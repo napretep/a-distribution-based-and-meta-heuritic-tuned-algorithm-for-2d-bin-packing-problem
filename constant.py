@@ -133,6 +133,11 @@ class Rect:
                 self.end = args[2]
         elif len(args)==0:
             self.start = self.end = POS(0,0)
+        if self.start>=self.end:
+            new_end = self.start
+            self.start = self.end
+            self.end= new_end
+
     @property
     def center(self):
         return (self.start + self.end) / 2
@@ -178,8 +183,7 @@ class Rect:
                 l = self.end - self.start
                 return (l.x>0 and l.y==0) or (l.x==0 and l.y>0)
             elif other is POS:
-                l = self.end - self.start
-                return l.x==0 and l.y==0
+                return self.end == self.start
             else:
                 raise ValueError("other must be Rect or Line or POS")
 
@@ -279,15 +283,19 @@ class ProtoPlan:
     ID:int
     material:Rect
     item_sequence:list[Item]
+    remain_containers:"list[Container]|None"=None
 
-
+    def util_rate(self):
+        return sum([item.size.area for item in self.item_sequence]) / self.material.area
+# @dataclasses.dataclass
+# class Solution:
+#     plan_list:list[ProtoPlan]
 
 _temp_外包_data = np.loadtxt(os.path.join(DATA_PATH, r'外包数据\items.csv'), delimiter=',')
 外包_data: "np.ndarray|None" = None
 # _temp_外包_data = np.column_stack((_temp_外包_data[:,0],np.maximum(_temp_外包_data[:,1],_temp_外包_data[:,2]),np.minimum(_temp_外包_data[:,1],_temp_外包_data[:,2])))
 for i in range(_temp_外包_data.shape[0]):
     row = _temp_外包_data[i]
-    # num_orders = row[COL.ID]
     item_count = row[COL.Remain]
     new_rows = np.repeat(row[np.newaxis, :], item_count, axis=0)
 
@@ -307,9 +315,6 @@ minL_min = np.min(外包_data[:, COL.minL])
 外包_data = np.column_stack(
         (外包_data[:, 0], np.maximum(外包_data[:, 1], 外包_data[:, 2]), np.minimum(外包_data[:, 1], 外包_data[:, 2]))
 )
-# 外包_data = np.column_stack(
-#         (外包_data[:,0],外包_data[:,1],外包_data[:,2])
-# )
 
 华为杯_data: "np.ndarray|None" = None
 # item_id, item_material, item_num, item_length, item_width, item_order
@@ -355,6 +360,12 @@ samples = samples[(0 <= samples[:, 0]) & (samples[:, 0] <= 1) & (0 <= samples[:,
 随机_data = np.column_stack((np.zeros(samples.shape[0]), np.maximum(samples[:, 0], samples[:, 1]), np.minimum(samples[:, 0], samples[:, 1])))
 
 
+
+
+def unify(data:"np.ndarray"):
+    """单位化"""
+
+
 # 随机_data = np.column_stack((np.zeros(samples.shape[0]),samples))
 
 def kde(data):
@@ -367,5 +378,6 @@ def kde(data):
 
 
 if __name__ == "__main__":
-    kde(随机_data)
+    print(Rect(POS(10,10),POS(10,0))==Rect)
+
     pass

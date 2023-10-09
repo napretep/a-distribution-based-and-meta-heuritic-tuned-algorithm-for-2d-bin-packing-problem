@@ -29,7 +29,7 @@ class Container:
 
 @dataclass
 class Plan(ProtoPlan):
-    freeContainers: list[Container]
+    freeContainers: "list[Container]|None"=None
 
 
 @dataclass
@@ -113,7 +113,8 @@ class MaxRect:
                                     score=(container.rect.width - new_item.size.width, container.rect.height - new_item.size.height)
                             )
                             scores.append(score)
-                            itemT: "Item" = new_item.transpose()
+                        itemT: "Item" = new_item.transpose()
+                        if (itemT.size + container.rect.start) in container.rect:
                             score = ItemScore(
                                     item=itemT,
                                     container=container,
@@ -139,7 +140,7 @@ class MaxRect:
                 scores.append(score)
             best_score: "ItemScore" = min(scores, key=cmp_to_key(score_cmp))
             if best_score.plan_id == -1:
-                plan = Plan(len(plans), self.material.copy(), [], [])
+                plan = Plan(ID=len(plans),material=self.material.copy(),item_sequence=[],freeContainers=[])
                 container_top = Container(best_score.item.size.topLeft, self.material.topRight)
                 container_btm = Container(best_score.item.size.bottomRight, self.material.topRight)
                 plan.freeContainers += [container_top, container_btm]
@@ -178,16 +179,20 @@ class MaxRect:
                         wait_for_remove.append(free_c)
                         if result.topRight.y < free_c.rect.topRight.y:
                             top_c = Container(POS(free_c.rect.topLeft.x, result.topLeft.y), free_c.rect.topRight,plan.ID)
-                            wait_for_append.append(top_c)
+                            if top_c.rect==Rect:
+                                wait_for_append.append(top_c)
                         if result.bottomRight.y > free_c.rect.bottomRight.y:
                             bottom_c = Container(free_c.rect.bottomLeft, POS(free_c.rect.bottomRight.x, result.bottomRight.y),plan.ID)
-                            wait_for_append.append(bottom_c)
+                            if bottom_c.rect == Rect:
+                                wait_for_append.append(bottom_c)
                         if result.topRight.x < free_c.rect.topRight.x:
                             left_c = Container(POS(result.bottomRight.x, free_c.rect.bottomLeft.y), free_c.rect.topRight,plan.ID)
-                            wait_for_append.append(left_c)
+                            if left_c.rect == Rect:
+                                wait_for_append.append(left_c)
                         if result.topLeft.x > free_c.rect.topLeft.x:
                             right_c = Container(free_c.rect.bottomLeft, POS(result.bottomRight.x, free_c.rect.topRight.y),plan.ID)
-                            wait_for_append.append(right_c)
+                            if right_c.rect==Rect:
+                                wait_for_append.append(right_c)
                 for container in wait_for_remove:
                     plan.freeContainers.remove(container)
                 # 清理被包含的container
@@ -201,14 +206,14 @@ class MaxRect:
                             elif result == Line:
                                 diff = result.end - result.start
                                 if diff.x == 0:
-                                    if result.start.x == free_c.rect.end.x:
+                                    if result.start == free_c.rect.bottomRight :
                                         free_c.rect.end = wait_for_append[i].rect.end
-                                    elif result.start.x == free_c.rect.start.x:
+                                    elif result.start == free_c.rect.bottomLeft:
                                         free_c.rect.start = wait_for_append[i].rect.start
                                 elif diff.y == 0:
-                                    if result.end.y == free_c.rect.end.y:
+                                    if result.end == free_c.rect.topRight:
                                         free_c.rect.end = wait_for_append[i].rect.end
-                                    elif result.end.y == free_c.rect.start.y:
+                                    elif result.end == free_c.rect.bottomRight:
                                         free_c.rect.start = wait_for_append[i].rect.start
                                 wait_for_append[i] = None
                     if all(new_c is None for new_c in wait_for_append):
@@ -217,8 +222,15 @@ class MaxRect:
                     if container is not None:
                         plan.freeContainers.append(container)
             self.items.remove(best_score.item)
-        return plans
+        # return plans
+        self.solution=plans
     def clear_step_img(self):
         pass
 
+    pass
+
+
+if __name__ == "__main__":
+
+    MaxRect()
     pass
