@@ -25,17 +25,6 @@ class ScoreType(Enum):
     SkyLine=auto()
 
 @dataclass
-class Container:
-    rect: Rect
-    plan_id: int = None
-
-    def __init__(self, start: POS, end: POS, plan_id: "int|None" = None):
-        self.rect = Rect(start, end)
-        self.plan_id = plan_id
-
-    def __eq__(self, other: "Container"):
-        return self.rect == other.rect
-@dataclass
 class Plan(ProtoPlan):
     skyLineContainers: "list[Container]|None"=None # 此处,freeContainers是有序的list,需要维护和排序
     wasteMap: "list[Container]|None"=None

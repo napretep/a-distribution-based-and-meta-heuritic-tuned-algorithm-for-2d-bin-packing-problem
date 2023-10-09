@@ -6,25 +6,14 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/2 17:43'
 """
+import uuid
 from dataclasses import dataclass
 from functools import cmp_to_key
 from constant import *
 import numpy as np
+from visualizing.draw_plan import standard_draw_plan
 
 
-@dataclass
-class Container:
-    rect: Rect
-    # intersect_with: "list[Container]"
-    # containedBy: "list[Container]"
-    plan_id: int = None
-
-    def __init__(self, start: POS, end: POS, plan_id: "int|None" = None):
-        self.rect = Rect(start, end)
-        self.plan_id = plan_id
-
-    def __eq__(self, other: "Container"):
-        return self.rect == other.rect
 
 
 @dataclass
@@ -54,6 +43,8 @@ def score_cmp(a: "ItemScore", b: "ItemScore"):
     :return:
     """
     chooseA, chooseB = 1, -1
+    assert a.score[1]>=0 and a.score[0]>=0
+    assert b.score[1]>=0 and b.score[0]>=0
     if a.score[1] == b.score[1]:
         if a.score[0] > b.score[0]:
             return chooseB
@@ -68,7 +59,7 @@ def score_cmp(a: "ItemScore", b: "ItemScore"):
 
 class MaxRect:
 
-    def __init__(self, item_data: "np.ndarray", material_data: "np.ndarray"):
+    def __init__(self, item_data: "np.ndarray", material_data: "list",task_id=None):
         """
         :param item_data: [ID,maxL,minL]
         :param material_data: [ID,maxL,minL]
@@ -79,10 +70,10 @@ class MaxRect:
                                          pos=POS(0, 0)
                                          ) for item in item_data]
         self.material: "Rect" = Rect(POS(0, 0), POS(material_data[1], material_data[2]))
-        self.solution: "np.ndarray|None" = None
+        self.solution: "list[Plan]|None" = None
         self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
-
-    def run(self):
+        self.task_id = task_id if task_id else str(uuid.uuid4())[0:8]
+    def run(self,debug_mode=False):
         """
         循环 直到待排物品为空
             循环 取出待排物品
@@ -97,116 +88,182 @@ class MaxRect:
 
         :return:
         """
+        debug_plan:"list[Plan]"=[]
         plans: "list[Plan]" = []
         # containers:"list[list[Container]]" = [] # container的id对应了plan
         while len(self.items) > 0:
+
             scores: "list[ItemScore]" = []
+
             for new_item in self.items:
                 for plan in plans:
                     for container in plan.freeContainers:
+
                         if (new_item.size + container.rect.start) in container.rect:
                             new_item.pos = container.rect.start
                             score = ItemScore(
-                                    item=new_item,
+                                    item=new_item.copy(),
                                     container=container,
                                     plan_id=plan.ID,
                                     score=(container.rect.width - new_item.size.width, container.rect.height - new_item.size.height)
                             )
                             scores.append(score)
                         itemT: "Item" = new_item.transpose()
+                        itemT.pos=POS()
                         if (itemT.size + container.rect.start) in container.rect:
+                            itemT.pos = container.rect.start
                             score = ItemScore(
-                                    item=itemT,
+                                    item=itemT.copy(),
                                     container=container,
                                     plan_id=plan.ID,
                                     score=(container.rect.width - itemT.size.width, container.rect.height - itemT.size.height)
                             )
                             scores.append(score)
                 new_item.pos = POS()
-                score = ItemScore(
-                        item=new_item,
-                        container=Container(POS(0, 0), POS(self.material.width, self.material.height)),
-                        plan_id=-1,
-                        score=(self.material.width - new_item.size.width, self.material.height - new_item.size.height)
-                )
-                scores.append(score)
+                new_container=Container(POS(0, 0), POS(self.material.width, self.material.height))
+
+                if (new_item.size+new_container.rect.start) in new_container.rect:
+                    score = ItemScore(
+                            item=new_item.copy(),
+                            container=new_container,
+                            plan_id=-1,
+                            score=(self.material.width - new_item.size.width, self.material.height - new_item.size.height)
+                    )
+                    scores.append(score)
                 itemT: "Item" = new_item.transpose()
-                score = ItemScore(
-                        item=itemT,
-                        container=Container(POS(0, 0), POS(self.material.width, self.material.height)),
-                        plan_id=-1,
-                        score=(self.material.width - itemT.size.width, self.material.height - itemT.size.height)
-                )
-                scores.append(score)
-            best_score: "ItemScore" = min(scores, key=cmp_to_key(score_cmp))
+                itemT.pos=POS()
+
+                if (itemT.size + new_container.rect.start) in new_container.rect:
+                    score = ItemScore(
+                            item=itemT.copy(),
+                            container=new_container,
+                            plan_id=-1,
+                            score=(self.material.width - itemT.size.width, self.material.height - itemT.size.height)
+                    )
+                    scores.append(score)
+
+            best_score = min(scores,key=lambda x:min(x.score))
             if best_score.plan_id == -1:
                 plan = Plan(ID=len(plans),material=self.material.copy(),item_sequence=[],freeContainers=[])
-                container_top = Container(best_score.item.size.topLeft, self.material.topRight)
-                container_btm = Container(best_score.item.size.bottomRight, self.material.topRight)
+                item_rect = best_score.item.size+best_score.item.pos
+                container_top = Container(item_rect.topLeft, self.material.topRight)
+                container_btm = Container(item_rect.bottomRight, self.material.topRight)
                 plan.freeContainers += [container_top, container_btm]
                 plan.item_sequence.append(best_score.item)
+                plans.append(plan)
+                if debug_mode:
+                    plan.remain_containers=plan.freeContainers
+                    debug_plan.append(plan)
+                if debug_mode:
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"初始化添加容器")
             else:
                 plan = plans[best_score.plan_id]
+                plan.item_sequence.append(best_score.item)
+                if debug_mode:
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.size+best_score.item.pos}")
                 # 取出旧container,item
                 new_item = best_score.item
                 container = best_score.container
+                # print(new_item.pos)
                 new_rect = new_item.size + new_item.pos
                 # 由旧container和item,创建新container
                 plan.freeContainers.remove(container)
-                container_new1: "Container|None" = Container(container.rect.start, container.rect.end,plan.ID)
-                container_new2: "Container|None" = Container(container.rect.start, container.rect.end,plan.ID)
-                if container.rect.height > new_rect.height:
-                    container_new1.rect.start = new_rect.topLeft
-                else:
+                if debug_mode:
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{container.rect}")
+                    # 将这些容器插入到表格中
+                container_new1: "Container|None" = Container(new_rect.topLeft, container.rect.end, plan.ID)
+                container_new2: "Container|None" = Container(new_rect.bottomRight, container.rect.end, plan.ID)
+                if container_new1.rect != Rect:
                     container_new1 = None
-                if container.rect.width > new_rect.width:
-                    container_new2.rect.start = new_rect.bottomRight
-                else:
+                if container_new2.rect != Rect:
                     container_new2 = None
-                if container_new1:
-                    plan.freeContainers.append(container_new1)
-                if container_new2:
-                    plan.freeContainers.append(container_new2)
 
-                # 更新container关系,根据item切割有交集的container
+                for container in plan.freeContainers:
+                    if container_new1 is not None:
+                        if container.rect&container_new1.rect==container_new1.rect:
+                            container_new1=None
+                    if container_new2 is not None:
+                        if container.rect & container_new2.rect == container_new2.rect:
+                            container_new2=None
+                    if container_new1 is None and container_new2 is None:
+                        break
+
                 wait_for_remove = []
                 wait_for_append = []
-                # top_c,bottom_c,left_c,right_c=None,None,None,None
+                # 维护分两部分
+                # 第1部分: 原有的容器被新插入的矩形分割得到的两个新容器,如果他们中有完全被剩余容器包裹的, 删除掉
+                # 第2部分: 新插入的矩形分割了其他矩形,删除掉,添加没被分割的部分, 也要判断是否被其他容器包裹, 若是也要删除
+                # 最后,拼接可以合并的矩形
+
+                # 首先找到与插入新矩形有交集的容器,并删除他们,并根据这些容器创建新的不交新矩形的容器
                 for free_c in plan.freeContainers:
+
                     result = free_c.rect & new_rect
                     # 判断新加入的矩形是否和其他空余矩形有交集,如果有,则剔除这个矩形,同时生成它的剩余部分作为新的空余矩形
+                    # print(result)
                     if result == Rect:
+                        # print("result == Rect","free_c=",free_c,"new_rect= ",new_rect)
                         wait_for_remove.append(free_c)
+
+                        # 上部
                         if result.topRight.y < free_c.rect.topRight.y:
-                            top_c = Container(POS(free_c.rect.topLeft.x, result.topLeft.y), free_c.rect.topRight,plan.ID)
-                            if top_c.rect==Rect:
+                            top_c = Container(
+                                    POS(free_c.rect.topLeft.x, result.topLeft.y),
+                                    free_c.rect.topRight,
+                                    plan.ID
+                            )
+                            if top_c.rect == Rect:  # 还需要判断新容器是个有面积的矩形
                                 wait_for_append.append(top_c)
+                        # 下部
                         if result.bottomRight.y > free_c.rect.bottomRight.y:
-                            bottom_c = Container(free_c.rect.bottomLeft, POS(free_c.rect.bottomRight.x, result.bottomRight.y),plan.ID)
+                            bottom_c = Container(free_c.rect.bottomLeft, POS(free_c.rect.bottomRight.x, result.bottomRight.y), plan.ID)
                             if bottom_c.rect == Rect:
                                 wait_for_append.append(bottom_c)
+                        # 右部
                         if result.topRight.x < free_c.rect.topRight.x:
-                            left_c = Container(POS(result.bottomRight.x, free_c.rect.bottomLeft.y), free_c.rect.topRight,plan.ID)
+                            left_c = Container(POS(result.bottomRight.x, free_c.rect.bottomLeft.y), free_c.rect.topRight, plan.ID)
                             if left_c.rect == Rect:
                                 wait_for_append.append(left_c)
+                        # 左部
                         if result.topLeft.x > free_c.rect.topLeft.x:
-                            right_c = Container(free_c.rect.bottomLeft, POS(result.bottomRight.x, free_c.rect.topRight.y),plan.ID)
-                            if right_c.rect==Rect:
+                            right_c = Container(free_c.rect.bottomLeft, POS(result.topLeft.x, free_c.rect.topRight.y), plan.ID)
+                            if right_c.rect == Rect:
                                 wait_for_append.append(right_c)
-                for container in wait_for_remove:
-                    plan.freeContainers.remove(container)
-                # 清理被包含的container
-                # 合并公共边的container
+
+
+                for c in wait_for_append:
+                    if container_new1 is not None:
+                        if c.rect & container_new1.rect == container_new1.rect:
+                            container_new1=None
+                    if container_new2 is not None:
+                        if c.rect & container_new2.rect == container_new2.rect:
+                            container_new2=None
+                    if container_new1 is None and container_new2 is None:
+                        break
+
+                if container_new1 is not None:
+                    wait_for_append.append(container_new1)
+                if container_new2 is not None:
+                    wait_for_append.append(container_new2)
+
+                for c in wait_for_remove:
+                    plan.freeContainers.remove(c)
+                    if debug_mode:
+                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{c.rect}")
+
+                # 维护矩形
                 for free_c in plan.freeContainers:
                     for i in range(len(wait_for_append)):
                         if wait_for_append[i] is not None:
                             result = wait_for_append[i].rect
-                            if result & free_c.rect == result:
+                            # 清理被包含的container
+                            if result & free_c.rect == result:  # 被包含
                                 wait_for_append[i] = None
-                            elif result == Line:
+                            # 合并公共边的container
+                            elif result == Line:  # 相切则合并
                                 diff = result.end - result.start
                                 if diff.x == 0:
-                                    if result.start == free_c.rect.bottomRight :
+                                    if result.start == free_c.rect.bottomRight:
                                         free_c.rect.end = wait_for_append[i].rect.end
                                     elif result.start == free_c.rect.bottomLeft:
                                         free_c.rect.start = wait_for_append[i].rect.start
@@ -218,12 +275,32 @@ class MaxRect:
                                 wait_for_append[i] = None
                     if all(new_c is None for new_c in wait_for_append):
                         break
+
                 for container in wait_for_append:
                     if container is not None:
                         plan.freeContainers.append(container)
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加容器,{container.rect}")
+
+
+                # 下面开始第二部分
+
+                if debug_mode:
+                    plan.remain_containers=plan.freeContainers
+                    debug_plan.append(plan)
             self.items.remove(best_score.item)
+            if debug_mode:
+                # print(len(self.items))
+                if plans:
+                    standard_draw_plan(debug_plan,is_debug=debug_mode,task_id=self.task_id)
+                    debug_plan=[]
         # return plans
+        print([i.util_rate() for i in plans])
+        for plan in plans:
+            plan.remain_containers=plan.freeContainers
         self.solution=plans
+
+        return plans
     def clear_step_img(self):
         pass
 
@@ -231,6 +308,20 @@ class MaxRect:
 
 
 if __name__ == "__main__":
+    # r1 = Rect(50,50,100,100)
+    # r2 = Rect(75,75,120,95)
+    # r3 = Rect(25,75,75,95)
+    # r4 = Rect(75,75,120,120)
+    # r5 = Rect(60,10,80,60)
+    # print(r1 & r2)
+    # print(r1 & r5)
 
-    MaxRect()
+
+    data_idx = np.random.choice(华为杯_data.shape[0],300)
+    data = 华为杯_data[data_idx]
+    r = MaxRect(data,[0,2440,1220])
+    print(r.task_id)
+    plans = r.run(debug_mode=False)
+    print(r.solution)
+    standard_draw_plan(plans,task_id=r.task_id)
     pass

@@ -25,7 +25,7 @@ SOLUTIONS_PATH = os.path.join(IMAGES_PATH, 'solutions')
 
 # 华为_data = os.path.join(DATA_PATH, '华为杯数据')
 
-__all__ = ['外包_data', '华为杯_data', "COL", "随机_data", "PROCESSING_STEP_PATH", "SOLUTIONS_PATH","Rect", "ProtoPlan", "POS","Item","Line"]
+__all__ = ['外包_data', '华为杯_data', "COL", "随机_data", "PROCESSING_STEP_PATH", "SOLUTIONS_PATH","Rect", "ProtoPlan", "POS","Item","Line","Container"]
 
 
 class COL:
@@ -100,6 +100,7 @@ class POS:
     def __ge__(self, other:"POS"):
         return self.x >= other.x and self.y >= other.y
     def __le__(self, other:"POS"):
+        assert type(other)==POS
         return self.x <= other.x and self.y <= other.y
 
 
@@ -114,7 +115,8 @@ class Rect:
     end:POS
     ID:int|None=None
 
-    def __init__(self, *args):
+    def __init__(self, *args,ID=None):
+        self.ID=ID
         if len(args) == 2:
             if type(args[0])==POS:
                 self.start = args[0]
@@ -163,14 +165,17 @@ class Rect:
     def area(self):
         return self.width * self.height
 
+
     def transpose(self):
         """转置"""
         # end = POS(self.start+self.width, self.start+self.height)
         end = POS(self.height,self.width)+self.start
-        return Rect(self.start, end,self.ID)
+        r = Rect(self.start, end)
+        r.ID= self.ID
+        return r
 
     def copy(self):
-        return Rect(self.start,self.end,self.ID)
+        return Rect(self.start,self.end,ID=self.ID)
 
     def __eq__(self, other:"Type[Rect|Line|POS]|Rect"):
         if type(other)==Rect:
@@ -192,12 +197,14 @@ class Rect:
 
     def __add__(self, other:POS|float|int):
         return Rect(self.start + other, self.end + other)
-
+    def __mul__(self, other):
+        assert type(other) in (int,float)
+        return Rect(self.start*other,self.end*other,ID=self.ID)
     def __contains__(self, item:"Rect|POS"):
         if type(item)==Rect:
             return self.start <= item.start and self.end >= item.end
         elif type(item)==POS:
-            return self.start <= item.start and self.end >= item.end
+            return self.start <= item and self.end >= item
         else:
             raise ValueError("item must be Rect or POS")
     def __and__(self, other:"Rect"):
@@ -206,7 +213,6 @@ class Rect:
             return Rect(other.start, other.end)
         elif self in other:
             return Rect(self.start, self.end)
-
         else:
 
             if other.bottomLeft in self:
@@ -215,25 +221,25 @@ class Rect:
                     return Rect(other.bottomLeft,other.bottomRight.x,self.topLeft.y)
                 # 下左,上左
                 elif other.topLeft in self:
-                    return Rect(other.bottomLeft,self.topLeft.x,other.topRight.y)
+                    return Rect(other.bottomLeft,self.topRight.x,other.topRight.y)
                 else:
-                    return Rect(other.bottomLeft,self.topLeft)
+                    return Rect(other.bottomLeft,self.topRight)
             elif other.topRight in self:
                 # 上右,上左
                 if other.topLeft in self:
-                    return Rect(other.bottomLeft.x,self.bottomLeft.y,other.topLeft)
+                    return Rect(other.bottomLeft.x,self.bottomLeft.y,other.topRight)
                 # 上右,下右
                 elif other.bottomRight in self:
-                    return Rect(self.bottomRight.x,other.bottomRight.y,other.topRight)
+                    return Rect(self.bottomLeft.x,other.bottomRight.y,other.topRight)
                 else:
                     return Rect(self.bottomLeft, other.topRight)
             elif other.topLeft in self:
                 # 上左,上右
                 if other.topRight in self:
-                    return Rect(other.bottomLeft.x,self.bottomLeft.y,other.topLeft)
+                    return Rect(other.bottomLeft.x,self.bottomLeft.y,other.topRight)
                 # 上左,下左
                 elif other.bottomLeft in self:
-                    return Rect(other.bottomLeft,self.topLeft.x,other.topRight.y)
+                    return Rect(other.bottomLeft,self.topRight.x,other.topRight.y)
                 else:
                     return Rect(other.bottomLeft.x,self.bottomLeft.y,self.topRight.x,other.topRight.y)
             elif other.bottomRight in self:
@@ -242,16 +248,18 @@ class Rect:
                     return Rect(other.bottomLeft,other.bottomRight.x,self.topLeft.y)
                 # 下右,上右
                 elif other.topRight in self:
-                    return Rect(self.bottomRight.x,other.bottomRight.y,other.topRight)
+                    return Rect(self.bottomLeft.x,other.bottomRight.y,other.topRight)
                 else:
-                    return Rect(self.bottomRight.x,other.bottomRight.y,self.bottomRight.x,self.topRight.y)
-            elif other.topRight.x<=self.topRight.x and other.topLeft.x>=self.topLeft.x:
+                    return Rect(self.bottomRight.x,other.bottomRight.y,other.bottomRight.x,self.topRight.y)
+            elif self.topLeft.x<=other.topLeft.x and other.topRight.x<=self.topRight.x:
                 return Rect(other.bottomLeft.x,self.bottomLeft.y,other.topLeft.x,self.topLeft.y)
-            elif other.topLeft.y<=self.topLeft.y and other.bottomRight.y>=self.bottomRight.y:
+            elif self.bottomRight.y<=other.bottomRight.y and other.topLeft.y<=self.topLeft.y:
                 return Rect(self.bottomLeft.x,other.bottomLeft.y,self.topRight.x,other.topRight.y)
             else:
                 return Rect()
 
+    def __str__(self):
+        return f"Rect{self.start.x},{self.start.y}|{self.end.x},{self.end.y}"
 
     def __bool__(self):
         if self.start == self.end:
@@ -262,16 +270,29 @@ class Rect:
     # def contain(self, item:"Rect"):
     #     return (item+self.start) in self
 
+@dataclasses.dataclass
+class Container:
+    rect: Rect
+    plan_id: int = None
 
+    def __init__(self, start: POS, end: POS, plan_id: "int|None" = None):
+        self.rect = Rect(start, end)
+        self.plan_id = plan_id
 
+    def __eq__(self, other: "Container"):
+        return self.rect == other.rect
 
+@dataclasses.dataclass
 class Item:
     ID:int
     size:Rect
     pos:POS
     def transpose(self):
-        return Item(self.ID,self.size.transpose())
+        return Item(self.ID,self.size.transpose(),self.pos)
 
+
+    def copy(self):
+        return Item(self.ID,self.size,self.pos)
     def __eq__(self, other:"Item"):
         return self.ID==other.ID
 
@@ -304,14 +325,6 @@ for i in range(_temp_外包_data.shape[0]):
     else:
         外包_data = np.row_stack((外包_data, new_rows))
 
-maxL_max = np.max(外包_data[:, COL.maxL])
-maxL_min = np.min(外包_data[:, COL.maxL])
-minL_max = np.max(外包_data[:, COL.minL])
-minL_min = np.min(外包_data[:, COL.minL])
-外包_data = np.column_stack(
-        (外包_data[:, 0],
-         (外包_data[:, COL.maxL] - maxL_min) / (maxL_max - maxL_min),
-         (外包_data[:, COL.minL] - minL_min) / (minL_max - minL_min)))
 外包_data = np.column_stack(
         (外包_data[:, 0], np.maximum(外包_data[:, 1], 外包_data[:, 2]), np.minimum(外包_data[:, 1], 外包_data[:, 2]))
 )
@@ -325,16 +338,7 @@ for i in range(5):
     else:
         华为杯_data = np.row_stack((华为杯_data, _temp_华为杯_data))
 华为杯_data = np.column_stack((华为杯_data[:, 0], np.maximum(华为杯_data[:, 1], 华为杯_data[:, 2]), np.minimum(华为杯_data[:, 1], 华为杯_data[:, 2])))
-# 华为杯_data = np.column_stack((华为杯_data[:,0],华为杯_data[:,1],华为杯_data[:,2]))
 
-maxL_max = np.max(华为杯_data[:, COL.maxL])
-maxL_min = np.min(华为杯_data[:, COL.maxL])
-minL_max = np.max(华为杯_data[:, COL.minL])
-minL_min = np.min(华为杯_data[:, COL.minL])
-华为杯_data = np.column_stack(
-        (华为杯_data[:, 0],
-         (华为杯_data[:, COL.maxL] - maxL_min) / (maxL_max - maxL_min),
-         (华为杯_data[:, COL.minL] - minL_min) / (minL_max - minL_min)))
 
 # 设置随机种子以保证结果可复现
 np.random.seed(0)
@@ -363,7 +367,17 @@ samples = samples[(0 <= samples[:, 0]) & (samples[:, 0] <= 1) & (0 <= samples[:,
 
 
 def unify(data:"np.ndarray"):
-    """单位化"""
+    """单位化
+    :param:data:[ID,col1,col2]
+    """
+    data1 = np.column_stack((data[:, 0], np.maximum(data[:, 1], data[:, 2]), np.minimum(data[:, 1], data[:, 2])))
+    max_data = np.max(data1[:,1:3])
+    min_data = np.min(data1[:,1:3])
+    data_col1 = data1[:,1]
+    data_col2 = data1[:,2]
+    final_data=np.column_stack(data[:,0],(data_col1-min_data)/(max_data-min_data),(data_col2-min_data)/(max_data-min_data))
+
+    return final_data
 
 
 # 随机_data = np.column_stack((np.zeros(samples.shape[0]),samples))
@@ -378,6 +392,10 @@ def kde(data):
 
 
 if __name__ == "__main__":
-    print(Rect(POS(10,10),POS(10,0))==Rect)
+    r1 = Rect(657,1198,2440,1220)
+    r2 = Rect(657,58,1214,1220)
+    print(r1 & r2 == Rect)
+    # print(Rect(POS(10,10),POS(10,0))==Rect)
+
 
     pass
