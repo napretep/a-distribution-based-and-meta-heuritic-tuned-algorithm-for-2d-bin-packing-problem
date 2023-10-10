@@ -251,9 +251,11 @@ class Rect:
                     return Rect(self.bottomLeft.x,other.bottomRight.y,other.topRight)
                 else:
                     return Rect(self.bottomRight.x,other.bottomRight.y,other.bottomRight.x,self.topRight.y)
-            elif self.topLeft.x<=other.topLeft.x and other.topRight.x<=self.topRight.x:
+            elif self.topLeft.x<=other.topLeft.x and other.topRight.x<=self.topRight.x and \
+                    other.bottomRight.y<=self.bottomRight.y and self.topLeft.y<=other.topLeft.y:
                 return Rect(other.bottomLeft.x,self.bottomLeft.y,other.topLeft.x,self.topLeft.y)
-            elif self.bottomRight.y<=other.bottomRight.y and other.topLeft.y<=self.topLeft.y:
+            elif self.bottomRight.y<=other.bottomRight.y and other.topLeft.y<=self.topLeft.y\
+                    and other.topLeft.x<=self.topLeft.x and self.topRight.x<=other.topRight.x:
                 return Rect(self.bottomLeft.x,other.bottomLeft.y,self.topRight.x,other.topRight.y)
             else:
                 return Rect()
@@ -395,9 +397,10 @@ def kde(data):
 
 
 if __name__ == "__main__":
-    r1 = Rect(657,1198,2440,1220)
-    r2 = Rect(657,58,1214,1220)
-    print(r1 & r2 == Rect)
+    r1 = Rect(0,998,1878,1056)
+    r2 = Rect(2382,998,2440,1220)
+    print(r2 & r1)
+    print((r2 & r1) == Rect)
     # print(Rect(POS(10,10),POS(10,0))==Rect)
 
 

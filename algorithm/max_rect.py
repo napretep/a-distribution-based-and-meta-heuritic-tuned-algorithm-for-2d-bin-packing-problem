@@ -160,7 +160,6 @@ class MaxRect:
                     standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"初始化添加容器")
             else:
                 plan = plans[best_score.plan_id]
-
                 plan.item_sequence.append(best_score.item)
                 new_item = best_score.item
                 container = best_score.container

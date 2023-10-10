@@ -104,6 +104,7 @@ class Skyline:
         :return:
             若有可放置的区域,返回end_idx,否则返回-1
         """
+        debug_plan=[]
         height = item.size.height
         width = item.size.width
         start_x=containers[begin_idx].rect.start.x
@@ -236,9 +237,9 @@ class Skyline:
                                 score=self.compute_wasted_area(item, i, idx, new_plan.skyLineContainers),
                                 plan_id=-1
                         ))
-            print(scores)
+            # print(scores)
             best_score: "ItemScore" = min(scores, key=cmp_to_key(self.best_score_cmp))
-            print(best_score)
+            # print(best_score)
             if best_score.plan_id==-1:
                 plan = Plan(len(plans), self.material.copy(),[], [Container(self.material.start,self.material.end)], [])
                 container_top = Container(best_score.item.size.topLeft, POS(
@@ -251,17 +252,17 @@ class Skyline:
                 if container_top.rect == Rect:
                     plan.skyLineContainers.append(container_top)
                 # plan.freeContainers += [container_top, container_right]
-                plan.item_sequence.append(best_score.item)
                 plans.append(plan)
                 if debug_mode:
-
                     standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.rect}")
-            else:
-                plan = plans[best_score.plan_id]
                 plan.item_sequence.append(best_score.item)
                 if debug_mode:
-
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id,)
+            else:
+                plan = plans[best_score.plan_id]
+                if debug_mode:
                     standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.rect}")
+                plan.item_sequence.append(best_score.item)
 
                 new_rect = best_score.item.size + best_score.item.pos
                 if best_score.type_id==ScoreType.WasteMap: # wasteMap模式
@@ -320,12 +321,16 @@ class Skyline:
                         plan.wasteMap.append(newC_top)
                     if newC_right is not None:
                         plan.wasteMap.append(newC_right)
+                    if debug_mode:
+                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"最终效果")
                     pass
                 else: # skyline模式
                     # 根据score给的range取出全部横跨的skyline容器,并从freeContainers中删除
                     removed_containers = plan.skyLineContainers[best_score.container_range[0]:best_score.container_range[1]]
-                    for i in range(best_score.container_range[0],best_score.container_range[1]):
-                        plan.skyLineContainers.remove(plan.skyLineContainers[i])
+                    for container in removed_containers:
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"移除容器,{container.rect}")
+                        plan.skyLineContainers.remove(container)
                     last_c=removed_containers[-1]
                     # 创建新的skyline,通常只有两个
                     container_top = Container(new_rect.topLeft, POS(
@@ -372,13 +377,16 @@ class Skyline:
                         plan.skyLineContainers.append(container_top)
 
                     # 对剩余的skyline进行添加
-
+                    if debug_mode:
+                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"最终效果")
 
                     pass
 
 
 
                 pass
+            plan.skyLineContainers.sort(key=lambda x: x.rect.start.x)
+            plan.wasteMap.sort(key=lambda x: x.rect.start.x)
         for plan in plans:
             plan.remain_containers=plan.skyLineContainers+plan.wasteMap
         self.solution=plans
@@ -389,6 +397,7 @@ if __name__ == "__main__":
     data_idx = np.random.choice(华为杯_data.shape[0], 300)
     data = 华为杯_data[data_idx]
     s = Skyline(data,[0,2440,1220])
+    print(s.task_id)
     s.run(debug_mode=True)
-    print(s.solution)
+    # print(s.solution)
     pass
