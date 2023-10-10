@@ -6,6 +6,7 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/2 17:44'
 """
+import uuid
 from dataclasses import dataclass, field
 
 # - SKYLINE-MW-WM-BFF-DESCSS算法实现
@@ -39,7 +40,7 @@ class ItemScore:
 
 class Skyline:
 
-    def __init__(self, item_data: "np.ndarray", material_data: "list"):
+    def __init__(self, item_data: "np.ndarray", material_data: "list",task_id=None):
         """
         :param item_data: [ID,maxL,minL]
         :param material_data: [ID,maxL,minL]
@@ -52,6 +53,7 @@ class Skyline:
         self.material: "Rect" = Rect(POS(0, 0), POS(material_data[1], material_data[2]))
         self.solution: "list[Plan]|None" = None
         self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
+        self.task_id = task_id if task_id else str(uuid.uuid4())[0:8]
 
     def itemSort_cmp(self, a: "Item", b: "Item"):
         chooseA,chooseB = 1,-1
@@ -248,9 +250,14 @@ class Skyline:
                 # plan.freeContainers += [container_top, container_right]
                 plan.item_sequence.append(best_score.item)
                 plans.append(plan)
+                if debug_mode:
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item}")
             else:
                 plan = plans[best_score.plan_id]
                 plan.item_sequence.append(best_score.item)
+                if debug_mode:
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{container.rect}")
+
                 new_rect = best_score.item.size + best_score.item.pos
                 if best_score.type_id==ScoreType.WasteMap: # wasteMap模式
                     # 将所占用的wastemap容器删除,填入新的wastemap容器

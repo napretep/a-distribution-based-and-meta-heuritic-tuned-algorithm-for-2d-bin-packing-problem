@@ -197,7 +197,12 @@ class MaxRect:
                             right_c = Container(free_c.rect.bottomLeft, POS(result.topLeft.x, free_c.rect.topRight.y), plan.ID)
                             if right_c.rect == Rect:
                                 container_to_append.append(right_c)
+                for container in container_to_remove:
+                    if debug_mode:
+                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{container.rect}")
+                    plan.freeContainers.remove(container)
 
+                container_to_remove = []
                 # 维护矩形
                 for free_c in plan.freeContainers:
                     for i in range(len(container_to_append)):
@@ -222,10 +227,6 @@ class MaxRect:
                                 container_to_append[i] = None
                     if all(new_c is None for new_c in container_to_append):
                         break
-                for container in container_to_remove:
-                    if debug_mode:
-                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{container.rect}")
-                    plan.freeContainers.remove(container)
                 for container in container_to_append:
                     if container is not None:
                         if debug_mode:

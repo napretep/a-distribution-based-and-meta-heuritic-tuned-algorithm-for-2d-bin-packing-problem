@@ -290,7 +290,9 @@ class Item:
     pos:POS
     def transpose(self):
         return Item(self.ID,self.size.transpose(),self.pos)
-
+    @property
+    def rect(self):
+        return self.size+self.pos
 
     def copy(self):
         return Item(self.ID,self.size,self.pos)
