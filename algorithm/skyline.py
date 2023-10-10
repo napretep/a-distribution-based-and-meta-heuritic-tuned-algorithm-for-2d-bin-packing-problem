@@ -30,11 +30,14 @@ class Plan(ProtoPlan):
     skyLineContainers: "list[Container]|None"=field(default_factory=list) # 此处,freeContainers是有序的list,需要维护和排序
     wasteMap: "list[Container]|None"=field(default_factory=list)
 
+    def get_remain_containers(self):
+        return self.skyLineContainers+self.wasteMap
+
 @dataclass
 class ItemScore:
     item: Item
     container_range: tuple[int,int]
-    score:tuple[ int | float,int|float]|int|float # 先比较浪费空间谁最小,然后比较min_y谁最小
+    score:tuple[int | float,int|float]|int|float # 先比较浪费空间谁最小,然后比较min_y谁最小
     plan_id: int | None = None
     type_id:ScoreType = ScoreType.SkyLine
 
@@ -251,12 +254,14 @@ class Skyline:
                 plan.item_sequence.append(best_score.item)
                 plans.append(plan)
                 if debug_mode:
-                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item}")
+
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.rect}")
             else:
                 plan = plans[best_score.plan_id]
                 plan.item_sequence.append(best_score.item)
                 if debug_mode:
-                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{container.rect}")
+
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.rect}")
 
                 new_rect = best_score.item.size + best_score.item.pos
                 if best_score.type_id==ScoreType.WasteMap: # wasteMap模式

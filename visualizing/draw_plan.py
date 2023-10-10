@@ -74,7 +74,7 @@ def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=
 
         # if is_debug:
 
-        for corner in plan.remain_containers:
+        for corner in plan.get_remain_containers():
             # corner_start, corner_end = POS(*corner[0]) * 0.001, POS(*corner[1]) * 0.001
             r= corner.rect
             # corner_size = (corner_end - corner_start)

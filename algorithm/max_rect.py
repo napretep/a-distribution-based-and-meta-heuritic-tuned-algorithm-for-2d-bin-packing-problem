@@ -20,6 +20,8 @@ from visualizing.draw_plan import standard_draw_plan
 class Plan(ProtoPlan):
     freeContainers: "list[Container]|None"=None
 
+    def get_remain_containers(self):
+        return self.freeContainers
 
 @dataclass
 class ItemScore:
@@ -212,19 +214,19 @@ class MaxRect:
                             if result & free_c.rect == result:  # 被包含
                                 container_to_append[i] = None
                             # 合并公共边的container
-                            elif result == Line:  # 相切则合并
-                                diff = result.end - result.start
-                                if diff.x == 0:
-                                    if result.start == free_c.rect.bottomRight:
-                                        free_c.rect.end = container_to_append[i].rect.end
-                                    elif result.start == free_c.rect.bottomLeft:
-                                        free_c.rect.start = container_to_append[i].rect.start
-                                elif diff.y == 0:
-                                    if result.end == free_c.rect.topRight:
-                                        free_c.rect.end = container_to_append[i].rect.end
-                                    elif result.end == free_c.rect.bottomRight:
-                                        free_c.rect.start = container_to_append[i].rect.start
-                                container_to_append[i] = None
+                            # elif result == Line:  # 相切则合并
+                            #     diff = result.end - result.start
+                            #     if diff.x == 0:
+                            #         if result.start == free_c.rect.bottomRight:
+                            #             free_c.rect.end = container_to_append[i].rect.end
+                            #         elif result.start == free_c.rect.bottomLeft:
+                            #             free_c.rect.start = container_to_append[i].rect.start
+                            #     elif diff.y == 0:
+                            #         if result.end == free_c.rect.topRight:
+                            #             free_c.rect.end = container_to_append[i].rect.end
+                            #         elif result.end == free_c.rect.bottomRight:
+                            #             free_c.rect.start = container_to_append[i].rect.start
+                            #     container_to_append[i] = None
                     if all(new_c is None for new_c in container_to_append):
                         break
                 for container in container_to_append:
@@ -232,130 +234,6 @@ class MaxRect:
                         if debug_mode:
                             standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加容器,{container.rect}")
                         plan.freeContainers.append(container)
-                # # 取出旧container,item
-                # new_item = best_score.item
-                # container = best_score.container
-                # # print(new_item.pos)
-                # new_rect = new_item.size + new_item.pos
-                # # 由旧container和item,创建新container
-                # if debug_mode:
-                #     standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{container.rect}")
-                # plan.freeContainers.remove(container)
-                #
-                #     # 将这些容器插入到表格中
-                # container_new1: "Container|None" = Container(new_rect.topLeft, container.rect.end, plan.ID)
-                # container_new2: "Container|None" = Container(new_rect.bottomRight, container.rect.end, plan.ID)
-                # if container_new1.rect != Rect:
-                #     container_new1 = None
-                # if container_new2.rect != Rect:
-                #     container_new2 = None
-                #
-                # for container in plan.freeContainers:
-                #     if container_new1 is not None:
-                #         if container.rect&container_new1.rect==container_new1.rect:
-                #             container_new1=None
-                #     if container_new2 is not None:
-                #         if container.rect & container_new2.rect == container_new2.rect:
-                #             container_new2=None
-                #     if container_new1 is None and container_new2 is None:
-                #         break
-                #
-                # wait_for_remove = []
-                # wait_for_append = []
-                # # 维护分两部分
-                # # 第1部分: 原有的容器被新插入的矩形分割得到的两个新容器,如果他们中有完全被剩余容器包裹的, 删除掉
-                # # 第2部分: 新插入的矩形分割了其他矩形,删除掉,添加没被分割的部分, 也要判断是否被其他容器包裹, 若是也要删除
-                # # 最后,拼接可以合并的矩形
-                #
-                # # 首先找到与插入新矩形有交集的容器,并删除他们,并根据这些容器创建新的不交新矩形的容器
-                # for free_c in plan.freeContainers:
-                #
-                #     result = free_c.rect & new_rect
-                #     # 判断新加入的矩形是否和其他空余矩形有交集,如果有,则剔除这个矩形,同时生成它的剩余部分作为新的空余矩形
-                #     # print(result)
-                #     if result == Rect:
-                #         # print("result == Rect","free_c=",free_c,"new_rect= ",new_rect)
-                #         wait_for_remove.append(free_c)
-                #
-                #         # 上部
-                #         if result.topRight.y < free_c.rect.topRight.y:
-                #             top_c = Container(
-                #                     POS(free_c.rect.topLeft.x, result.topLeft.y),
-                #                     free_c.rect.topRight,
-                #                     plan.ID
-                #             )
-                #             if top_c.rect == Rect:  # 还需要判断新容器是个有面积的矩形
-                #                 wait_for_append.append(top_c)
-                #         # 下部
-                #         if result.bottomRight.y > free_c.rect.bottomRight.y:
-                #             bottom_c = Container(free_c.rect.bottomLeft, POS(free_c.rect.bottomRight.x, result.bottomRight.y), plan.ID)
-                #             if bottom_c.rect == Rect:
-                #                 wait_for_append.append(bottom_c)
-                #         # 右部
-                #         if result.topRight.x < free_c.rect.topRight.x:
-                #             left_c = Container(POS(result.bottomRight.x, free_c.rect.bottomLeft.y), free_c.rect.topRight, plan.ID)
-                #             if left_c.rect == Rect:
-                #                 wait_for_append.append(left_c)
-                #         # 左部
-                #         if result.topLeft.x > free_c.rect.topLeft.x:
-                #             right_c = Container(free_c.rect.bottomLeft, POS(result.topLeft.x, free_c.rect.topRight.y), plan.ID)
-                #             if right_c.rect == Rect:
-                #                 wait_for_append.append(right_c)
-                #
-                #
-                # for c in wait_for_append:
-                #     if container_new1 is not None:
-                #         if c.rect & container_new1.rect == container_new1.rect:
-                #             container_new1=None
-                #     if container_new2 is not None:
-                #         if c.rect & container_new2.rect == container_new2.rect:
-                #             container_new2=None
-                #     if container_new1 is None and container_new2 is None:
-                #         break
-                #
-                # if container_new1 is not None:
-                #     wait_for_append.append(container_new1)
-                # if container_new2 is not None:
-                #     wait_for_append.append(container_new2)
-                #
-                # for c in wait_for_remove:
-                #     if debug_mode:
-                #         standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{c.rect}")
-                #     plan.freeContainers.remove(c)
-                #
-                # # 维护矩形
-                # for free_c in plan.freeContainers:
-                #     for i in range(len(wait_for_append)):
-                #         if wait_for_append[i] is not None:
-                #             result = wait_for_append[i].rect
-                #             # 清理被包含的container
-                #             if result & free_c.rect == result:  # 被包含
-                #                 wait_for_append[i] = None
-                #             # 合并公共边的container
-                #             elif result == Line:  # 相切则合并
-                #                 diff = result.end - result.start
-                #                 if diff.x == 0:
-                #                     if result.start == free_c.rect.bottomRight:
-                #                         free_c.rect.end = wait_for_append[i].rect.end
-                #                     elif result.start == free_c.rect.bottomLeft:
-                #                         free_c.rect.start = wait_for_append[i].rect.start
-                #                 elif diff.y == 0:
-                #                     if result.end == free_c.rect.topRight:
-                #                         free_c.rect.end = wait_for_append[i].rect.end
-                #                     elif result.end == free_c.rect.bottomRight:
-                #                         free_c.rect.start = wait_for_append[i].rect.start
-                #                 wait_for_append[i] = None
-                #     if all(new_c is None for new_c in wait_for_append):
-                #         break
-                #
-                # for container in wait_for_append:
-                #     if container is not None:
-                #         if debug_mode:
-                #             standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加容器,{container.rect}")
-                #         plan.freeContainers.append(container)
-
-
-                # 下面开始第二部分
 
                 if debug_mode:
                     plan.remain_containers=plan.freeContainers

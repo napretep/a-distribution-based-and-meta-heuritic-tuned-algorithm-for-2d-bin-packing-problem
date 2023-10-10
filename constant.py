@@ -311,9 +311,9 @@ class ProtoPlan:
 
     def util_rate(self):
         return sum([item.size.area for item in self.item_sequence]) / self.material.area
-# @dataclasses.dataclass
-# class Solution:
-#     plan_list:list[ProtoPlan]
+
+    def get_remain_containers(self):
+        raise NotImplementedError()
 
 _temp_外包_data = np.loadtxt(os.path.join(DATA_PATH, r'外包数据\items.csv'), delimiter=',')
 外包_data: "np.ndarray|None" = None
