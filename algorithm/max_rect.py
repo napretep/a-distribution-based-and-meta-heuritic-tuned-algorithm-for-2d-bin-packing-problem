@@ -227,9 +227,10 @@ class MaxRect:
                         standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{container.rect}")
                     plan.freeContainers.remove(container)
                 for container in container_to_append:
-                    if debug_mode:
-                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加容器,{container.rect}")
-                    plan.freeContainers.append(container)
+                    if container is not None:
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加容器,{container.rect}")
+                        plan.freeContainers.append(container)
                 # # 取出旧container,item
                 # new_item = best_score.item
                 # container = best_score.container

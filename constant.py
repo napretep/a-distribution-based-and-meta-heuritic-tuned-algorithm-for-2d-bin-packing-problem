@@ -280,6 +280,7 @@ class Container:
         self.plan_id = plan_id
 
     def __eq__(self, other: "Container"):
+        assert type(other) == Container
         return self.rect == other.rect
 
 @dataclasses.dataclass

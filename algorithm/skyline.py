@@ -88,7 +88,7 @@ class Skyline:
             waste_area+=(min_y-containers[i+1].rect.start.y)*containers[i+1].rect.width
         return waste_area,min_y
         pass
-    def get_placable_area(self,item:"Item",begin_idx,containers:"list[Container]"):
+    def get_placable_area(self,item:"Item",begin_idx,containers:"list[Container]")->float|int:
         """
         可放置区域满足:
             1 后继所有container的y值小于等于第一个container的y值
@@ -107,7 +107,7 @@ class Skyline:
         min_y = containers[begin_idx].rect.start.y
         end_idx = begin_idx
         if end_x <= containers[end_idx].rect.end.x and max_y <= containers[end_idx].rect.end.y:
-            return end_idx,min_y
+            return end_idx
         else:
             # 如果第一个container都不能提供合适的高度,就完全放不进去了,直接返回 -1
             if max_y> containers[end_idx].rect.end.y:
@@ -184,7 +184,7 @@ class Skyline:
                         )
                 if len(scores) == 0:
                     for i in range(len(plan.skyLineContainers)):
-                        idx = self.get_placable_area(new_item, i, plan.skyLineContainers)
+                        idx= self.get_placable_area(new_item, i, plan.skyLineContainers)
                         if idx >= 0:
                             item = new_item.copy()
                             item.pos = plan.skyLineContainers[i].rect.start
@@ -259,9 +259,9 @@ class Skyline:
                     newC_top:"Container|None" = Container(new_rect.topLeft,container.rect.topRight,best_score.plan_id)
                     newC_right:"Container|None" = Container(new_rect.bottomRight,POS(container.rect.bottomRight.x,new_rect.topRight.y),best_score.plan_id)
                     # 判断新切出来的container是否能合并到旧的
-                    if newC_right != Rect:
+                    if newC_right.rect != Rect:
                         newC_right=None
-                    if newC_top !=Rect:
+                    if newC_top.rect !=Rect:
                         newC_top=None
 
                     for waste_c in plan.wasteMap:
@@ -323,9 +323,9 @@ class Skyline:
                             POS(new_rect.bottomRight.x,last_c.rect.start.y),
                             POS(last_c.rect.end.x,self.material.height)
                     )
-                    if container_top!=Rect:
+                    if container_top.rect!=Rect:
                         container_top=None
-                    if container_right!=Rect:
+                    if container_right.rect !=Rect:
                         container_right=None
                     # 合并到原有的skyline
                     for sky_c in plan.skyLineContainers:
