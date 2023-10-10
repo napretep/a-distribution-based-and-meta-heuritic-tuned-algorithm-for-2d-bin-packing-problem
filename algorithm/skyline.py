@@ -6,7 +6,7 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/2 17:44'
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # - SKYLINE-MW-WM-BFF-DESCSS算法实现
 # SKYLINE - 表示使用Skyline数据结构进行打包
@@ -18,7 +18,7 @@ import numpy as np
 from constant import *
 from functools import cmp_to_key
 from enum import Enum, auto
-
+from visualizing.draw_plan import standard_draw_plan
 
 class ScoreType(Enum):
     WasteMap=auto()
@@ -26,8 +26,8 @@ class ScoreType(Enum):
 
 @dataclass
 class Plan(ProtoPlan):
-    skyLineContainers: "list[Container]|None"=None # 此处,freeContainers是有序的list,需要维护和排序
-    wasteMap: "list[Container]|None"=None
+    skyLineContainers: "list[Container]|None"=field(default_factory=list) # 此处,freeContainers是有序的list,需要维护和排序
+    wasteMap: "list[Container]|None"=field(default_factory=list)
 
 @dataclass
 class ItemScore:
@@ -39,7 +39,7 @@ class ItemScore:
 
 class Skyline:
 
-    def __init__(self, item_data: "np.ndarray", material_data: "np.ndarray"):
+    def __init__(self, item_data: "np.ndarray", material_data: "list"):
         """
         :param item_data: [ID,maxL,minL]
         :param material_data: [ID,maxL,minL]
@@ -50,7 +50,7 @@ class Skyline:
                                          pos=POS(0, 0)
                                          ) for item in item_data]
         self.material: "Rect" = Rect(POS(0, 0), POS(material_data[1], material_data[2]))
-        self.solution: "np.ndarray|None" = None
+        self.solution: "list[Plan]|None" = None
         self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
 
     def itemSort_cmp(self, a: "Item", b: "Item"):
@@ -76,13 +76,14 @@ class Skyline:
         :return: score,container
         """
         waste_area=0
-        if begin_idx==end_idx:
-            return waste_area
+
         height = item.size.height
         width = item.size.width
         start_x = containers[begin_idx].rect.start.x
         end_x = start_x + width
         min_y = containers[begin_idx].rect.start.y
+        if begin_idx==end_idx:
+            return waste_area,min_y
         for i in range(begin_idx,end_idx,1):
             waste_area+=(min_y-containers[i+1].rect.start.y)*containers[i+1].rect.width
         return waste_area,min_y
@@ -106,7 +107,7 @@ class Skyline:
         min_y = containers[begin_idx].rect.start.y
         end_idx = begin_idx
         if end_x <= containers[end_idx].rect.end.x and max_y <= containers[end_idx].rect.end.y:
-            return end_idx
+            return end_idx,min_y
         else:
             # 如果第一个container都不能提供合适的高度,就完全放不进去了,直接返回 -1
             if max_y> containers[end_idx].rect.end.y:
@@ -114,7 +115,6 @@ class Skyline:
             # 没有下一个了就回去
             if end_idx == len(containers)-1:
                 return -1
-            end_idx+=1
             # 搜索最小的包含这个新矩形的容器
             while end_x>=containers[end_idx].rect.end.x:
                 end_idx += 1
@@ -125,9 +125,7 @@ class Skyline:
             for i in range(begin_idx+1,end_idx+1,1):
                 if min_y<containers[i].rect.start.y:
                     return -1
-            return end_idx,min_y
-
-
+            return end_idx
     def best_score_cmp(self,a:"ItemScore",b:"ItemScore"):
         chooseA,chooseB = 1,-1
 
@@ -149,7 +147,7 @@ class Skyline:
                 else:
                     return chooseA
 
-    def run(self):
+    def run(self,debug_mode=False):
         items = sorted(self.items, key=cmp_to_key(self.itemSort_cmp))
         plans: "list[Plan]" = []
         for new_item in items:
@@ -160,67 +158,96 @@ class Skyline:
                     # if self.is_waste_map_placable(new_item, plan.wasteMap[i]):
                     waste_rect = plan.wasteMap[i].rect
                     if new_item.size+waste_rect.start in waste_rect:
-                        new_item.pos=waste_rect.start
+                        item = new_item.copy()
+                        item.pos=waste_rect.start
                         scores.append(
                                 ItemScore(
-                                        item=new_item,
+                                        item=item,
                                         container_range=(i,i+1),
-                                        score=self.calc_waste_map_score(new_item,plan.wasteMap[i]),
+                                        score=self.calc_waste_map_score(item,plan.wasteMap[i]),
                                         plan_id=plan.ID,
                                         type_id=ScoreType.WasteMap
                                 )
                         )
                     itemT=new_item.transpose()
                     if itemT.size+waste_rect.start in waste_rect:
-                        itemT.pos=waste_rect.start
+                        item = itemT.copy()
+                        item.pos=waste_rect.start
                         scores.append(
                                 ItemScore(
-                                        item=itemT,
+                                        item=item,
                                         container_range=(i,i+1),
-                                        score=self.calc_waste_map_score(itemT,plan.wasteMap[i]),
+                                        score=self.calc_waste_map_score(item,plan.wasteMap[i]),
                                         plan_id=plan.ID,
                                         type_id=ScoreType.WasteMap
                                 )
                         )
-                if len(scores)==0:
+                if len(scores) == 0:
                     for i in range(len(plan.skyLineContainers)):
-                        idx= self.get_placable_area(new_item, i, plan.skyLineContainers)
-
-                        if idx>=0:
-                            new_item.pos=plan.skyLineContainers[i].rect.start
+                        idx = self.get_placable_area(new_item, i, plan.skyLineContainers)
+                        if idx >= 0:
+                            item = new_item.copy()
+                            item.pos = plan.skyLineContainers[i].rect.start
                             scores.append(ItemScore(
-                                    item=new_item,
-                                    container_range=(i,idx+1),
-                                    score=self.compute_wasted_area(new_item, i, idx, plan.skyLineContainers),
+                                    item=item,
+                                    container_range=(i, idx + 1),
+                                    score=self.compute_wasted_area(item, i, idx, plan.skyLineContainers),
                                     plan_id=plan.ID
                             ))
 
-                        itemT=new_item.transpose()
-                        idx= self.get_placable_area(itemT, i, plan.skyLineContainers)
-                        if idx>=0:
-                            itemT.pos=plan.skyLineContainers[i].rect.start
+                        itemT = new_item.transpose()
+                        idx = self.get_placable_area(itemT, i, plan.skyLineContainers)
+                        if idx >= 0:
+                            item = itemT.copy()
+                            item.pos = plan.skyLineContainers[i].rect.start
                             scores.append(ItemScore(
-                                    item=itemT,
-                                    container_range=(i,idx+1),
-                                    score=self.compute_wasted_area(itemT, i, idx, plan.skyLineContainers),
+                                    item=item,
+                                    container_range=(i, idx + 1),
+                                    score=self.compute_wasted_area(item, i, idx, plan.skyLineContainers),
                                     plan_id=plan.ID
                             ))
+            if len(scores)==0:
+                new_plan = Plan(len(plans), self.material.copy(), [], [],[Container(self.material.start,self.material.end)],[])
+                for i in range(len(new_plan.skyLineContainers)):
+                    idx= self.get_placable_area(new_item, i, new_plan.skyLineContainers)
+                    if idx>=0:
+                        item = new_item.copy()
+                        item.pos=new_plan.skyLineContainers[i].rect.start
+                        scores.append(ItemScore(
+                                item=item,
+                                container_range=(i,idx+1),
+                                score=self.compute_wasted_area(item, i, idx, new_plan.skyLineContainers),
+                                plan_id=-1
+                        ))
 
+                    itemT=new_item.transpose()
+                    idx= self.get_placable_area(itemT, i, new_plan.skyLineContainers)
+                    if idx>=0:
+                        item = itemT.copy()
+                        item.pos=new_plan.skyLineContainers[i].rect.start
+                        scores.append(ItemScore(
+                                item=item,
+                                container_range=(i,idx+1),
+                                score=self.compute_wasted_area(item, i, idx, new_plan.skyLineContainers),
+                                plan_id=-1
+                        ))
+            print(scores)
             best_score: "ItemScore" = min(scores, key=cmp_to_key(self.best_score_cmp))
-
+            print(best_score)
             if best_score.plan_id==-1:
-                plan = Plan(len(plans), self.material.copy(), [], [])
+                plan = Plan(len(plans), self.material.copy(),[], [Container(self.material.start,self.material.end)], [])
                 container_top = Container(best_score.item.size.topLeft, POS(
                         best_score.item.size.width,
                         self.material.topRight.y),
                         plan.ID)
                 container_right = Container(best_score.item.size.bottomRight, self.material.topRight)
-                if container_right==Rect:
+                if container_right.rect==Rect:
                     plan.skyLineContainers.append(container_right)
-                if container_top == Rect:
+                if container_top.rect == Rect:
                     plan.skyLineContainers.append(container_top)
                 # plan.freeContainers += [container_top, container_right]
                 plan.item_sequence.append(best_score.item)
+                plans.append(plan)
             else:
                 plan = plans[best_score.plan_id]
                 plan.item_sequence.append(best_score.item)
@@ -343,4 +370,13 @@ class Skyline:
         for plan in plans:
             plan.remain_containers=plan.skyLineContainers+plan.wasteMap
         self.solution=plans
+    pass
+
+
+if __name__ == "__main__":
+    data_idx = np.random.choice(华为杯_data.shape[0], 300)
+    data = 华为杯_data[data_idx]
+    s = Skyline(data,[0,2440,1220])
+    s.run(debug_mode=True)
+    print(s.solution)
     pass
