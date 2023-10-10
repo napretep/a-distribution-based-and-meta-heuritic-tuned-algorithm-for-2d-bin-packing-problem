@@ -214,19 +214,19 @@ class MaxRect:
                             if result & free_c.rect == result:  # 被包含
                                 container_to_append[i] = None
                             # 合并公共边的container
-                            # elif result == Line:  # 相切则合并
-                            #     diff = result.end - result.start
-                            #     if diff.x == 0:
-                            #         if result.start == free_c.rect.bottomRight:
-                            #             free_c.rect.end = container_to_append[i].rect.end
-                            #         elif result.start == free_c.rect.bottomLeft:
-                            #             free_c.rect.start = container_to_append[i].rect.start
-                            #     elif diff.y == 0:
-                            #         if result.end == free_c.rect.topRight:
-                            #             free_c.rect.end = container_to_append[i].rect.end
-                            #         elif result.end == free_c.rect.bottomRight:
-                            #             free_c.rect.start = container_to_append[i].rect.start
-                            #     container_to_append[i] = None
+                            elif result == Line:  # 相切则合并
+                                diff = result.end - result.start
+                                if diff.x == 0:
+                                    if result.start == free_c.rect.bottomRight:
+                                        free_c.rect.end = container_to_append[i].rect.end
+                                    elif result.start == free_c.rect.bottomLeft:
+                                        free_c.rect.start = container_to_append[i].rect.start
+                                elif diff.y == 0:
+                                    if result.end == free_c.rect.topRight:
+                                        free_c.rect.end = container_to_append[i].rect.end
+                                    elif result.end == free_c.rect.bottomRight:
+                                        free_c.rect.start = container_to_append[i].rect.start
+                                container_to_append[i] = None
                     if all(new_c is None for new_c in container_to_append):
                         break
                 for container in container_to_append:
@@ -238,12 +238,15 @@ class MaxRect:
                 if debug_mode:
                     plan.remain_containers=plan.freeContainers
                     debug_plan.append(plan)
+
+
             self.items.remove(best_score.item)
             if debug_mode:
                 # print(len(self.items))
                 if plans:
                     standard_draw_plan(debug_plan,is_debug=debug_mode,task_id=self.task_id)
                     debug_plan=[]
+
         # return plans
         print([i.util_rate() for i in plans])
         for plan in plans:
@@ -258,13 +261,6 @@ class MaxRect:
 
 
 if __name__ == "__main__":
-    # r1 = Rect(50,50,100,100)
-    # r2 = Rect(75,75,120,95)
-    # r3 = Rect(25,75,75,95)
-    # r4 = Rect(75,75,120,120)
-    # r5 = Rect(60,10,80,60)
-    # print(r1 & r2)
-    # print(r1 & r5)
 
 
     data_idx = np.random.choice(华为杯_data.shape[0],300)
