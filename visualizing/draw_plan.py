@@ -39,7 +39,7 @@ def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=
     if task_id is None:
         task_id=str(uuid.uuid4())[0:8]
 
-    fig, ax = plot.subplots(figsize=(8, 6))
+    fig, ax = plot.subplots(figsize=(16, 12))
     # img_data = []
     plot.rcParams['font.sans-serif'] = ['Microsoft YaHei']  # 指定默认字体为微软雅黑
     plot.rcParams['axes.unicode_minus'] = False  # 解决保存图像时负号'-'显示为方块的问题

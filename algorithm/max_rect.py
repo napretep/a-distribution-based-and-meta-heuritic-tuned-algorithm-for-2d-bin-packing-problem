@@ -167,9 +167,10 @@ class MaxRect:
                 # print(new_item.pos)
                 new_rect = new_item.size + new_item.pos
                 # 由旧container和item,创建新container
-                plan.freeContainers.remove(container)
                 if debug_mode:
                     standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{container.rect}")
+                plan.freeContainers.remove(container)
+
                     # 将这些容器插入到表格中
                 container_new1: "Container|None" = Container(new_rect.topLeft, container.rect.end, plan.ID)
                 container_new2: "Container|None" = Container(new_rect.bottomRight, container.rect.end, plan.ID)
@@ -247,9 +248,9 @@ class MaxRect:
                     wait_for_append.append(container_new2)
 
                 for c in wait_for_remove:
-                    plan.freeContainers.remove(c)
                     if debug_mode:
                         standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{c.rect}")
+                    plan.freeContainers.remove(c)
 
                 # 维护矩形
                 for free_c in plan.freeContainers:
@@ -278,9 +279,9 @@ class MaxRect:
 
                 for container in wait_for_append:
                     if container is not None:
-                        plan.freeContainers.append(container)
                         if debug_mode:
                             standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加容器,{container.rect}")
+                        plan.freeContainers.append(container)
 
 
                 # 下面开始第二部分
