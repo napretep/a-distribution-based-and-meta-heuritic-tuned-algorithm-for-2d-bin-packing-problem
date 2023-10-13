@@ -8,11 +8,16 @@ __time__ = '2023/10/2 4:23'
 """
 import dataclasses
 import os
+import uuid
+
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from typing import *
 import inspect
+
+from scipy.stats import gaussian_kde
+
 PROJECT_ROOT_PATH = os.path.split(__file__)[0]
 
 DATA_PATH = os.path.join(PROJECT_ROOT_PATH, 'data')
@@ -23,9 +28,15 @@ PROCESSING_STEP_PATH = os.path.join(IMAGES_PATH, 'processing_step')
 
 SOLUTIONS_PATH = os.path.join(IMAGES_PATH, 'solutions')
 
+
+
+DATA_SCALES = (100,300,500,1000,3000,5000)
+RUN_COUNT = 40
+MATERIAL_SIZE=(2440,1220)
+
 # 华为_data = os.path.join(DATA_PATH, '华为杯数据')
 
-__all__ = ['外包_data', '华为杯_data', "COL", "随机_data", "PROCESSING_STEP_PATH", "SOLUTIONS_PATH","Rect", "ProtoPlan", "POS","Item","Line","Container"]
+__all__ = ['外包_data', '华为杯_data', "COL", "随机_data", "PROCESSING_STEP_PATH", "SOLUTIONS_PATH","Rect", "ProtoPlan", "POS","Item","Line","Container","unify","Algo","DATA_SCALES","RUN_COUNT","MATERIAL_SIZE" ,"random_choice","kde_sample"]
 
 
 class COL:
@@ -281,9 +292,14 @@ class Container:
         self.rect = Rect(start, end)
         self.plan_id = plan_id
 
-    def __eq__(self, other: "Container"):
-        assert type(other) == Container
-        return self.rect == other.rect
+    def __eq__(self, other: "Container|Rect|Line|POS"):
+        # assert type(other) == Container
+        if type(other) == Container:
+            return self.rect == other.rect
+        else:
+            return self.rect == other
+
+
 
 @dataclasses.dataclass
 class Item:
@@ -366,34 +382,78 @@ samples4 = np.column_stack((x_samples, y_samples))
 samples = np.row_stack((samples2, samples1, samples3, samples4))
 samples = samples[(0 <= samples[:, 0]) & (samples[:, 0] <= 1) & (0 <= samples[:, 1]) & (samples[:, 1] <= 1)]
 
-随机_data = np.column_stack((np.zeros(samples.shape[0]), np.maximum(samples[:, 0], samples[:, 1]), np.minimum(samples[:, 0], samples[:, 1])))
+随机_data:"np.ndarray" = np.column_stack((np.zeros(samples.shape[0]), np.maximum(samples[:, 0], samples[:, 1])*MATERIAL_SIZE[0], np.minimum(samples[:, 0], samples[:, 1])*MATERIAL_SIZE[1]))
 
+# 随机_data[:,1:3] = 随机_data[:,1:3]
 
-
-
+# def unify(data:"np.ndarray"):
+#     """单位化
+#     :param:data:[ID,col1,col2]
+#     """
+#
+#     col1_idx = 1
+#     col2_idx = 2
+#     data1 = np.column_stack((data[:, 0],np.maximum(data[:, col1_idx], data[:, col2_idx]), np.minimum(data[:, col1_idx], data[:, col2_idx])))
+#     max_data = np.max(data1[:,col1_idx:col2_idx+1])
+#     min_data = np.min(data1[:,col1_idx:col2_idx+1])
+#     data_col1 = data1[:,0]
+#     data_col2 = data1[:,1]
+#     final_data=np.column_stack((data1[:,0],data_col1/MATERIAL_SIZE[1]*100,data_col2/MATERIAL_SIZE[1]*100))
+#
+#     return final_data
 def unify(data:"np.ndarray"):
     """单位化
     :param:data:[ID,col1,col2]
     """
-    data1 = np.column_stack((data[:, 0], np.maximum(data[:, 1], data[:, 2]), np.minimum(data[:, 1], data[:, 2])))
-    max_data = np.max(data1[:,1:3])
-    min_data = np.min(data1[:,1:3])
-    data_col1 = data1[:,1]
-    data_col2 = data1[:,2]
-    final_data=np.column_stack(data[:,0],(data_col1-min_data)/(max_data-min_data),(data_col2-min_data)/(max_data-min_data))
+
+    col1_idx = 1
+    col2_idx = 2
+    data1 = np.column_stack((data[:, 0],np.maximum(data[:, col1_idx], data[:, col2_idx]), np.minimum(data[:, col1_idx], data[:, col2_idx])))
+    max_data = np.max(data1[:,col1_idx:col2_idx+1])
+    min_data = np.min(data1[:,col1_idx:col2_idx+1])
+    data_col1 = data1[:,0]
+    data_col2 = data1[:,1]
+    final_data=np.column_stack((data1[:,0],((data_col1-min_data)/(max_data-min_data)),((data_col2-min_data)/(max_data-min_data))))
 
     return final_data
 
-
+def random_choice(data):
+    data_idx = np.random.choice(data.shape[0], 5000, replace=False)
+    return data[data_idx]
 # 随机_data = np.column_stack((np.zeros(samples.shape[0]),samples))
 
-def kde(data):
-    plt.figure(figsize=(6, 6))
-    ax = plt.subplot(1, 1, 1)
-    # ax.set_aspect('equal')
-    sns.kdeplot(x=data[:, 1], y=data[:, 2], fill=True, bw_adjust=1)
-    plt.show()
-    pass
+# def kde(data):
+#     plt.figure(figsize=(6, 6))
+#     ax = plt.subplot(1, 1, 1)
+#     # ax.set_aspect('equal')
+#     sns.kdeplot(x=data[:, 1], y=data[:, 2], fill=True, bw_adjust=1)
+#     plt.show()
+#     pass
+
+
+class Algo:
+    def __init__(self, item_data: "np.ndarray", material_data: "Iterable",task_id=None):
+        self.items: "list[Item]" = [Item(ID=item[0],
+                                         size=Rect(POS(0, 0), POS(item[1], item[2])),
+                                         pos=POS(0, 0)
+                                         ) for item in item_data]
+        self.material: "Rect" = Rect(POS(0, 0), POS(*material_data))
+        self.solution: "list[ProtoPlan]|None" = None
+        self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
+        self.task_id = task_id if task_id else str(uuid.uuid4())[0:8]
+
+    def avg_util_rate(self):
+        return sum([item.util_rate() for item in self.solution]) / len(self.solution)
+
+    def run(self,is_debug=False):
+        raise NotImplementedError()
+
+def kde_sample(data, count=1000): #epanechnikov,gaussian
+    kde_ = gaussian_kde((data[:,1:3]).T,bw_method=0.05)
+    resample_data = kde_.resample(count).T
+    return_data = np.column_stack((range(resample_data.shape[0]),resample_data))
+    # print(return_data)
+    return return_data
 
 
 if __name__ == "__main__":

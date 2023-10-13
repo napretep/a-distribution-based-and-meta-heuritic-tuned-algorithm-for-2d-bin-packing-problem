@@ -6,6 +6,7 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/2 17:43'
 """
+import time
 import uuid
 from dataclasses import dataclass
 from functools import cmp_to_key
@@ -59,22 +60,16 @@ def score_cmp(a: "ItemScore", b: "ItemScore"):
             return chooseA
 
 
-class MaxRect:
+class MaxRect(Algo):
 
-    def __init__(self, item_data: "np.ndarray", material_data: "list",task_id=None):
-        """
-        :param item_data: [ID,maxL,minL]
-        :param material_data: [ID,maxL,minL]
-        :return:
-        """
-        self.items: "list[Item]" = [Item(ID=item[0],
-                                         size=Rect(POS(0, 0), POS(item[1], item[2])),
-                                         pos=POS(0, 0)
-                                         ) for item in item_data]
-        self.material: "Rect" = Rect(POS(0, 0), POS(material_data[1], material_data[2]))
-        self.solution: "list[Plan]|None" = None
-        self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
-        self.task_id = task_id if task_id else str(uuid.uuid4())[0:8]
+    # def __init__(self, item_data: "np.ndarray", material_data: "list",task_id=None):
+    #     """
+    #     :param item_data: [ID,maxL,minL]
+    #     :param material_data: [ID,maxL,minL]
+    #     :return:
+    #     """
+    #     super(item_data, material_data, task_id)
+    #
     def run(self,debug_mode=False):
         """
         循环 直到待排物品为空
@@ -267,6 +262,6 @@ if __name__ == "__main__":
     r = MaxRect(data,[0,2440,1220])
     print(r.task_id)
     plans = r.run(debug_mode=False)
-    print(r.solution)
+    # print(r.solution)
     standard_draw_plan(plans,task_id=r.task_id)
     pass
