@@ -23,8 +23,6 @@ def subprocess_run(algo:type[Algo], base_data_set: "np.ndarray", data_scale:int)
     # kde = KernelDensity(kernel='gaussian', bandwidth=0.02).fit(base_data_set)
     np.random.seed(int(time.time()*10000) % 4294967296)
     input_data = kde_sample(base_data_set,data_scale)
-    # random_input_idx=np.random.choice(base_data_set.shape[0], data_scale)
-    # random_input_data=base_data_set[random_input_idx]
 
     r = algo(input_data, MATERIAL_SIZE)
     print(r.task_id,"start",f"scale={data_scale}")
