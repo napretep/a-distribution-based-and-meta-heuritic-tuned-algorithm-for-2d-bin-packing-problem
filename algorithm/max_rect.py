@@ -260,9 +260,8 @@ if __name__ == "__main__":
 
     data_idx = np.random.choice(华为杯_data.shape[0],300)
     data = 华为杯_data[data_idx]
-    r = MaxRect(data,[0,2440,1220])
+    r = MaxRect(data)
     print(r.task_id)
     plans = r.run(debug_mode=False)
-    # print(r.solution)
-    standard_draw_plan(plans,task_id=r.task_id)
-    pass
+    print(r.avg_util_rate())
+    # standard_draw_plan(plans,task_id=r.task_id)

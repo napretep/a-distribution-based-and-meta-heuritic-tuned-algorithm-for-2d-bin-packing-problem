@@ -37,7 +37,7 @@ def _draw_text(plot, p0: POS, p1: POS, ID):
 
 def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=""):
     if task_id is None:
-        task_id=str(uuid.uuid4())[0:8]
+        task_id= str(uuid.uuid4())[0:8]
 
     fig, ax = plot.subplots(figsize=(16, 12))
     # img_data = []

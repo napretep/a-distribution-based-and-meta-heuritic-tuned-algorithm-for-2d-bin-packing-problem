@@ -47,21 +47,6 @@ class ItemScore:
 
 class Skyline(Algo):
 
-    # def __init__(self, item_data: "np.ndarray", material_data: "list", task_id=None):
-    #     """
-    #     :param item_data: [ID,maxL,minL]
-    #     :param material_data: [ID,maxL,minL]
-    #     :return:
-    #     """
-    #     super().__init__()
-    #     self.items: "list[Item]" = [Item(ID=item[0],
-    #                                      size=Rect(POS(0, 0), POS(item[1], item[2])),
-    #                                      pos=POS(0, 0)
-    #                                      ) for item in item_data]
-    #     self.material: "Rect" = Rect(POS(0, 0), POS(material_data[1], material_data[2]))
-    #     self.solution: "list[Plan]|None" = None
-    #     self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
-    #     self.task_id = task_id if task_id else str(uuid.uuid4())[0:8]
 
     def itemSort_cmp(self, a: "Item", b: "Item"):
         chooseA, chooseB = 1, -1
@@ -145,7 +130,8 @@ class Skyline(Algo):
 
     def best_score_cmp(self, a: "ItemScore", b: "ItemScore"):
         chooseA, chooseB = 1, -1
-        # assert a.type_id==b.type_id
+        if a.type_id!=b.type_id:
+            raise ValueError("比较类型要相同:",a,b)
         if a.plan_id == b.plan_id:
             if a.type_id == ScoreType.WasteMap and b.type_id == ScoreType.WasteMap:
                 if a.score > b.score:
@@ -208,7 +194,8 @@ class Skyline(Algo):
                                         type_id=ScoreType.WasteMap
                                 )
                         )
-                if len(scores) == 0:
+            if len(scores) == 0:
+                for plan in plans:
                     for i in range(len(plan.skyLineContainers)):
                         idx = self.get_placable_area(new_item, i, plan.skyLineContainers)
                         if idx >= 0:
@@ -257,6 +244,8 @@ class Skyline(Algo):
                                 score=self.compute_wasted_area(item, i, idx, new_plan.skyLineContainers),
                                 plan_id=-1
                         ))
+            if len(scores)==0:
+                raise Exception("没有找到合适的位置",new_item)
             best_score: "ItemScore" = min(scores, key=cmp_to_key(self.best_score_cmp))
             if best_score.plan_id == -1:
                 plan = Plan(len(plans), self.material.copy(), [], [Container(self.material.start, self.material.end)], [])
@@ -382,13 +371,6 @@ class Skyline(Algo):
                             POS(new_rect.bottomRight.x, last_c.rect.start.y),
                             POS(last_c.rect.end.x, self.material.height)
                     )
-                    # 判断新切出来的container是否能合并到旧的
-
-                    if container_top.rect != Rect:
-                        container_top = None
-                    if container_right.rect != Rect:
-                        container_right = None
-
                     # 合并到原有的skyline
                     for sky_c in plan.skyLineContainers:
                         if container_right is None and container_top is None:
@@ -440,18 +422,6 @@ class Skyline(Algo):
                             waste_rect_to_append.append(c)
                             # last_waste=c
 
-                    # wasteMap维护,拼接
-                    # for waste_c in plan.wasteMap:
-                    #     for i in range(len(waste_rect_to_append)):
-                    #         if waste_rect_to_append[i] is not None:
-                    #             new_waste_c = waste_rect_to_append[i]
-                    #             result = new_waste_c.rect & waste_c.rect
-                    #             if result == Line:
-                    #                 diff = result.end - result.start
-                    #                 if diff.y == 0:  # 横轴
-                    #                     if new_waste_c.rect.bottomLeft == waste_c.rect.topLeft and new_waste_c.rect.bottomRight == waste_c.rect.topRight:  # 旧容器在右侧
-                    #                         waste_c.rect.end = new_waste_c.rect.end
-                    #                         waste_rect_to_append[i] = None
                     for waste_c in waste_rect_to_append:
                         if waste_c is not None:
                             if debug_mode:
@@ -468,8 +438,6 @@ class Skyline(Algo):
                 pass
             plan.skyLineContainers.sort(key=lambda x: x.rect.start.x)
             plan.wasteMap.sort(key=lambda x: x.rect.start.x)
-        for plan in plans:
-            plan.remain_containers = plan.skyLineContainers + plan.wasteMap
         self.solution = plans
 
     pass
@@ -478,9 +446,8 @@ class Skyline(Algo):
 if __name__ == "__main__":
     data_idx = np.random.choice(华为杯_data.shape[0], 300)
     data = 华为杯_data[data_idx]
-    s = Skyline(data, [0, 2440, 1220])
+    s = Skyline(data)
     print(s.task_id)
     s.run(debug_mode=False)
     print(len(s.solution),sum((p.util_rate() for p in s.solution))/len(s.solution))
-    # print(s.solution)
     pass
