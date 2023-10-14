@@ -452,7 +452,8 @@ def kde_sample(data, count=1000): #epanechnikov,gaussian
     kde_ = gaussian_kde((data[:,1:3]).T,bw_method=0.05)
     resample_data = kde_.resample(count).T
     resample_data = np.column_stack((np.maximum(resample_data[:,0],resample_data[:,1]),np.minimum(resample_data[:,0],resample_data[:,1])))
-    resample_data = resample_data[(resample_data[:,0]<=MATERIAL_SIZE[0])&(resample_data[:,1]<=MATERIAL_SIZE[1])]
+    resample_data = resample_data[(resample_data[:,0]>0)&(resample_data[:,0]<=MATERIAL_SIZE[0])&
+                                  (resample_data[:,1]<=MATERIAL_SIZE[1])&(resample_data[:,1]>0)]
 
     return_data = np.column_stack((range(resample_data.shape[0]),resample_data))
     # print(return_data)

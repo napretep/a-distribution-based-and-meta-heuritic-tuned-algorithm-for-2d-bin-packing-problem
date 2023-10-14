@@ -138,7 +138,8 @@ class MaxRect(Algo):
                             score=(self.material.width - itemT.size.width, self.material.height - itemT.size.height)
                     )
                     scores.append(score)
-
+            if len(scores)==0:
+                raise ValueError(f"scores 空", f"当前itemlist = {self.items}")
             best_score = min(scores,key=lambda x:min(x.score))
             if best_score.plan_id == -1:
                 plan = Plan(ID=len(plans),material=self.material.copy(),item_sequence=[],freeContainers=[])

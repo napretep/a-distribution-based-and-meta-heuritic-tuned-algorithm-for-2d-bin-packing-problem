@@ -48,8 +48,6 @@ def main(algo,data_scales=DATA_SCALES,run_count=RUN_COUNT):
             wb_data_result+=p.starmap(subprocess_run, [(algo,外包_data,data_scale)]*run_count)
             result = np.array(random_data_result)
             np.save(f"{algo.__name__}_wb_{data_scale}.npy", result)
-            # np.random.seed(int(time.time()*10000))
-            # random_input_data=np.random.choice(随机_data.shape[0],data_scale)
 
 
 
