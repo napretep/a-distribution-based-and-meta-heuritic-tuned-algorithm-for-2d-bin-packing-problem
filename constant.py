@@ -173,6 +173,9 @@ class Rect:
         return POS(self.end.x, self.start.y)
 
     @property
+    def size(self):
+        return POS(self.width,self.height)
+    @property
     def width(self) -> int | float:
         return self.end.x - self.start.x
 
@@ -290,6 +293,8 @@ class Rect:
         else:
             return True
 
+    def __iter__(self):
+        return iter((self.start, self.end))
     # def contain(self, item:"Rect"):
     #     return (item+self.start) in self
 
@@ -303,12 +308,19 @@ class Container:
         self.rect = Rect(start, end)
         self.plan_id = plan_id
 
+
+
     def __eq__(self, other: "Container|Rect|Line|POS"):
         # assert type(other) == Container
         if type(other) == Container:
             return self.rect == other.rect
         else:
             return self.rect == other
+
+    def __contains__(self, item):
+        assert type(item) == Rect
+        return item in self.rect
+
 
 
 @dataclasses.dataclass
@@ -345,7 +357,10 @@ class ProtoPlan:
         return sum([item.size.area for item in self.item_sequence]) / self.material.area
 
     def get_remain_containers(self):
-        raise NotImplementedError()
+        if self.remain_containers is not None:
+            return self.remain_containers
+        else:
+            raise NotImplementedError()
 
 
 _temp_外包_data = np.loadtxt(os.path.join(DATA_PATH, r'外包数据\items.csv'), delimiter=',')
@@ -456,9 +471,16 @@ class Algo:
                                          pos=POS(0, 0)
                                          ) for item in item_data]
         self.material: "Rect" = Rect(POS(0, 0), POS(*material_data))
-        self.solution: "list[ProtoPlan]|None" = None
+        self.solution: "list[ProtoPlan]|None" = []
         self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
         self.task_id = task_id if task_id else str(uuid.uuid4())[0:8]
+
+    def load_data(self,item_data: "np.ndarray"):
+        self.items: "list[Item]" = [Item(ID=item[0],
+                                         size=Rect(POS(0, 0), POS(item[1], item[2])),
+                                         pos=POS(0, 0)
+                                         ) for item in item_data]
+        self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
 
     def avg_util_rate(self):
         return sum([item.util_rate() for item in self.solution]) / len(self.solution)

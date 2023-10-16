@@ -6,30 +6,36 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/2 4:23'
 """
-import seaborn as sns
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-# 假设我们有一组从正态分布中抽取的样本数据
-data = np.random.normal(loc=0, scale=1, size=1000)
+# Assuming you have results from three algorithms in three different lists
+# Each list contains arrays of results for each data scale, each array contains 40 results
+results_alg1 = [np.random.rand(40) for _ in range(6)]
+results_alg2 = [np.random.rand(40) for _ in range(6)]
+results_alg3 = [np.random.rand(40) for _ in range(6)]
 
+data_scales = np.array([100, 200, 300, 400, 500, 600])
 
-
+# Prepare data for DataFrame
+data = []
+for scale, res1, res2, res3 in zip(data_scales, results_alg1, results_alg2, results_alg3):
+    for res in res1:
+        data.append(['Algorithm1', scale, res])
+    for res in res2:
+        data.append(['Algorithm2', scale, res])
+    for res in res3:
+        data.append(['Algorithm3', scale, res])
 if __name__ == "__main__":
-    import numpy as np
-    from sklearn.neighbors import KernelDensity
 
-    # 生成一些随机数据
-    np.random.seed(0)
-    X = np.random.normal(size=(100, 2))
+    pass
+# Create DataFrame
+    df = pd.DataFrame(data, columns=['Algorithm', 'Data Scale', 'Result'])
 
-    # 进行KDE
-    kde = KernelDensity(kernel='gaussian', bandwidth=0.5).fit(X)
-    import matplotlib.pyplot as plt
-
-    # 生成新的样本
-    new_X = kde.sample(1000)
-
-    # 绘制散点图
-    plt.scatter(new_X[:, 0], new_X[:, 1], s=5)
+    # Plotting
+    plt.figure(figsize=(12, 8))
+    sns.boxplot(x='Data Scale', y='Result', hue='Algorithm', data=df)
+    plt.title('Comparison of Algorithm Results')
     plt.show()
