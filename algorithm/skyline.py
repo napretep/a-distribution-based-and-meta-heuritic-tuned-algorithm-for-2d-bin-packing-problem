@@ -8,6 +8,7 @@ __time__ = '2023/10/2 17:44'
 """
 import uuid
 from dataclasses import dataclass, field
+from time import time
 
 # - SKYLINE-MW-WM-BFF-DESCSS算法实现
 # SKYLINE - 表示使用Skyline数据结构进行打包
@@ -444,10 +445,11 @@ class Skyline(Algo):
 
 
 if __name__ == "__main__":
+    np.random.seed(int(time() * 10000) % 4294967296)
     data_idx = np.random.choice(华为杯_data.shape[0], 300)
     data = 华为杯_data[data_idx]
     s = Skyline(data)
     print(s.task_id)
     s.run(debug_mode=False)
-    print(len(s.solution),sum((p.util_rate() for p in s.solution))/len(s.solution))
+    print(f"util rate={s.avg_util_rate()}")
     pass

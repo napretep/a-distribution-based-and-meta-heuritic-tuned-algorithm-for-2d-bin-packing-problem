@@ -8,3 +8,4 @@ __time__ = '2023/10/13 21:57'
 """
 from .skyline import Skyline
 from .max_rect import MaxRect
+from .distribution_based import Distribution

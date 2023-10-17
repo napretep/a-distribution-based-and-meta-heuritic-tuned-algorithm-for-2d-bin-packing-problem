@@ -6,6 +6,7 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/7 15:47'
 """
+import multiprocessing
 #对于评分函数 提供三种神经网络,第一种是SLP,10个输入, 第二,三种是 MLP,多层感知机, 层数分别为 10*4*4*1和10*4*4*4*4*1
 #对于排序函数 提供两种神经网络,第一种是SLP,6个输入,第二种是SLP,6*4*4*1
 from dataclasses import dataclass
@@ -30,7 +31,7 @@ class ScoringSys:
         self.container_scoring_arch=np.array([10, 10, 8, 4, 1])
         self.item_sorting_arch=np.array([6, 6, 4, 1])
         self.algo=algo
-        self.parameters=self.algo.parameters if self.algo.parameters else np.ones(self.item_sorting_param_count + self.container_scoring_param_count)
+        self.parameters=np.ones(self.total_param_num)
         # self.container_scoring_parameters = self.parameters[:self.container_scoring_param_count]
         # self.item_sorting_parameters:"np.ndarray" = self.parameters[self.container_scoring_param_count:]
         # self.total_param_num=self.item_sorting_param_count+self.container_scoring_param_count
@@ -43,6 +44,7 @@ class ScoringSys:
 
     @property
     def item_sorting_parameters(self):
+        # print("parameters_total=",self.parameters,"item_sorting_parameters=",self.parameters[self.container_scoring_param_count:],"self.container_scoring_param_count=",self.container_scoring_param_count)
         return self.parameters[self.container_scoring_param_count:]
 
     @property
@@ -59,7 +61,7 @@ class ScoringSys:
     @property
     def item_sorting_param_count(self):
         if self.version == self.V.GA:
-            return 14
+            return 4
         else:
             return sum((x+1)*y for x,y in zip(self.item_sorting_arch, self.item_sorting_arch[1:] + [0]))
 
@@ -107,6 +109,7 @@ class ScoringSys:
 
     @staticmethod
     def multi_layer_perceptron(X, parameters, layer_dims):
+        # print("MLP Parameter=",parameters)
         start = 0
         A = X.copy()
         # print(X.shape,parameters.shape,layer_dims)
@@ -152,10 +155,10 @@ class ItemScore:
         return s
 
 class Distribution(Algo):
-    def __init__(self,item_data: "np.ndarray", material_data: "Iterable" = MATERIAL_SIZE, task_id=None,parameters=None):
+    def __init__(self,item_data: "np.ndarray", material_data: "Iterable" = MATERIAL_SIZE, task_id=None):
         super().__init__(item_data, material_data,task_id)
         # self.parameters = parameters
-        self.parameters=parameters
+        # self.parameters=parameters
         self.scoring_sys = ScoringSys(self)
 
         self.maxL = max(self.items, key=lambda x: x.size.width).size.width
@@ -225,28 +228,34 @@ class Distribution(Algo):
                 #     break
 
             if len(pre_score_list) == 0:
-                # 处理新板材
-                pre_score_list.append(
-                        ItemScore(
-                                item=new_item,
-                                algo=self,
-                                container=Container(POS(0, 0), POS(self.material.width, self.material.height)),
-                                plan_id=-1,
-                                # plans=plans,
-                                # scoring_system=self.scoring_sys
-                        )
-                )
-                pre_score_list.append(
-                        ItemScore(
-                                item=new_item.transpose(),
-                                # material=self.material,
-                                container=Container(POS(0, 0), POS(self.material.width, self.material.height)),
-                                plan_id=-1,
-                                algo=self,
-                                # plans=plans,
-                                # scoring_system=self.scoring_sys
-                        )
-                )
+                fake_container = Container(POS(0,0),POS(*MATERIAL_SIZE))
+                corner_start = fake_container.rect.start
+                if new_item.size + corner_start in fake_container:
+                    # 处理新板材
+                    pre_score_list.append(
+                            ItemScore(
+                                    item=new_item.copy(),
+                                    algo=self,
+                                    container=Container(POS(0, 0), POS(self.material.width, self.material.height)),
+                                    plan_id=-1,
+                                    # plans=plans,
+                                    # scoring_system=self.scoring_sys
+                            )
+                    )
+
+                itemT = new_item.transpose()
+                if itemT.size + corner_start in fake_container:
+                    pre_score_list.append(
+                            ItemScore(
+                                    item=itemT.copy(),
+                                    # material=self.material,
+                                    container=Container(POS(0, 0), POS(self.material.width, self.material.height)),
+                                    plan_id=-1,
+                                    algo=self,
+                                    # plans=plans,
+                                    # scoring_system=self.scoring_sys
+                            )
+                    )
 
             if len(pre_score_list)==0:
                 raise ValueError("pre_score_list is empty",new_item)
@@ -288,7 +297,7 @@ class Distribution(Algo):
                 new_plan = ProtoPlan(len(self.solution),self.material.copy(),[],[])
                 new_plan.item_sequence.append(bestscore.item)
                 if is_debug:
-                    standard_draw_plan([new_plan],is_debug=is_debug,task_id=self.task_id,text="插入矩形")
+                    standard_draw_plan([new_plan],is_debug=is_debug,task_id=self.task_id,text=f"插入矩形{bestscore.item.rect}")
                 if new_BR_corner is not None:
                     if new_BR_corner.rect.start.y >= Y or new_BR_corner.rect.start.x >= X:
                         new_BR_corner = None
@@ -376,7 +385,9 @@ class Distribution(Algo):
 
 
     def eval(self,parameters,count=18):
-        self.parameters=parameters
+        # print("eval_parameters ",parameters)
+        start_time = time()
+        self.scoring_sys.parameters=parameters
         result = []
         for i in range(count):
             np.random.seed(int(time() * 10000) % 4294967296)
@@ -387,10 +398,14 @@ class Distribution(Algo):
             result.append(self.avg_util_rate())
         result.remove(max(result))
         result.remove(min(result))
-        return np.average(result),
+        # print("EVAL END")
+        value = 1/np.average(result)
+        end_time = time()
+        print(f"value={value},time cost = {end_time - start_time}")
+        return value,
 
-    def fit_NN_ea(self, pop_size=36, max_gen=100, init_population=None):
-        self.scoring_sys.version = self.scoring_sys.V.MLP
+    def fit_NN_ea(self, pop_size=36, max_gen=100, init_population=None,scoring_version=ScoringSys.V.MLP):
+        self.scoring_sys.version = scoring_version
         from deap import base, creator, tools, algorithms
         import random
         from multiprocessing import Pool
@@ -411,6 +426,7 @@ class Distribution(Algo):
 
         # Structure initializers
         gene_length = self.scoring_sys.total_param_num
+        print(f"gene_length={gene_length}")
         # 定义个体和种群的初始化方式
         if init_population is None:
             toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=gene_length)
@@ -534,21 +550,76 @@ class Distribution(Algo):
         # the_best_solution = [None]
         return best_individual, best_individual.fitness, logbook
 
+    def fit_DE(self,scoring_version=ScoringSys.V.GA):
+        start_time = time()
+        self.scoring_sys.version = scoring_version
+        from scipy.optimize import differential_evolution
+        def callback(xk, convergence):
+            print(f'Current solution: {xk}, Convergence: {convergence}')
+
+
+        bounds = [[-10, 10]] * self.scoring_sys.total_param_num
+        result = differential_evolution(self.eval, bounds,workers=-1,atol=0.0001,strategy="randtobest1exp",popsize=12,callback=callback,maxiter=10)
+        return result.x,result.fun
+        end_time = time()
+        print(end_time - start_time)
+    def de(self, mut=0.8, crossp=0.7, popsize=20, its=1000):
+        bounds = [[-1,1]]*self.scoring_sys.total_param_num
+        with multiprocessing.Pool() as pool:
+            dimensions = len(bounds)
+            pop = np.random.rand(popsize, dimensions)
+            min_b, max_b = np.asarray(bounds).T
+            diff = np.fabs(min_b - max_b)
+            pop_denorm = min_b + pop * diff
+            # fitness = np.asarray(pool.map(self.eval, pop_denorm))
+
+            # best_idx = np.argmin(fitness)
+            # best = pop_denorm[best_idx]
+            for i in range(its):
+                fitness = np.asarray(pool.map(self.eval, pop_denorm))
+                for j in range(popsize):
+                    idxs = [idx for idx in range(popsize) if idx != j]
+                    a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
+                    mutant = np.clip(a + mut * (b - c), 0, 1)
+                    cross_points = np.random.rand(dimensions) < crossp
+                    if not np.any(cross_points):
+                        cross_points[np.random.randint(0, dimensions)] = True
+                    trial = np.where(cross_points, mutant, pop[j])
+                    trial_denorm = min_b + trial * diff
+                    trial_fitness = fobj(trial_denorm)
+                    if trial_fitness < fitness[j]:
+                        fitness[j] = trial_fitness
+                        pop[j] = trial
+                        if trial_fitness < fitness[best_idx]:
+                            best_idx = j
+                            best = trial_denorm
+
+                pop_denorm = min_b + pop * diff
+
+                yield best, fitness[best_idx]
+
 
 if __name__ == "__main__":
     import matplotlib as plt
+    print("start")
     start_time = time()
-    init_pop = [0.732621371038817, 0.27689683065424686, -1.5549311561474415, -0.10364913818754412, -0.3183939508251832, -0.1876724590250347, -0.36244424848144485, 0.9332322399113105, 0.10721160370194749, 0.1342500283998984, -0.605439486931415, -0.6854014322480135, -0.9954102772339521, -0.6477256710628161, 0.3420227898005268, -0.10250084110444613, -0.6822676418415798, 0.5947435912790431] # 0.694
-
-    d = Distribution(华为杯_data)
-    best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
-    best_ind,best_score,logbook= d.fit_NN_ea()
-
-    print(best_score)
-    print(best_ind)
-    gen = logbook.select("gen")
-    fit_maxs = logbook.select("max")
-    np.save(f"distribution_based_ea_{start_time}.npy",np.array([gen,fit_maxs]))
+    # init_pop = [0.732621371038817, 0.27689683065424686, -1.5549311561474415, -0.10364913818754412, -0.3183939508251832, -0.1876724590250347, -0.36244424848144485, 0.9332322399113105, 0.10721160370194749, 0.1342500283998984, -0.605439486931415, -0.6854014322480135, -0.9954102772339521, -0.6477256710628161, 0.3420227898005268, -0.10250084110444613, -0.6822676418415798, 0.5947435912790431] # 0.694
+    np.random.seed(int(time() * 10000) % 4294967296)
+    data_idx = np.random.choice(华为杯_data.shape[0], 300)
+    data = 华为杯_data[data_idx]
+    d = Distribution(data)
+    # best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
+    # best_ind,best_score= d.fit_DE()
+    d.scoring_sys.parameters=[ 7.84605513, -0.62829151, -0.34513113, -6.99626145,  6.84425151, -0.4938427,
+ -3.40503507,  6.32845631, -4.60328576,  3.80204546,  3.65414871, -5.52031716,
+  5.63098865,  2.63530608, -2.66109476, -2.82704527,  5.19361657,  7.49876944]
+    d.scoring_sys.version=ScoringSys.V.GA
+    print(d.task_id)
+    d.run(is_debug=False)
+    print("util rate",d.avg_util_rate())
+    # gen = logbook.select("gen")
+    # fit_maxs = logbook.select("max")
+    # np.save(f"distribution_based_ea_{start_time}.npy",np.array([gen,fit_maxs]))
     # fig, ax1 = plt.subplots()
     # line1 = ax1.plot(gen, fit_maxs, "b-", label="maximum Fitness")
     # ax1.set_xlabel("Generation")
@@ -557,6 +628,6 @@ if __name__ == "__main__":
     # print(best_ind,best_score)
 
     end_time = time()
-    print(end_time-start_time)
-    # standard_draw_plan(d.solution,task_id=d.task_id)
+    print("time cost=",end_time-start_time)
+    standard_draw_plan(d.solution,task_id=d.task_id)
     pass

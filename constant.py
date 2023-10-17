@@ -502,10 +502,10 @@ def kde_sample(data, count=1000):  # epanechnikov,gaussian
 
 
 if __name__ == "__main__":
-    r1 = Rect(0, 998, 1878, 1056)
-    r2 = Rect(2382, 998, 2440, 1220)
-    print(r2 & r1)
-    print((r2 & r1) == Rect)
+    r1 = Rect(0, 0, 862, 2356)
+    r2 = Container(POS(0,0),POS(*MATERIAL_SIZE))
+    print(r1 in r2)
+    # print((r2 & r1) == Rect)
     # print(Rect(POS(10,10),POS(10,0))==Rect)
 
     pass
