@@ -30,17 +30,38 @@ class ScoringSys:
         self.pos_scoring_arch=np.array([10, 10, 8, 4, 1])
         self.item_sorting_arch=np.array([6, 6, 4, 1])
         self.algo=algo
-        self.container_scoring_param_count =14 #sum((x + 1) * y for x,y in zip(self.pos_scoring_arch, self.pos_scoring_arch[1:] + [0]))
-        self.item_sorting_param_count =4 #sum((x+1)*y for x,y in zip(self.item_sorting_arch, self.item_sorting_arch[1:] + [0]))
         self.parameters=self.algo.parameters if self.algo.parameters else np.ones(self.item_sorting_param_count + self.container_scoring_param_count)
-        self.pos_scoring_parameters = self.parameters[:self.container_scoring_param_count]
-        self.item_sorting_parameters:"np.ndarray" = self.parameters[self.container_scoring_param_count:]
-        self.total_param_num=self.item_sorting_param_count+self.container_scoring_param_count
+        # self.container_scoring_parameters = self.parameters[:self.container_scoring_param_count]
+        # self.item_sorting_parameters:"np.ndarray" = self.parameters[self.container_scoring_param_count:]
+        # self.total_param_num=self.item_sorting_param_count+self.container_scoring_param_count
         # self.algo:"Algo"=algo
         # self.plans=plans
         # self.choosed_container=container
+    @property
+    def container_scoring_parameters(self):
+        return self.parameters[:self.container_scoring_param_count]
 
+    @property
+    def item_sorting_parameters(self):
+        return self.parameters[self.container_scoring_param_count:]
 
+    @property
+    def total_param_num(self):
+        return self.item_sorting_param_count+self.container_scoring_param_count
+
+    @property
+    def container_scoring_param_count(self):
+        if self.version == self.V.GA:
+            return 14
+        else:
+            return sum((x + 1) * y for x,y in zip(self.pos_scoring_arch, self.pos_scoring_arch[1:] + [0]))
+
+    @property
+    def item_sorting_param_count(self):
+        if self.version == self.V.GA:
+            return 14
+        else:
+            return sum((x+1)*y for x,y in zip(self.item_sorting_arch, self.item_sorting_arch[1:] + [0]))
 
 
     def item_sorting(self, item_width, item_height)-> float | int:
@@ -76,7 +97,7 @@ class ScoringSys:
                 self.algo.material.height/self.algo.material.width,
                 self.algo.solution[plan_id].util_rate() if plan_id>=0 else 0,
         ])
-        return np.dot(X,self.pos_scoring_parameters)
+        return np.dot(X, self.container_scoring_parameters)
 
 
     @staticmethod
@@ -364,6 +385,7 @@ class Distribution(Algo):
         return np.average(result),
 
     def fit_NN_ea(self, pop_size=36, max_gen=100, init_population=None):
+        self.scoring_sys.version = self.scoring_sys.V.MLP
         from deap import base, creator, tools, algorithms
         import random
         from multiprocessing import Pool
@@ -427,6 +449,7 @@ class Distribution(Algo):
 
 
     def fit_ea(self,pop_size=36, max_gen=100, init_population=None):
+        self.scoring_sys.version = self.scoring_sys.V.MLP
         from deap import base, creator, tools, algorithms
         import random
         from multiprocessing import Pool
@@ -514,7 +537,7 @@ if __name__ == "__main__":
 
     d = Distribution(华为杯_data)
     best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
-    # best_ind,best_score,logbook= d.fit_NN_ea()
+    best_ind,best_score,logbook= d.fit_NN_ea()
 
     print(best_score)
     print(best_ind)
