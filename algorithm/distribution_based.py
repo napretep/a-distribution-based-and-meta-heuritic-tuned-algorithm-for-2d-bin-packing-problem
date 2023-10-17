@@ -30,7 +30,7 @@ class ScoringSys:
         self.pos_scoring_arch=np.array([10, 10, 8, 4, 1])
         self.item_sorting_arch=np.array([6, 6, 4, 1])
         self.algo=algo
-        self.container_scoring_param_count =15 #sum((x + 1) * y for x,y in zip(self.pos_scoring_arch, self.pos_scoring_arch[1:] + [0]))
+        self.container_scoring_param_count =14 #sum((x + 1) * y for x,y in zip(self.pos_scoring_arch, self.pos_scoring_arch[1:] + [0]))
         self.item_sorting_param_count =4 #sum((x+1)*y for x,y in zip(self.item_sorting_arch, self.item_sorting_arch[1:] + [0]))
         self.parameters=self.algo.parameters if self.algo.parameters else np.ones(self.item_sorting_param_count + self.container_scoring_param_count)
         self.pos_scoring_parameters = self.parameters[:self.container_scoring_param_count]
@@ -68,7 +68,6 @@ class ScoringSys:
                 (plan_id+1)/len(self.algo.solution) if self.algo.solution else 0,
                 (item_width * item_height) / (container_width * container_height),
                 1-(item_width * item_height) / (container_width * container_height),
-                abs(item_width - item_height) / abs(container_width-container_height),
                 1-item_width/container_width,
                 1-item_height/container_height,
                 (container_width * container_height)/self.algo.material.area,
@@ -446,7 +445,7 @@ class Distribution(Algo):
         toolbox.register("map", pool.map)
 
         # 定义属性（决策变量）的初始化方式
-        toolbox.register("attr_float", random.uniform, -100, 100)
+        toolbox.register("attr_float", random.uniform, -1, 1)
 
         # 自定义一个函数来创建单个个体
 
@@ -477,7 +476,7 @@ class Distribution(Algo):
 
         for gen in range(max_gen):
             start_time = time()
-            offspring = algorithms.varAnd(pop, toolbox, cxpb=0.5, mutpb=0.2)
+            offspring = algorithms.varAnd(pop, toolbox, cxpb=0.3, mutpb=0.3)
             fits = toolbox.map(toolbox.evaluate, offspring)
             for fit, ind in zip(fits, offspring):
                 ind.fitness.values = fit
