@@ -23,36 +23,62 @@ def sigmoid(x):
 # 训练后保存参数,使用时读取参数
 class ScoringSys:
     class V:
-        SLP = "SLP"
-        MLP6 = "MLP6"
-        MLP4 = "MLP4"
+        MLP=0
+        GA=1
     def __init__(self,algo:"Distribution"):
-        self.version=self.V.MLP6
+        self.version=self.V.GA
         self.pos_scoring_arch=np.array([10, 10, 8, 4, 1])
         self.item_sorting_arch=np.array([6, 6, 4, 1])
         self.algo=algo
-        self.container_scoring_param_count = sum((x + 1) * y for x,y in zip(self.pos_scoring_arch, self.pos_scoring_arch[1:] + [0]))
-        self.item_sorting_param_count = sum((x+1)*y for x,y in zip(self.item_sorting_arch, self.item_sorting_arch[1:] + [0]))
+        self.container_scoring_param_count =15 #sum((x + 1) * y for x,y in zip(self.pos_scoring_arch, self.pos_scoring_arch[1:] + [0]))
+        self.item_sorting_param_count =4 #sum((x+1)*y for x,y in zip(self.item_sorting_arch, self.item_sorting_arch[1:] + [0]))
         self.parameters=self.algo.parameters if self.algo.parameters else np.ones(self.item_sorting_param_count + self.container_scoring_param_count)
-        self.scoring_parameters = self.parameters[:self.container_scoring_param_count]
-        self.sorting_parameters = self.parameters[self.container_scoring_param_count:]
+        self.pos_scoring_parameters = self.parameters[:self.container_scoring_param_count]
+        self.item_sorting_parameters:"np.ndarray" = self.parameters[self.container_scoring_param_count:]
         self.total_param_num=self.item_sorting_param_count+self.container_scoring_param_count
         # self.algo:"Algo"=algo
         # self.plans=plans
         # self.choosed_container=container
 
 
-    def traning(self):
-        pass
 
 
     def item_sorting(self, item_width, item_height)-> float | int:
-        X = np.array([item_width,item_height,self.algo.maxL,self.algo.minL,self.algo.material.width,self.algo.material.height])
-        return self.multi_layer_perceptron(X, self.sorting_parameters, self.item_sorting_arch)
+        X = np.array([
+                (item_width * item_height)/(self.algo.minL*self.algo.maxL), # item area
+                item_height/item_width,  # side ratio
+                (item_width * item_height) / self.algo.material.area,
+                abs(item_width - item_height)/(self.algo.maxL-self.algo.minL),
+        ])
+        return np.dot(X, self.item_sorting_parameters)
+        # X = np.array([item_width,item_height,self.algo.maxL,self.algo.minL,self.algo.material.width,self.algo.material.height])
+        # return self.multi_layer_perceptron(X, self.sorting_parameters, self.item_sorting_arch)
+
+
+
     def pos_scoring(self, item_width, item_height, container_begin_x, container_begin_y, container_width, container_height, plan_id)-> float | int:
-        rate = self.algo.solution[plan_id].util_rate() if plan_id> -1 else 0
-        X = np.array([item_width,item_height,container_begin_x,container_begin_y,container_width,container_height,self.algo.material.width,self.algo.material.height,plan_id,rate])
-        return self.multi_layer_perceptron(X, self.scoring_parameters, self.pos_scoring_arch)
+        # rate = self.algo.solution[plan_id].util_rate() if plan_id> -1 else 0
+        # X = np.array([item_width,item_height,container_begin_x,container_begin_y,container_width,container_height,self.algo.material.width,self.algo.material.height,plan_id,rate])
+        # return self.multi_layer_perceptron(X, self.pos_scoring_parameters, self.pos_scoring_arch)
+        X = np.array([
+                (item_width * item_height) / (self.algo.minL * self.algo.maxL),  # item area
+                item_height/item_width ,  # side ratio
+                (item_width * item_height) / self.algo.material.area,
+                abs(item_width - item_height) / (self.algo.maxL - self.algo.minL),
+                (plan_id+1)/len(self.algo.solution) if self.algo.solution else 0,
+                (item_width * item_height) / (container_width * container_height),
+                1-(item_width * item_height) / (container_width * container_height),
+                abs(item_width - item_height) / abs(container_width-container_height),
+                1-item_width/container_width,
+                1-item_height/container_height,
+                (container_width * container_height)/self.algo.material.area,
+                container_begin_x/self.algo.material.width,
+                container_begin_y/self.algo.material.height,
+                self.algo.material.height/self.algo.material.width,
+                self.algo.solution[plan_id].util_rate() if plan_id>=0 else 0,
+        ])
+        return np.dot(X,self.pos_scoring_parameters)
+
 
     @staticmethod
     def multi_layer_perceptron(X, parameters, layer_dims):
@@ -338,7 +364,7 @@ class Distribution(Algo):
         result.remove(min(result))
         return np.average(result),
 
-    def fit(self, pop_size=36, max_gen=100, init_population=None):
+    def fit_NN_ea(self, pop_size=36, max_gen=100, init_population=None):
         from deap import base, creator, tools, algorithms
         import random
         from multiprocessing import Pool
@@ -404,15 +430,79 @@ class Distribution(Algo):
         # the_best_solution = [None]
         return best_individual, best_individual.fitness,logbook
 
-# def fitness_fun():
 
+    def fit_ea(self,pop_size=36, max_gen=100, init_population=None):
+        from deap import base, creator, tools, algorithms
+        import random
+        from multiprocessing import Pool
+        print("traning start")
+        creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+        creator.create("Individual", list, fitness=creator.FitnessMax)
+
+        toolbox = base.Toolbox()
+
+        # 使用并行处理来计算适应度函数
+        pool = Pool()
+        toolbox.register("map", pool.map)
+
+        # 定义属性（决策变量）的初始化方式
+        toolbox.register("attr_float", random.uniform, -100, 100)
+
+        # 自定义一个函数来创建单个个体
+
+        # Structure initializers
+        gene_length = self.scoring_sys.total_param_num
+        # 定义个体和种群的初始化方式
+        if init_population is None:
+            toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=gene_length)
+        else:
+            def create_individual():
+                return creator.Individual(init_population)
+
+            toolbox.register("individual", create_individual)
+            # toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+        # 定义遗传算法的操作
+        toolbox.register("evaluate", self.eval)
+        toolbox.register("mate", tools.cxTwoPoint)
+        toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
+        toolbox.register("select", tools.selTournament, tournsize=3)
+        # 初始化种群
+        pop = toolbox.population(n=pop_size)
+        stats = tools.Statistics(key=lambda ind: ind.fitness.values)
+        stats.register("max", np.max)
+        logbook = tools.Logbook()
+        logbook.header = "gen", "max"
+
+        for gen in range(max_gen):
+            start_time = time()
+            offspring = algorithms.varAnd(pop, toolbox, cxpb=0.5, mutpb=0.2)
+            fits = toolbox.map(toolbox.evaluate, offspring)
+            for fit, ind in zip(fits, offspring):
+                ind.fitness.values = fit
+            pop = toolbox.select(offspring, k=len(pop))
+            best_ind = max(pop, key=lambda ind: ind.fitness.values)
+            print(f"Best fitness in generation {best_ind} : {best_ind.fitness.values}")
+            record = stats.compile(pop)
+            logbook.record(gen=gen, **record)
+
+            end_time = time()
+            print(end_time - start_time)
+            print(gen, "over", )
+
+        best_individual = tools.selBest(pop, k=1)[0]
+        print("Best individual is: %s\nwith fitness: %s" % (best_individual, best_individual.fitness))
+        #
+        # the_best_solution = [None]
+        return best_individual, best_individual.fitness, logbook
 
 
 if __name__ == "__main__":
     start_time = time()
 
     d = Distribution(华为杯_data)
-    best_ind,best_score,logbook= d.fit()
+    best_ind,best_score,logbook= d.fit_ea()
     print(best_score)
     print(best_ind)
     gen = logbook.select("gen")
