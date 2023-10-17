@@ -27,7 +27,7 @@ class ScoringSys:
         GA=1
     def __init__(self,algo:"Distribution"):
         self.version=self.V.GA
-        self.pos_scoring_arch=np.array([10, 10, 8, 4, 1])
+        self.container_scoring_arch=np.array([10, 10, 8, 4, 1])
         self.item_sorting_arch=np.array([6, 6, 4, 1])
         self.algo=algo
         self.parameters=self.algo.parameters if self.algo.parameters else np.ones(self.item_sorting_param_count + self.container_scoring_param_count)
@@ -54,7 +54,7 @@ class ScoringSys:
         if self.version == self.V.GA:
             return 14
         else:
-            return sum((x + 1) * y for x,y in zip(self.pos_scoring_arch, self.pos_scoring_arch[1:] + [0]))
+            return sum((x + 1) * y for x,y in zip(self.container_scoring_arch, self.container_scoring_arch[1:] + [0]))
 
     @property
     def item_sorting_param_count(self):
@@ -67,7 +67,7 @@ class ScoringSys:
     def item_sorting(self, item_width, item_height)-> float | int:
         if self.version == self.V.MLP:
             X = np.array([item_width,item_height,self.algo.maxL,self.algo.minL,self.algo.material.width,self.algo.material.height])
-            return self.multi_layer_perceptron(X, self.sorting_parameters, self.item_sorting_arch)
+            return self.multi_layer_perceptron(X, self.item_sorting_parameters, self.item_sorting_arch)
         else:
             X = np.array([
                     (item_width * item_height)/(self.algo.minL*self.algo.maxL), # item area
@@ -84,7 +84,7 @@ class ScoringSys:
         if self.version == self.V.MLP:
             rate = self.algo.solution[plan_id].util_rate() if plan_id> -1 else 0
             X = np.array([item_width,item_height,container_begin_x,container_begin_y,container_width,container_height,self.algo.material.width,self.algo.material.height,plan_id,rate])
-            return self.multi_layer_perceptron(X, self.container_scoring_parameters, self.pos_scoring_arch)
+            return self.multi_layer_perceptron(X, self.container_scoring_parameters, self.container_scoring_arch)
         else:
             X = np.array([
                     (item_width * item_height) / (self.algo.minL * self.algo.maxL),  # item area
