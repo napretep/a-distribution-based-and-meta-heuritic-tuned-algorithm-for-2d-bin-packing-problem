@@ -65,39 +65,44 @@ class ScoringSys:
 
 
     def item_sorting(self, item_width, item_height)-> float | int:
-        X = np.array([
-                (item_width * item_height)/(self.algo.minL*self.algo.maxL), # item area
-                item_height/item_width,  # side ratio
-                (item_width * item_height) / self.algo.material.area,
-                abs(item_width - item_height)/(self.algo.maxL-self.algo.minL),
-        ])
-        return np.dot(X, self.item_sorting_parameters)
-        # X = np.array([item_width,item_height,self.algo.maxL,self.algo.minL,self.algo.material.width,self.algo.material.height])
-        # return self.multi_layer_perceptron(X, self.sorting_parameters, self.item_sorting_arch)
+        if self.version == self.V.MLP:
+            X = np.array([item_width,item_height,self.algo.maxL,self.algo.minL,self.algo.material.width,self.algo.material.height])
+            return self.multi_layer_perceptron(X, self.sorting_parameters, self.item_sorting_arch)
+        else:
+            X = np.array([
+                    (item_width * item_height)/(self.algo.minL*self.algo.maxL), # item area
+                    item_height/item_width,  # side ratio
+                    (item_width * item_height) / self.algo.material.area,
+                    abs(item_width - item_height)/(self.algo.maxL-self.algo.minL),
+            ])
+            return np.dot(X, self.item_sorting_parameters)
+
 
 
 
     def pos_scoring(self, item_width, item_height, container_begin_x, container_begin_y, container_width, container_height, plan_id)-> float | int:
-        # rate = self.algo.solution[plan_id].util_rate() if plan_id> -1 else 0
-        # X = np.array([item_width,item_height,container_begin_x,container_begin_y,container_width,container_height,self.algo.material.width,self.algo.material.height,plan_id,rate])
-        # return self.multi_layer_perceptron(X, self.pos_scoring_parameters, self.pos_scoring_arch)
-        X = np.array([
-                (item_width * item_height) / (self.algo.minL * self.algo.maxL),  # item area
-                item_height/item_width ,  # side ratio
-                (item_width * item_height) / self.algo.material.area,
-                abs(item_width - item_height) / (self.algo.maxL - self.algo.minL),
-                (plan_id+1)/len(self.algo.solution) if self.algo.solution else 0,
-                (item_width * item_height) / (container_width * container_height),
-                1-(item_width * item_height) / (container_width * container_height),
-                1-item_width/container_width,
-                1-item_height/container_height,
-                (container_width * container_height)/self.algo.material.area,
-                container_begin_x/self.algo.material.width,
-                container_begin_y/self.algo.material.height,
-                self.algo.material.height/self.algo.material.width,
-                self.algo.solution[plan_id].util_rate() if plan_id>=0 else 0,
-        ])
-        return np.dot(X, self.container_scoring_parameters)
+        if self.version == self.V.MLP:
+            rate = self.algo.solution[plan_id].util_rate() if plan_id> -1 else 0
+            X = np.array([item_width,item_height,container_begin_x,container_begin_y,container_width,container_height,self.algo.material.width,self.algo.material.height,plan_id,rate])
+            return self.multi_layer_perceptron(X, self.container_scoring_parameters, self.pos_scoring_arch)
+        else:
+            X = np.array([
+                    (item_width * item_height) / (self.algo.minL * self.algo.maxL),  # item area
+                    item_height/item_width ,  # side ratio
+                    (item_width * item_height) / self.algo.material.area,
+                    abs(item_width - item_height) / (self.algo.maxL - self.algo.minL),
+                    (plan_id+1)/len(self.algo.solution) if self.algo.solution else 0,
+                    (item_width * item_height) / (container_width * container_height),
+                    1-(item_width * item_height) / (container_width * container_height),
+                    1-item_width/container_width,
+                    1-item_height/container_height,
+                    (container_width * container_height)/self.algo.material.area,
+                    container_begin_x/self.algo.material.width,
+                    container_begin_y/self.algo.material.height,
+                    self.algo.material.height/self.algo.material.width,
+                    self.algo.solution[plan_id].util_rate() if plan_id>=0 else 0,
+            ])
+            return np.dot(X, self.container_scoring_parameters)
 
 
     @staticmethod
