@@ -378,7 +378,7 @@ class Distribution(Algo):
         toolbox.register("map", pool.map)
 
         # 定义属性（决策变量）的初始化方式
-        toolbox.register("attr_float", random.uniform, -100, 100)
+        toolbox.register("attr_float", random.uniform, -2, 2)
 
         # 自定义一个函数来创建单个个体
 
@@ -395,11 +395,21 @@ class Distribution(Algo):
             # toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
+        def deap_mutation(individual, toolbox, F=0.5):
+            size = len(individual)
+            a, b, c = toolbox.select(toolbox.population(n=size), k=3)
+            mutant = toolbox.clone(a)
+            index = random.randrange(size)
+            for i in range(size):
+                if i == index or random.random() < F:
+                    mutant[i] = a[i] + F * (b[i] - c[i])
+            return mutant,
+
         # 定义遗传算法的操作
         toolbox.register("evaluate", self.eval)
         toolbox.register("mate", tools.cxTwoPoint)
-        toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
-        toolbox.register("select", tools.selTournament, tournsize=3)
+        toolbox.register("mutate", deap_mutation)
+        toolbox.register("select", tools.selBest)
         # 初始化种群
         pop = toolbox.population(n=pop_size)
         stats = tools.Statistics(key=lambda ind: ind.fitness.values)
@@ -409,13 +419,13 @@ class Distribution(Algo):
 
         for gen in range(max_gen):
             start_time = time()
-            offspring = algorithms.varAnd(pop, toolbox, cxpb=0.5, mutpb=0.2)
+            offspring = algorithms.eaMuCommaLambda(pop, toolbox, mu=12, lambda_=24, cxpb=0.3, mutpb=0.3,ngen=max_gen)
             fits = toolbox.map(toolbox.evaluate, offspring)
             for fit, ind in zip(fits, offspring):
                 ind.fitness.values = fit
-            pop = toolbox.select(offspring, k=len(pop))
+            pop = toolbox.select(offspring,k=pop_size)
             best_ind = max(pop, key=lambda ind: ind.fitness.values)
-            print(f"Best fitness in generation : {best_ind.fitness.values}")
+            print(f"Best fitness in generation {best_ind} : {best_ind.fitness.values}")
             record = stats.compile(pop)
             logbook.record(gen=gen, **record)
 
@@ -427,7 +437,7 @@ class Distribution(Algo):
         print("Best individual is: %s\nwith fitness: %s" % (best_individual, best_individual.fitness))
         #
         # the_best_solution = [None]
-        return best_individual, best_individual.fitness,logbook
+        return best_individual, best_individual.fitness, logbook
 
 
     def fit_ea(self,pop_size=36, max_gen=100, init_population=None):
@@ -513,7 +523,9 @@ if __name__ == "__main__":
     init_pop = [0.732621371038817, 0.27689683065424686, -1.5549311561474415, -0.10364913818754412, -0.3183939508251832, -0.1876724590250347, -0.36244424848144485, 0.9332322399113105, 0.10721160370194749, 0.1342500283998984, -0.605439486931415, -0.6854014322480135, -0.9954102772339521, -0.6477256710628161, 0.3420227898005268, -0.10250084110444613, -0.6822676418415798, 0.5947435912790431] # 0.694
 
     d = Distribution(华为杯_data)
-    best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
+    # best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
+    best_ind,best_score,logbook= d.fit_NN_ea()
+
     print(best_score)
     print(best_ind)
     gen = logbook.select("gen")
