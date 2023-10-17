@@ -221,30 +221,28 @@ class Skyline(Algo):
                                     plan_id=plan.ID
                             ))
             if len(scores) == 0:
-                new_plan = Plan(len(plans), self.material.copy(), [], [], [Container(self.material.start, self.material.end)], [])
-                for i in range(len(new_plan.skyLineContainers)):
-                    idx = self.get_placable_area(new_item, i, new_plan.skyLineContainers)
-                    if idx >= 0:
-                        item = new_item.copy()
-                        item.pos = new_plan.skyLineContainers[i].rect.start
-                        scores.append(ItemScore(
-                                item=item,
-                                container_range=(i, idx + 1),
-                                score=self.compute_wasted_area(item, i, idx, new_plan.skyLineContainers),
-                                plan_id=-1
-                        ))
+                # new_plan = Plan(len(plans), self.material.copy(), [], [], [Container(self.material.start, self.material.end)], [])
+                # for i in range(len(new_plan.skyLineContainers)):
+                idx = self.get_placable_area(new_item, 0, [Container(self.material.start, self.material.end)])
+                if idx >= 0:
+                    item = new_item.copy()
+                    scores.append(ItemScore(
+                            item=item,
+                            container_range=(0,1),
+                            score=self.compute_wasted_area(item, 0, idx, [Container(self.material.start, self.material.end)]),
+                            plan_id=-1
+                    ))
 
-                    itemT = new_item.transpose()
-                    idx = self.get_placable_area(itemT, i, new_plan.skyLineContainers)
-                    if idx >= 0:
-                        item = itemT.copy()
-                        item.pos = new_plan.skyLineContainers[i].rect.start
-                        scores.append(ItemScore(
-                                item=item,
-                                container_range=(i, idx + 1),
-                                score=self.compute_wasted_area(item, i, idx, new_plan.skyLineContainers),
-                                plan_id=-1
-                        ))
+                itemT = new_item.transpose()
+                idx = self.get_placable_area(itemT, 0, [Container(self.material.start, self.material.end)])
+                if idx >= 0:
+                    item = itemT.copy()
+                    scores.append(ItemScore(
+                            item=item,
+                            container_range=(0,1),
+                            score=self.compute_wasted_area(item, 0, idx, [Container(self.material.start, self.material.end)]),
+                            plan_id=-1
+                    ))
             if len(scores)==0:
                 raise Exception("没有找到合适的位置",new_item)
             best_score: "ItemScore" = min(scores, key=cmp_to_key(self.best_score_cmp))
@@ -446,10 +444,14 @@ class Skyline(Algo):
 
 if __name__ == "__main__":
     np.random.seed(int(time() * 10000) % 4294967296)
-    data_idx = np.random.choice(华为杯_data.shape[0], 300)
-    data = 华为杯_data[data_idx]
+    data_idx = np.random.choice(随机_data.shape[0], 500)
+    data = 随机_data[data_idx]
     s = Skyline(data)
+
+    # idx = s.get_placable_area(Item(0,Rect(0,0,1500,1500),POS(0,0)),0,[Container(POS(0,0),POS(*MATERIAL_SIZE))])
+    # print(idx)
     print(s.task_id)
-    s.run(debug_mode=False)
+    s.run(debug_mode=True)
     print(f"util rate={s.avg_util_rate()}")
+    standard_draw_plan(s.solution,task_id=s.task_id)
     pass

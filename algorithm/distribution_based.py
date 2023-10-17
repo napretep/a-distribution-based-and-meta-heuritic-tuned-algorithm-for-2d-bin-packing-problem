@@ -554,12 +554,15 @@ class Distribution(Algo):
         start_time = time()
         self.scoring_sys.version = scoring_version
         from scipy.optimize import differential_evolution
+        time_recorder =[time()]
         def callback(xk, convergence):
-            print(f'Current solution: {xk}, Convergence: {convergence}')
-
-
+            time_recorder.append(time())
+            print(f'time cost {time_recorder[-1]-time_recorder[-2]}Current solution: {xk}, Convergence: {convergence}')
+        init = [-3.13492378, -1.11457937 , 1.22778879,  4.83960852,  1.45576684,  7.38295868,
+ -8.51840606,  3.56529697 , 4.10378123, -8.85677593, -3.35759839, -4.90079062,
+  8.84279645,  4.77418402, -3.43442509, -8.48811202, -4.73466265,  7.90226931]
         bounds = [[-10, 10]] * self.scoring_sys.total_param_num
-        result = differential_evolution(self.eval, bounds,workers=-1,atol=0.0001,strategy="randtobest1exp",popsize=12,callback=callback,maxiter=10)
+        result = differential_evolution(self.eval, bounds,workers=-1,atol=0.0001,strategy="randtobest1exp",popsize=12,init=init,callback=callback,maxiter=100)
         return result.x,result.fun
         end_time = time()
         print(end_time - start_time)
@@ -609,14 +612,14 @@ if __name__ == "__main__":
     data = 华为杯_data[data_idx]
     d = Distribution(data)
     # best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
-    # best_ind,best_score= d.fit_DE()
-    d.scoring_sys.parameters=[ 7.84605513, -0.62829151, -0.34513113, -6.99626145,  6.84425151, -0.4938427,
- -3.40503507,  6.32845631, -4.60328576,  3.80204546,  3.65414871, -5.52031716,
-  5.63098865,  2.63530608, -2.66109476, -2.82704527,  5.19361657,  7.49876944]
     d.scoring_sys.version=ScoringSys.V.GA
-    print(d.task_id)
-    d.run(is_debug=False)
-    print("util rate",d.avg_util_rate())
+    best_ind,best_score= d.fit_DE()
+ #    d.scoring_sys.parameters=[ 7.84605513, -0.62829151, -0.34513113, -6.99626145,  6.84425151, -0.4938427,
+ # -3.40503507,  6.32845631, -4.60328576,  3.80204546,  3.65414871, -5.52031716,
+ #  5.63098865,  2.63530608, -2.66109476, -2.82704527,  5.19361657,  7.49876944]
+ #    print(d.task_id)
+ #    d.run(is_debug=False)
+ #    print("util rate",d.avg_util_rate())
     # gen = logbook.select("gen")
     # fit_maxs = logbook.select("max")
     # np.save(f"distribution_based_ea_{start_time}.npy",np.array([gen,fit_maxs]))

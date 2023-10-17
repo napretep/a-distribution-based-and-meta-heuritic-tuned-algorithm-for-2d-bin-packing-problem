@@ -379,7 +379,8 @@ for i in range(_temp_外包_data.shape[0]):
 外包_data = np.column_stack(
         (外包_data[:, 0], np.maximum(外包_data[:, 1], 外包_data[:, 2]), np.minimum(外包_data[:, 1], 外包_data[:, 2]))
 )
-
+外包_data_idx = (外包_data[:, 1]<=MATERIAL_SIZE[0])&(外包_data[:,2]<=MATERIAL_SIZE[1])
+外包_data=外包_data[外包_data_idx]
 华为杯_data: "np.ndarray|None" = None
 # item_id, item_material, item_num, item_length, item_width, item_order
 for i in range(5):

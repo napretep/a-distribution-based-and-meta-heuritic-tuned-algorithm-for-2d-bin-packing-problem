@@ -88,7 +88,7 @@ def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=
         save_name = f"{save_path}/{task_id}_{plan.ID}{'_'+timestamp if is_debug else''}.png"
         plot.savefig(save_name)
 
-        print(f"\rdraw plan_{plan.ID} ok", end="", flush=True)
+        print(f"\rdraw task_id={task_id} plan_{plan.ID} ok", end="", flush=True)
         ax.cla()
     plot.close()
     # return img_data
