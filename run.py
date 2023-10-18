@@ -16,7 +16,7 @@ from visualizing.draw_plan import standard_draw_plan
 
 if __name__ == "__main__":
     np.random.seed(int(time() * 10000) % 4294967296)
-    data_idx = np.random.choice(随机_data.shape[0], 500)
+    data_idx = np.random.choice(随机_data.shape[0], 300)
     data = 随机_data[data_idx]
     s = Skyline(data)
     d = Distribution(data)

@@ -113,14 +113,25 @@ class Skyline(Algo):
         if item_end_x <= containers[end_idx].rect.end.x and container_start_y<=item_start_y and item_end_y <= container_end_y:
             return end_idx
         else:
-            end_idx+=1
-            if end_idx==len(containers):
+
+            if end_idx+1==len(containers):
                 return -1
             # 先判断占据的容器个数,再判断容器的高度是否满足条件
             for idx in range(begin_idx+1,len(containers)):
-                
-
-
+                if item_end_x < containers[idx].rect.end.x and containers[idx].rect.end.y>=item_end_y and item_start_y>=containers[idx].rect.start.y:
+                    end_idx=idx
+                    break
+            if end_idx==begin_idx:
+                return -1
+            # if item_end_x > containers[end_idx].rect.end.x:
+            for idx in range(begin_idx, end_idx):
+                if not (containers[idx].rect.end.y >= item_end_y and item_start_y >= containers[idx].rect.start.y):
+                    return -1
+            # for idx in range(begin_idx,end_idx):
+            #     if containers[idx].rect.end.y>=item_end_y and item_start_y>=containers[idx].rect.start.y:
+            #         continue
+            #     else:
+            #         return -1
             return end_idx
 
     def best_score_cmp(self, a: "ItemScore", b: "ItemScore"):
@@ -376,10 +387,16 @@ class Skyline(Algo):
                     container_top = Container(new_rect.topLeft, POS(
                             new_rect.topRight.x, self.material.height
                     ), plan.ID)
-                    container_right = Container(
-                            POS(new_rect.bottomRight.x, last_c.rect.start.y),
-                            POS(last_c.rect.end.x, self.material.height)
-                    )
+
+                    if new_rect.bottomRight.x!=last_c.rect.end.x:
+                        container_right = Container(
+                                POS(new_rect.bottomRight.x, last_c.rect.start.y),
+                                POS(last_c.rect.end.x, self.material.height)
+                        )
+                    else:
+                        container_right = None
+
+
                     # 合并到原有的skyline
                     for sky_c in plan.skyLineContainers:
                         if container_right is None and container_top is None:
@@ -429,13 +446,6 @@ class Skyline(Algo):
                     last_waste = None
                     for waste_c in removed_containers[1:]:
                         if new_rect.bottomRight.y > waste_c.rect.bottomRight.y:
-                            # 如果水平线相同,直接合并就好了
-                            # if last_waste and waste_c.rect.topRight.y==last_waste.rect.topRight.y:
-                            #     last_waste.rect.end=POS(
-                            #     min(waste_c.rect.bottomRight.x, new_rect.bottomRight.x),
-                            #     new_rect.bottomRight.y
-                            # )
-                            # else:
                             c = Container(waste_c.rect.bottomLeft, POS(
                                     min(waste_c.rect.bottomRight.x, new_rect.bottomRight.x),
                                     new_rect.bottomRight.y
@@ -465,7 +475,7 @@ class Skyline(Algo):
 
 if __name__ == "__main__":
     np.random.seed(int(time() * 10000) % 4294967296)
-    data_idx = np.random.choice(随机_data.shape[0], 300)
+    data_idx = np.random.choice(随机_data.shape[0], 500)
     data = 随机_data[data_idx]
     s = Skyline(data)
 
