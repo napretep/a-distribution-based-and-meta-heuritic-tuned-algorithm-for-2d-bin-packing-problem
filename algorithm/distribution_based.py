@@ -614,6 +614,7 @@ if __name__ == "__main__":
     # best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
     d.scoring_sys.version=ScoringSys.V.GA
     best_ind,best_score= d.fit_DE()
+    print(list(best_ind),best_score)
  #    d.scoring_sys.parameters=[ 7.84605513, -0.62829151, -0.34513113, -6.99626145,  6.84425151, -0.4938427,
  # -3.40503507,  6.32845631, -4.60328576,  3.80204546,  3.65414871, -5.52031716,
  #  5.63098865,  2.63530608, -2.66109476, -2.82704527,  5.19361657,  7.49876944]

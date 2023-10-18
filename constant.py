@@ -413,7 +413,7 @@ samples = np.row_stack((samples2, samples1, samples3, samples4))
 samples = samples[(0 <= samples[:, 0]) & (samples[:, 0] <= 1) & (0 <= samples[:, 1]) & (samples[:, 1] <= 1)]
 
 随机_data: "np.ndarray" = np.column_stack((np.zeros(samples.shape[0]), np.maximum(samples[:, 0], samples[:, 1]) * MATERIAL_SIZE[0], np.minimum(samples[:, 0], samples[:, 1]) * MATERIAL_SIZE[1]))
-
+随机_data = 随机_data.astype(int)
 
 # 随机_data[:,1:3] = 随机_data[:,1:3]
 
