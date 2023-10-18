@@ -103,30 +103,24 @@ class Skyline(Algo):
         debug_plan = []
         height = item.size.height
         width = item.size.width
-        start_x = containers[begin_idx].rect.start.x
-        end_x = start_x + width
-        max_y = containers[begin_idx].rect.start.y + height
-        min_y = containers[begin_idx].rect.start.y
+        item_start_y = containers[begin_idx].rect.start.y
+        item_start_x = containers[begin_idx].rect.start.x
+        item_end_x = item_start_x + width
+        item_end_y = item_start_y + height
+        container_start_y = containers[begin_idx].rect.start.y
+        container_end_y = containers[begin_idx].rect.end.y
         end_idx = begin_idx
-        if end_x <= containers[end_idx].rect.end.x and max_y <= containers[end_idx].rect.end.y:
+        if item_end_x <= containers[end_idx].rect.end.x and container_start_y<=item_start_y and item_end_y <= container_end_y:
             return end_idx
         else:
-            # 如果第一个container都不能提供合适的高度,就完全放不进去了,直接返回 -1
-            if max_y > containers[end_idx].rect.end.y:
+            end_idx+=1
+            if end_idx==len(containers):
                 return -1
-            # 没有下一个了就回去
-            if end_idx == len(containers) - 1:
-                return -1
-            # 搜索最小的包含这个新矩形的容器
-            while end_x >= containers[end_idx].rect.end.x:
-                end_idx += 1
-                # 此时说明超出了container范围,没有放得下的
-                if end_idx == len(containers) - 1:
-                    return -1
-            # 确保区间内的台阶递减
-            for i in range(begin_idx + 1, end_idx + 1, 1):
-                if min_y < containers[i].rect.start.y:
-                    return -1
+            # 先判断占据的容器个数,再判断容器的高度是否满足条件
+            for idx in range(begin_idx+1,len(containers)):
+                
+
+
             return end_idx
 
     def best_score_cmp(self, a: "ItemScore", b: "ItemScore"):
@@ -199,7 +193,7 @@ class Skyline(Algo):
                 for plan in plans:
                     for i in range(len(plan.skyLineContainers)):
                         idx = self.get_placable_area(new_item, i, plan.skyLineContainers)
-                        if idx >= 0:
+                        if idx >= i:
                             item = new_item.copy()
                             item.pos = plan.skyLineContainers[i].rect.start
                             scores.append(ItemScore(
@@ -211,7 +205,7 @@ class Skyline(Algo):
 
                         itemT = new_item.transpose()
                         idx = self.get_placable_area(itemT, i, plan.skyLineContainers)
-                        if idx >= 0:
+                        if idx >= i:
                             item = itemT.copy()
                             item.pos = plan.skyLineContainers[i].rect.start
                             scores.append(ItemScore(
@@ -221,8 +215,6 @@ class Skyline(Algo):
                                     plan_id=plan.ID
                             ))
             if len(scores) == 0:
-                # new_plan = Plan(len(plans), self.material.copy(), [], [], [Container(self.material.start, self.material.end)], [])
-                # for i in range(len(new_plan.skyLineContainers)):
                 idx = self.get_placable_area(new_item, 0, [Container(self.material.start, self.material.end)])
                 if idx >= 0:
                     item = new_item.copy()
@@ -258,24 +250,24 @@ class Skyline(Algo):
                 if container_top.rect == Rect:
                     plan.skyLineContainers.append(container_top)
                 plans.append(plan)
-                if debug_mode:
-                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.rect}")
                 plan.item_sequence.append(best_score.item)
                 if debug_mode:
-                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, )
+                    standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.rect}")
+                # if debug_mode:
+                #     standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, )
             else:
                 plan = plans[best_score.plan_id]
+                plan.item_sequence.append(best_score.item)
                 if debug_mode:
                     standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加矩形,{best_score.item.rect}")
-                plan.item_sequence.append(best_score.item)
 
                 new_rect = best_score.item.size + best_score.item.pos
                 if best_score.type_id == ScoreType.WasteMap:  # wasteMap模式
                     # 将所占用的wastemap容器删除,填入新的wastemap容器
                     container = plan.wasteMap[best_score.container_range[0]]
-                    if debug_mode:
-                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"移除容器,{container.rect}")
                     plan.wasteMap.remove(container)
+                    if debug_mode:
+                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"移除wastemap容器,{container.rect}")
 
 
                     # GuillotineBinPack::SplitMaximizeArea:
@@ -310,20 +302,27 @@ class Skyline(Algo):
                                     if waste_c.rect.bottomRight == newC_right.rect.bottomLeft and\
                                             waste_c.rect.topRight==newC_right.rect.topLeft: #  新容器在右边
                                         waste_c.rect.end = newC_right.rect.end
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_right = None
                                     elif waste_c.rect.bottomLeft==newC_right.rect.bottomRight and waste_c.rect.topLeft ==newC_right.rect.topRight: # 新容器在左边
                                         waste_c.rect.start = newC_right.rect.start
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_right = None
                                 elif diff.y==0: # 横轴线
                                     if waste_c.rect.topRight==newC_right.rect.bottomRight and waste_c.rect.topLeft==newC_right.rect.bottomLeft: # 新容器在上边
                                         waste_c.rect.end = newC_right.rect.end
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_right = None
                                     elif waste_c.rect.bottomRight==newC_right.rect.topRight and waste_c.rect.bottomLeft==newC_right.rect.topLeft: # 新容器在下边
                                         waste_c.rect.start = newC_right.rect.start
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_right = None
-                                if newC_right is None:
-                                    if debug_mode:
-                                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接容器,{waste_c.rect}")
+
+
                         if newC_top is not None:
                             result = newC_top.rect & waste_c.rect
                             if result == Line:
@@ -331,25 +330,36 @@ class Skyline(Algo):
                                 if diff.x == 0:  # 竖轴为线
                                     if waste_c.rect.bottomRight == newC_top.rect.bottomLeft and  waste_c.rect.topRight == newC_top.rect.topLeft:  # 新容器在右边
                                         waste_c.rect.end = newC_top.rect.end
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_top = None
                                     elif waste_c.rect.bottomLeft == newC_top.rect.bottomRight and waste_c.rect.topLeft == newC_top.rect.topRight:  # 新容器在左边
                                         waste_c.rect.start = newC_top.rect.start
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_top = None
                                 elif diff.y == 0:  # 横轴线
                                     if waste_c.rect.topRight == newC_top.rect.bottomRight and waste_c.rect.topLeft == newC_top.rect.bottomLeft:  # 新容器在上边
                                         waste_c.rect.end = newC_top.rect.end
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_top = None
                                     elif waste_c.rect.bottomRight == newC_top.rect.topRight and waste_c.rect.bottomLeft == newC_top.rect.topLeft:  # 新容器在下边
                                         waste_c.rect.start = newC_top.rect.start
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接wastemap容器,{waste_c.rect}")
                                         newC_top = None
-                                if newC_top is None:
-                                    if debug_mode:
-                                        standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接容器,{waste_c.rect}")
+                                # if newC_top is None:
+
 
                     if newC_top is not None:
                         plan.wasteMap.append(newC_top)
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加wastemap容器,{newC_top.rect}")
                     if newC_right is not None:
                         plan.wasteMap.append(newC_right)
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加wastemap容器,{newC_right.rect}")
                     if debug_mode:
                         standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"最终效果")
                     pass
@@ -358,9 +368,9 @@ class Skyline(Algo):
                     removed_containers = plan.skyLineContainers[best_score.container_range[0]:best_score.container_range[1]]
                     # print("removed_containers count",len(removed_containers))
                     for container in removed_containers:
-                        if debug_mode:
-                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"移除容器,{container.rect}")
                         plan.skyLineContainers.remove(container)
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"移除skyline容器,{container.rect}")
                     last_c = removed_containers[-1]
                     # 创建新的skyline,通常只有两个
                     container_top = Container(new_rect.topLeft, POS(
@@ -381,9 +391,13 @@ class Skyline(Algo):
                                 if diff.x == 0:  # 表明此时是竖轴重合
                                     if sky_c.rect.bottomLeft == container_right.rect.bottomRight:  # 旧容器在右侧
                                         sky_c.rect.start = container_right.rect.start
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接skyline容器,{sky_c.rect}")
                                         container_right = None
                                     elif sky_c.rect.bottomRight == container_right.rect.bottomLeft:  # 旧容器在左侧
                                         sky_c.rect.end = container_right.rect.end
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接skyline容器,{sky_c.rect}")
                                         container_right = None
                         if container_top is not None:
                             result = container_top.rect & sky_c.rect
@@ -392,15 +406,23 @@ class Skyline(Algo):
                                 if diff.x == 0:
                                     if sky_c.rect.bottomLeft == container_top.rect.bottomRight:  # 旧容器在右侧
                                         sky_c.rect.start = container_top.rect.start
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接skyline容器,{sky_c.rect}")
                                         container_top = None
                                     elif sky_c.rect.bottomRight == container_top.rect.bottomLeft:  # 旧容器在左侧
                                         sky_c.rect.end = container_top.rect.end
+                                        if debug_mode:
+                                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"拼接skyline容器,{sky_c.rect}")
                                         container_top = None
 
                     if container_right is not None:
                         plan.skyLineContainers.append(container_right)
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加skyline容器,{container_right.rect}")
                     if container_top is not None:
                         plan.skyLineContainers.append(container_top)
+                        if debug_mode:
+                            standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加skyline容器,{container_top.rect}")
 
                     # 同时也要计算浪费掉的矩形
                     waste_rect_to_append = []
@@ -423,10 +445,9 @@ class Skyline(Algo):
 
                     for waste_c in waste_rect_to_append:
                         if waste_c is not None:
-                            if debug_mode:
-                                standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加浪费区,{waste_c.rect}")
-
                             plan.wasteMap.append(waste_c)
+                            if debug_mode:
+                                standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加wastemap容器,{waste_c.rect}")
 
                     # 对剩余的skyline进行添加
                     if debug_mode:
@@ -444,14 +465,15 @@ class Skyline(Algo):
 
 if __name__ == "__main__":
     np.random.seed(int(time() * 10000) % 4294967296)
-    data_idx = np.random.choice(随机_data.shape[0], 500)
+    data_idx = np.random.choice(随机_data.shape[0], 300)
     data = 随机_data[data_idx]
     s = Skyline(data)
 
     # idx = s.get_placable_area(Item(0,Rect(0,0,1500,1500),POS(0,0)),0,[Container(POS(0,0),POS(*MATERIAL_SIZE))])
     # print(idx)
     print(s.task_id)
-    s.run(debug_mode=True)
+    # s.run(debug_mode=True)
+    s.run(debug_mode=False)
     print(f"util rate={s.avg_util_rate()}")
     standard_draw_plan(s.solution,task_id=s.task_id)
     pass

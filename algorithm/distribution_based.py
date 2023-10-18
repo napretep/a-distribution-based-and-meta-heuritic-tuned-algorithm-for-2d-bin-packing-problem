@@ -7,6 +7,7 @@ __email__ = '564298339@qq.com'
 __time__ = '2023/10/7 15:47'
 """
 import multiprocessing
+import pickle
 #对于评分函数 提供三种神经网络,第一种是SLP,10个输入, 第二,三种是 MLP,多层感知机, 层数分别为 10*4*4*1和10*4*4*4*4*1
 #对于排序函数 提供两种神经网络,第一种是SLP,6个输入,第二种是SLP,6*4*4*1
 from dataclasses import dataclass
@@ -555,17 +556,21 @@ class Distribution(Algo):
         self.scoring_sys.version = scoring_version
         from scipy.optimize import differential_evolution
         time_recorder =[time()]
+        traning_log=[]
         def callback(xk, convergence):
             time_recorder.append(time())
+            traning_log.append([len(time_recorder),1/self.eval(xk)[0]])
             print(f'time cost {time_recorder[-1]-time_recorder[-2]}Current solution: {xk}, Convergence: {convergence}')
         init = [-3.13492378, -1.11457937 , 1.22778879,  4.83960852,  1.45576684,  7.38295868,
  -8.51840606,  3.56529697 , 4.10378123, -8.85677593, -3.35759839, -4.90079062,
   8.84279645,  4.77418402, -3.43442509, -8.48811202, -4.73466265,  7.90226931]
-        bounds = [[-10, 10]] * self.scoring_sys.total_param_num
+        bounds = [[-20, 20]] * self.scoring_sys.total_param_num
         result = differential_evolution(self.eval, bounds,workers=-1,atol=0.0001,strategy="randtobest1exp",popsize=12,init=init,callback=callback,maxiter=100)
-        return result.x,result.fun
         end_time = time()
         print(end_time - start_time)
+        to_save = [end_time,result.x,result.fun]
+        print(to_save)
+        return result.x,result.fun,traning_log
     def de(self, mut=0.8, crossp=0.7, popsize=20, its=1000):
         bounds = [[-1,1]]*self.scoring_sys.total_param_num
         with multiprocessing.Pool() as pool:
@@ -613,25 +618,15 @@ if __name__ == "__main__":
     d = Distribution(data)
     # best_ind,best_score,logbook= d.fit_ea(init_population=init_pop)
     d.scoring_sys.version=ScoringSys.V.GA
-    best_ind,best_score= d.fit_DE()
+    best_ind,best_score,log= d.fit_DE()
     print(list(best_ind),best_score)
- #    d.scoring_sys.parameters=[ 7.84605513, -0.62829151, -0.34513113, -6.99626145,  6.84425151, -0.4938427,
+    # d.scoring_sys.parameters=[ 7.84605513, -0.62829151, -0.34513113, -6.99626145,  6.84425151, -0.4938427,
  # -3.40503507,  6.32845631, -4.60328576,  3.80204546,  3.65414871, -5.52031716,
  #  5.63098865,  2.63530608, -2.66109476, -2.82704527,  5.19361657,  7.49876944]
  #    print(d.task_id)
- #    d.run(is_debug=False)
- #    print("util rate",d.avg_util_rate())
-    # gen = logbook.select("gen")
-    # fit_maxs = logbook.select("max")
-    # np.save(f"distribution_based_ea_{start_time}.npy",np.array([gen,fit_maxs]))
-    # fig, ax1 = plt.subplots()
-    # line1 = ax1.plot(gen, fit_maxs, "b-", label="maximum Fitness")
-    # ax1.set_xlabel("Generation")
-    # ax1.set_ylabel("Fitness", color="b")
-    # plt.show()
-    # print(best_ind,best_score)
-
+    d.run(is_debug=False)
     end_time = time()
+    np.save(f"华为杯_data_traning_log__{end_time}.npy",np.array())
     print("time cost=",end_time-start_time)
     standard_draw_plan(d.solution,task_id=d.task_id)
     pass
