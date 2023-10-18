@@ -561,9 +561,7 @@ class Distribution(Algo):
             time_recorder.append(time())
             traning_log.append([len(time_recorder),1/self.eval(xk)[0]])
             print(f'time cost {time_recorder[-1]-time_recorder[-2]}Current solution: {xk}, Convergence: {convergence}')
-        init = [-3.13492378, -1.11457937 , 1.22778879,  4.83960852,  1.45576684,  7.38295868,
- -8.51840606,  3.56529697 , 4.10378123, -8.85677593, -3.35759839, -4.90079062,
-  8.84279645,  4.77418402, -3.43442509, -8.48811202, -4.73466265,  7.90226931]
+        init = None
         bounds = [[-20, 20]] * self.scoring_sys.total_param_num
         result = differential_evolution(self.eval, bounds,workers=-1,atol=0.0001,strategy="randtobest1exp",popsize=12,init=init,callback=callback,maxiter=100)
         end_time = time()
