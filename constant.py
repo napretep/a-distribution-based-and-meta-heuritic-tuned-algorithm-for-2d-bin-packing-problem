@@ -506,7 +506,7 @@ class Algo:
         self.items: "list[Item]" = [Item(ID=item[0],
                                          size=Rect(POS(0, 0), POS(item[1], item[2])),
                                          pos=POS(0, 0)
-                                         ) for item in item_data] if item_data else []
+                                         ) for item in item_data] if item_data is not None else []
         self.material: "Rect" = Rect(POS(0, 0), POS(*material_data))
         self.solution: "list[ProtoPlan]|None" = []
         # self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
