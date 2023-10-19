@@ -64,6 +64,8 @@ class POS:
     x: int | float = 0
     y: int | float = 0
 
+    def copy(self):
+        return POS(self.x,self.y)
     def __sub__(self, other: "POS|float|int"):
         if isinstance(other, POS):
             return POS(self.x - other.x, self.y - other.y)
@@ -151,6 +153,12 @@ class Rect:
             new_end = self.start
             self.start = self.end
             self.end = new_end
+
+    def __sub__(self, other: "Rect"):
+        assert type(other)==Rect
+
+
+
 
     @property
     def center(self):
@@ -274,10 +282,11 @@ class Rect:
                 elif other.topRight in self:
                     return Rect(self.bottomLeft.x, other.bottomRight.y, other.topRight)
                 else:
-                    return Rect(self.bottomRight.x, other.bottomRight.y, other.bottomRight.x, self.topRight.y)
+                    # 仅一个右下点在里面
+                    return Rect(self.topLeft.x, other.bottomLeft.y, other.bottomRight.x, self.topRight.y)
             elif self.topLeft.x <= other.topLeft.x and other.topRight.x <= self.topRight.x and \
                     other.bottomRight.y <= self.bottomRight.y and self.topLeft.y <= other.topLeft.y:
-                return Rect(other.bottomLeft.x, self.bottomLeft.y, other.topLeft.x, self.topLeft.y)
+                return Rect(other.bottomLeft.x, self.bottomLeft.y, other.topRight.x, self.topRight.y)
             elif self.bottomRight.y <= other.bottomRight.y and other.topLeft.y <= self.topLeft.y \
                     and other.topLeft.x <= self.topLeft.x and self.topRight.x <= other.topRight.x:
                 return Rect(self.bottomLeft.x, other.bottomLeft.y, self.topRight.x, other.topRight.y)
@@ -491,7 +500,7 @@ class Algo:
 
 
 def kde_sample(data, count=1000):  # epanechnikov,gaussian
-    kde_ = gaussian_kde((data[:, 1:3]).T, bw_method=0.05)
+    kde_ = gaussian_kde((data[:, 1:3]).T, bw_method=1)
     resample_data = kde_.resample(count).T
     resample_data = np.column_stack((np.maximum(resample_data[:, 0], resample_data[:, 1]), np.minimum(resample_data[:, 0], resample_data[:, 1])))
     resample_data = resample_data[(resample_data[:, 0] > 0) & (resample_data[:, 0] <= MATERIAL_SIZE[0]) &
@@ -502,11 +511,48 @@ def kde_sample(data, count=1000):  # epanechnikov,gaussian
     return return_data
 
 
+def test_rect():
+    data = [
+            [
+                    [0, 0, 10, 10], [5, 5, 15, 15], [5, 5, 10, 10]
+            ],
+            [
+                    [5, 0, 15, 10], [0, 5, 10, 15], [5, 5, 10, 10]
+            ],
+            [
+                    [5, 5, 15, 15], [0, 0, 10, 10], [5, 5, 10, 10]
+            ],
+            [
+                    [0, 5, 10, 15], [5, 0, 15, 10], [5, 5, 10, 10]
+            ],
+            [
+                    [0, 5, 5, 10], [1, 0, 4, 6], [1, 5, 4, 6]
+            ],
+            [
+                    [0, 0, 5, 5, ], [4, 1, 8, 4], [4, 1, 5, 4]
+            ],
+            [
+                    [0, 0, 5, 5], [1, 4, 4, 6], [1, 4, 4, 5]
+            ],
+            [
+                    [1, 0, 6, 5], [0, 1, 2, 4], [1, 1, 2, 4]
+            ],
+            [
+                    [1, 0, 6, 5], [0, 1, 7, 4], [1, 1, 6, 4]
+            ],
+            [
+                    [0, 1, 5, 6], [1, 0, 4, 7], [1, 1, 4, 6]
+            ]
+    ]
+    for a, b, c in data:
+        A = Rect(*a)
+        B = Rect(*b)
+        C = Rect(*c)
+        D = A & B
+        print(f"A={A},B={B},A&B={D}=={C},{D == C}", )
+
+
 if __name__ == "__main__":
-    r1 = Rect(0, 0, 862, 2356)
-    r2 = Container(POS(0,0),POS(*MATERIAL_SIZE))
-    print(r1 in r2)
-    # print((r2 & r1) == Rect)
-    # print(Rect(POS(10,10),POS(10,0))==Rect)
+    test_rect()
 
     pass

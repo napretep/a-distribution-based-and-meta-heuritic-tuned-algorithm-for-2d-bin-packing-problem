@@ -10,25 +10,27 @@ from time import time
 
 import numpy as np
 
-from algorithm import Skyline,Distribution
+from algorithm import Skyline,Distribution,MaxRect
 from constant import *
 from visualizing.draw_plan import standard_draw_plan
 
 if __name__ == "__main__":
-    np.random.seed(int(time() * 10000) % 4294967296)
-    data_idx = np.random.choice(随机_data.shape[0], 300)
-    data = 随机_data[data_idx]
-    s = Skyline(data)
-    d = Distribution(data)
-    d.scoring_sys.parameters = [-3.13492378, -1.11457937 , 1.22778879,  4.83960852,  1.45576684,  7.38295868,
- -8.51840606,  3.56529697 , 4.10378123, -8.85677593, -3.35759839, -4.90079062,
-  8.84279645,  4.77418402, -3.43442509, -8.48811202, -4.73466265,  7.90226931]
-    d.scoring_sys.version = d.scoring_sys.V.GA
-    s.run()
-    d.run()
-    print(f"skyline util rate = {s.avg_util_rate()},dist util rate={d.avg_util_rate()}")
+    for i in range(10):
+        np.random.seed(int(time() * 10000) % 4294967296)
+        data_idx = np.random.choice(华为杯_data.shape[0], 300)
+        data = 华为杯_data[data_idx]
+        m = MaxRect(data)
+        s = Skyline(data)
+        d = Distribution(data)
+        d.scoring_sys.parameters = [-12.764467729922428, -7.2807524490032804, -17.405272153673526, 11.62060943355495, -17.767676767373285, 13.498788968865574, -3.058679224306764, -17.380930383866435, -17.380008727391687, -19.579085902347263, 15.561194939767207, 2.310615782862815, -5.273339286206582, 1.6631169187587558, -1.906345802422087, -3.3207320056750733, -7.4098035553284936, 12.394940621852495] # 1.07
+        d.scoring_sys.version = d.scoring_sys.V.GA
+        m.run()
+        s.run()
+        d.run(is_debug=False)
+        print(f"maxrect={m.avg_util_rate()},skyline={s.avg_util_rate()},dist={d.avg_util_rate()}")
+        # standard_draw_plan(d.solution, task_id=d.task_id)
 
-    standard_draw_plan(d.solution,task_id=d.task_id)
-    print("")
-    standard_draw_plan(s.solution, task_id=s.task_id)
+    # standard_draw_plan(d.solution,task_id=d.task_id)
+    # print("")
+    # standard_draw_plan(s.solution, task_id=s.task_id)
     pass

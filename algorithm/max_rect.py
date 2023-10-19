@@ -243,7 +243,7 @@ class MaxRect(Algo):
                     debug_plan=[]
 
         # return plans
-        print([i.util_rate() for i in plans])
+        # print([i.util_rate() for i in plans])
         for plan in plans:
             plan.remain_containers=plan.freeContainers
         self.solution=plans
@@ -260,5 +260,6 @@ if __name__ == "__main__":
     data = 华为杯_data[data_idx]
     r = MaxRect(data)
     print(r.task_id)
-    plans = r.run(debug_mode=True)
+    plans = r.run(debug_mode=False)
     print(r.avg_util_rate())
+    standard_draw_plan(r.solution,task_id=r.task_id)
