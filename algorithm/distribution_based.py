@@ -161,16 +161,24 @@ class ItemScore:
 
 
 class Distribution(Algo):
-    def __init__(self, item_data: "np.ndarray", material_data: "Iterable" = MATERIAL_SIZE, task_id=None):
+    def __init__(self, item_data: "np.ndarray|list|None"=None, material_data: "Iterable" = MATERIAL_SIZE, task_id=None):
         super().__init__(item_data, material_data, task_id)
         # self.parameters = parameters
         # self.parameters=parameters
         self.scoring_sys = ScoringSys(self)
 
-        self.maxL = max(self.items, key=lambda x: x.size.width).size.width
-        self.minL = min(self.items, key=lambda x: x.size.height).size.height
+        self.maxL = max(self.items, key=lambda x: x.size.width).size.width if len(self.items)>0 else None
+        self.minL = min(self.items, key=lambda x: x.size.height).size.height if len(self.items)>0 else None
+
+    def load_data(self,item_data: "np.ndarray"):
+        super().load_data(item_data)
+        self.maxL = max(self.items, key=lambda x: x.size.width).size.width if len(self.items)>0 else None
+        self.minL = min(self.items, key=lambda x: x.size.height).size.height if len(self.items)>0 else None
+
 
     def run(self, is_debug=False):
+        if len(self.items)==0:
+            raise  ValueError("len(self.items)==0")
         self.solution = []
         min_item_length = min(self.items, key=lambda x: x.size.height)
 

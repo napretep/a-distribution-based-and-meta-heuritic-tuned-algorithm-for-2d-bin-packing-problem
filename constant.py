@@ -156,8 +156,35 @@ class Rect:
 
     def __sub__(self, other: "Rect"):
         assert type(other)==Rect
+        inter_rect = self & other
 
-
+        # 判断新加入的矩形是否和其他空余矩形有交集,如果有,则剔除这个矩形,同时生成它的剩余部分作为新的空余矩形
+        if inter_rect == Rect:
+            result = [None,None,None,None] # 上下左右
+            top_c, bottom_c, left_c, right_c, = None,None,None,None
+            # 上部
+            if inter_rect.topRight.y < self.topRight.y:
+                top_c = Rect(POS(self.topLeft.x, inter_rect.topLeft.y), self.topRight,)
+                if top_c == Rect:  # 还需要判断新容器是个有面积的矩形
+                    result[0]=top_c
+            # 下部
+            if inter_rect.bottomRight.y > self.bottomRight.y:
+                bottom_c = Rect(self.bottomLeft, POS(self.bottomRight.x, inter_rect.bottomRight.y),)
+                if bottom_c == Rect:
+                    result[1]=bottom_c
+            # 右部
+            if inter_rect.topRight.x < self.topRight.x:
+                left_c = Rect(POS(inter_rect.bottomRight.x, self.bottomLeft.y), self.topRight,)
+                if left_c == Rect:
+                    result[2]=left_c
+            # 左部
+            if inter_rect.topLeft.x > self.topLeft.x:
+                right_c = Rect(self.bottomLeft, POS(inter_rect.topLeft.x, self.topRight.y),)
+                if right_c == Rect:
+                    result[3]=right_c
+            return result
+        else:
+            return self,None,None,None
 
 
     @property
@@ -475,14 +502,14 @@ def random_choice(data):
 
 
 class Algo:
-    def __init__(self, item_data: "np.ndarray", material_data: "Iterable" = MATERIAL_SIZE, task_id=None):
+    def __init__(self, item_data: "np.ndarray|list"=None, material_data: "Iterable" = MATERIAL_SIZE, task_id=None):
         self.items: "list[Item]" = [Item(ID=item[0],
                                          size=Rect(POS(0, 0), POS(item[1], item[2])),
                                          pos=POS(0, 0)
-                                         ) for item in item_data]
+                                         ) for item in item_data] if item_data else []
         self.material: "Rect" = Rect(POS(0, 0), POS(*material_data))
         self.solution: "list[ProtoPlan]|None" = []
-        self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
+        # self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
         self.task_id = task_id if task_id else str(uuid.uuid4())[0:8]
 
     def load_data(self,item_data: "np.ndarray"):
@@ -490,7 +517,7 @@ class Algo:
                                          size=Rect(POS(0, 0), POS(item[1], item[2])),
                                          pos=POS(0, 0)
                                          ) for item in item_data]
-        self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
+        # self.min_size = min(np.min(item_data[:, COL.minL]), np.min(item_data[:, COL.maxL]))
 
     def avg_util_rate(self):
         return sum([item.util_rate() for item in self.solution]) / len(self.solution)
@@ -550,6 +577,8 @@ def test_rect():
         C = Rect(*c)
         D = A & B
         print(f"A={A},B={B},A&B={D}=={C},{D == C}", )
+
+param_hw_300_107 =  [-12.764467729922428, -7.2807524490032804, -17.405272153673526, 11.62060943355495, -17.767676767373285, 13.498788968865574, -3.058679224306764, -17.380930383866435, -17.380008727391687, -19.579085902347263, 15.561194939767207, 2.310615782862815, -5.273339286206582, 1.6631169187587558, -1.906345802422087, -3.3207320056750733, -7.4098035553284936, 12.394940621852495] # 1.07
 
 
 if __name__ == "__main__":
