@@ -34,8 +34,8 @@ MATERIAL_SIZE = (2440, 1220)
 
 # 华为_data = os.path.join(DATA_PATH, '华为杯数据')
 
-__all__ = ['外包_data', '华为杯_data', "COL", "随机_data", "PROCESSING_STEP_PATH", "SOLUTIONS_PATH", "Rect", "ProtoPlan", "POS", "Item", "Line", "Container", "unify", "Algo", "DATA_SCALES", "RUN_COUNT", "MATERIAL_SIZE", "random_choice",
-           "kde_sample"]
+# __all__ = ['外包_data', '华为杯_data', "COL", "随机_data", "PROCESSING_STEP_PATH", "SOLUTIONS_PATH", "Rect", "ProtoPlan", "POS", "Item", "Line", "Container", "unify", "Algo", "DATA_SCALES", "RUN_COUNT", "MATERIAL_SIZE", "random_choice",
+#            "kde_sample"]
 
 
 class COL:
@@ -579,8 +579,11 @@ def test_rect():
         print(f"A={A},B={B},A&B={D}=={C},{D == C}", )
 
 param_hw_300_107 =  [-12.764467729922428, -7.2807524490032804, -17.405272153673526, 11.62060943355495, -17.767676767373285, 13.498788968865574, -3.058679224306764, -17.380930383866435, -17.380008727391687, -19.579085902347263, 15.561194939767207, 2.310615782862815, -5.273339286206582, 1.6631169187587558, -1.906345802422087, -3.3207320056750733, -7.4098035553284936, 12.394940621852495] # 1.07
-
-
+param_hw_100_107 = [8.83448324,  -0.78330578, -12.21199958,   7.22317107,
+         1.61499858,  -0.0553183 ,  -2.69584164, -11.02099219,
+        -4.97376009, -15.62966524,  -5.56556291,  -1.03325264,
+        10.2767393 ,   2.58138559,  -1.69017877,  -3.64516804,
+         8.50960196,   6.30652372] #, 1.0703488072955363]
 if __name__ == "__main__":
     test_rect()
 
