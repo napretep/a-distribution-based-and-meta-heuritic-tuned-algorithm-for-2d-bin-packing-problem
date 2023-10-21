@@ -29,7 +29,7 @@ def subprocess_run(algo:Algo, base_data_set: "np.ndarray", data_scale:int):
     print(algo.task_id,"end")
     return algo.avg_util_rate()
 
-def main(algo,data_scales=DATA_SCALES,run_count=RUN_COUNT):
+def main(algo,parameters,job_name,data_scales=DATA_SCALES,run_count=RUN_COUNT):
     random_data_result:"list[float]"=[]
     hw_data_result:"list[float]"=[]
     wb_data_result:"list[float]"=[]
