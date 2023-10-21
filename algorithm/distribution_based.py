@@ -427,7 +427,7 @@ class Distribution(Algo):
         print(f"value={value},time cost = {end_time - start_time}")
         return value,
 
-    def fit_DE(self, scoring_version=ScoringSys.V.GA, data_set_name=""):
+    def fit_DE(self,data_set_name ,scoring_version=ScoringSys.V.GA, ):
         start_time = time()
         self.scoring_sys.version = scoring_version
         from scipy.optimize import differential_evolution
