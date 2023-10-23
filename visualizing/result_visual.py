@@ -36,8 +36,8 @@ def compare_different_algo():
 
     results_alg1 = np.load(f"../data/结果/Skyline_{data_name}_{5000}.npy").reshape((len(DATA_SCALES),RUN_COUNT))
     results_alg2 = np.load(f"../data/结果/MaxRect_{data_name}_{1000}.npy")
-    results_alg2 = np.concatenate((results_alg2,np.ones(len(DATA_SCALES)*RUN_COUNT-160))).reshape((len(DATA_SCALES),RUN_COUNT))
-    results_alg3 = np.load(f"../data/结果/Distribution_{data_name}_{5000}.npy").reshape((len(DATA_SCALES),RUN_COUNT))
+    results_alg2 = np.concatenate((results_alg2,np.ones(len(DATA_SCALES)*RUN_COUNT-results_alg2.shape[0]))).reshape((len(DATA_SCALES),RUN_COUNT))
+    results_alg3 = np.load(f"../data/结果/standard_Distribution_{data_name}_{5000}.npy").reshape((len(DATA_SCALES),RUN_COUNT))
     data = []
     for scale, res1, res2, res3 in zip(DATA_SCALES, results_alg1, results_alg2, results_alg3):
         for res in res1:

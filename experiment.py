@@ -29,7 +29,7 @@ def subprocess_run(algo:Algo, base_data_set: "np.ndarray", data_scale:int):
     print(algo.task_id,"end")
     return algo.avg_util_rate()
 
-def main(algo,parameters,job_name,data_scales=DATA_SCALES,run_count=RUN_COUNT):
+def main(algo,job_name,parameters=None,data_scales=DATA_SCALES,run_count=RUN_COUNT):
     random_data_result:"list[float]"=[]
     hw_data_result:"list[float]"=[]
     wb_data_result:"list[float]"=[]
@@ -38,15 +38,21 @@ def main(algo,parameters,job_name,data_scales=DATA_SCALES,run_count=RUN_COUNT):
     for data_scale in data_scales:
         # for i in range(run_count):
         with Pool() as p:
+            if parameters:
+                algo.scoring_sys.parameters = parameters[0]
             random_data_result+=p.starmap(subprocess_run, [(algo,随机_data,data_scale)]*run_count)
             result = np.array(random_data_result)
-            np.save(f"{algo.__class__.__name__}_random_{data_scale}.npy",result)
+            np.save(f"{job_name}_{algo.__class__.__name__}_random_{data_scale}.npy",result)
+            if parameters:
+                algo.scoring_sys.parameters = parameters[1]
             hw_data_result+=p.starmap(subprocess_run, [(algo,华为杯_data,data_scale)]*run_count)
             result = np.array(random_data_result)
-            np.save(f"{algo.__class__.__name__}_hw_{data_scale}.npy", result)
+            np.save(f"{job_name}_{algo.__class__.__name__}_hw_{data_scale}.npy", result)
+            if parameters:
+                algo.scoring_sys.parameters = parameters[2]
             wb_data_result+=p.starmap(subprocess_run, [(algo,外包_data,data_scale)]*run_count)
             result = np.array(random_data_result)
-            np.save(f"{algo.__class__.__name__}_wb_{data_scale}.npy", result)
+            np.save(f"{job_name}_{algo.__class__.__name__}_wb_{data_scale}.npy", result)
 
 
 
@@ -55,6 +61,6 @@ def main(algo,parameters,job_name,data_scales=DATA_SCALES,run_count=RUN_COUNT):
 if __name__ == "__main__":
 
     d = Distribution()
-    d.scoring_sys.parameters =param_hw_100_107
-    main(d)
+    # d.scoring_sys.parameters =param_hw_100_107
+    main(d,job_name="standard",parameters=[param_sj_300_107,param_hw_300_107,param_wb_300_107])
     pass
