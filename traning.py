@@ -16,7 +16,8 @@ from constant import *
 from visualizing.draw_plan import standard_draw_plan
 
 
-if __name__ == "__main__":
+
+def standard():
     print("start")
     start_time = time()
     np.random.seed(int(time() * 10000) % 4294967296)
@@ -25,10 +26,19 @@ if __name__ == "__main__":
     d = Distribution(data)
     best_ind, best_score, log = d.fit_DE()
     print(d.task_id)
-    d.scoring_sys.parameters=best_ind
+    d.scoring_sys.parameters = best_ind
     d.run()
     end_time = time()
     print("time cost=", end_time - start_time)
     print(d.avg_util_rate())
     standard_draw_plan(d.solution, task_id=d.task_id)
+
+
+
+def mixed():
+    pass
+
+
+if __name__ == "__main__":
+
     pass
