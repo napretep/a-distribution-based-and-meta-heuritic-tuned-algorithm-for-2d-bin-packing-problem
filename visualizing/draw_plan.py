@@ -35,7 +35,7 @@ def _draw_text(plot, p0: POS, p1: POS, ID):
     plot.text(*center, f"{ID}", verticalalignment='center', horizontalalignment='center', color="white", fontsize=8)
 
 
-def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=""):
+def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text="",need_container=True):
     if task_id is None:
         task_id= str(uuid.uuid4())[0:8]
 
@@ -54,7 +54,7 @@ def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=
         # plans = s.plans
         plan=plans[i]
 
-        msg = f"{text},id={plan.ID},利用率:{round(plan.util_rate() * 100, 2)}%,\n"
+        msg = f"{text},id={plan.ID},item_count={len(plan.item_sequence)},利用率:{round(plan.util_rate() * 100, 2)}%,\n"
         frame = patches.Rectangle((0, 0), plan.material.width , plan.material.height,
                                   edgecolor='b', facecolor='gray')
         # ax.xaxis.tick_top()
@@ -73,16 +73,16 @@ def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=
         ax.set_title(msg)
 
         # if is_debug:
-
-        for corner in plan.get_remain_containers():
-            # corner_start, corner_end = POS(*corner[0]) * 0.001, POS(*corner[1]) * 0.001
-            r= corner.rect
-            # corner_size = (corner_end - corner_start)
-            corner_rect = patches.Rectangle(r.start.to_tuple(), r.width,r.height, edgecolor='r',
-                                            # facecolor='y',
-                                            alpha=0.5
-                                            )
-            ax.add_patch(corner_rect)
+        if need_container:
+            for corner in plan.get_remain_containers():
+                # corner_start, corner_end = POS(*corner[0]) * 0.001, POS(*corner[1]) * 0.001
+                r= corner.rect
+                # corner_size = (corner_end - corner_start)
+                corner_rect = patches.Rectangle(r.start.to_tuple(), r.width,r.height, edgecolor='r',
+                                                # facecolor='y',
+                                                alpha=0.5
+                                                )
+                ax.add_patch(corner_rect)
             # _draw_text(plot, r.start, r.end, "")
         timestamp = round(time.time(),3).__str__()[5:]
         save_name = f"{save_path}/{task_id}_{plan.ID}{'_'+timestamp if is_debug else''}.png"
@@ -91,9 +91,7 @@ def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=
         print(f"\rdraw task_id={task_id} plan_{plan.ID} ok", end="", flush=True)
         ax.cla()
     plot.close()
-    # return img_data
-
-#
+    #
 
 if __name__ == '__main__':
     pass

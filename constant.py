@@ -9,6 +9,7 @@ __time__ = '2023/10/2 4:23'
 import dataclasses
 import os
 import uuid
+from time import time
 
 import numpy as np
 import seaborn as sns
@@ -321,7 +322,7 @@ class Rect:
                 return Rect()
 
     def __str__(self):
-        return f"Rect{self.start.x},{self.start.y}|{self.end.x},{self.end.y}"
+        return f"Rect(({self.start.x},{self.start.y}),({self.end.x},{self.end.y}))"
 
     def __bool__(self):
         if self.start == self.end:
@@ -357,6 +358,11 @@ class Container:
         assert type(item) == Rect
         return item in self.rect
 
+    def __repr__(self):
+        return self.rect.__str__()
+
+    def __str__(self):
+        return self.__repr__()
 
 
 @dataclasses.dataclass
@@ -399,7 +405,7 @@ class ProtoPlan:
             raise NotImplementedError()
 
 
-_temp_外包_data = np.loadtxt(os.path.join(DATA_PATH, r'外包数据\items.csv'), delimiter=',')
+_temp_外包_data = np.loadtxt(os.path.join(DATA_PATH, r'wb_data\items.csv'), delimiter=',')
 外包_data: "np.ndarray|None" = None
 # _temp_外包_data = np.column_stack((_temp_外包_data[:,0],np.maximum(_temp_外包_data[:,1],_temp_外包_data[:,2]),np.minimum(_temp_外包_data[:,1],_temp_外包_data[:,2])))
 for i in range(_temp_外包_data.shape[0]):
@@ -420,7 +426,7 @@ for i in range(_temp_外包_data.shape[0]):
 华为杯_data: "np.ndarray|None" = None
 # item_id, item_material, item_num, item_length, item_width, item_order
 for i in range(5):
-    _temp_华为杯_data = np.loadtxt(os.path.join(DATA_PATH, r'华为杯数据\data' + str(i + 1) + '.csv'), delimiter=',')
+    _temp_华为杯_data = np.loadtxt(os.path.join(DATA_PATH, r'hw_data\data' + str(i + 1) + '.csv'), delimiter=',')
     if 华为杯_data is None:
         华为杯_data = _temp_华为杯_data
     else:
@@ -445,7 +451,13 @@ samples3 = np.column_stack((x_samples, y_samples))
 x_samples = np.random.uniform(0, 1, 200)
 y_samples = np.random.uniform(0, 1, 200)
 samples4 = np.column_stack((x_samples, y_samples))
-samples = np.row_stack((samples2, samples1, samples3, samples4))
+x_samples = np.random.uniform(0, 1, 200)
+y_samples = np.random.uniform(0.55, 0.65, 200)
+samples5 = np.column_stack((x_samples, y_samples))
+x_samples = np.random.uniform(0, 1, 200)
+y_samples = np.random.uniform(0.35, 0.4, 200)
+samples6 = np.column_stack((x_samples, y_samples))
+samples = np.row_stack((samples2, samples1, samples3, samples4,samples5,samples6))
 samples = samples[(0 <= samples[:, 0]) & (samples[:, 0] <= 1) & (0 <= samples[:, 1]) & (samples[:, 1] <= 1)]
 
 随机_data: "np.ndarray" = np.column_stack((np.zeros(samples.shape[0]), np.maximum(samples[:, 0], samples[:, 1]) * MATERIAL_SIZE[0], np.minimum(samples[:, 0], samples[:, 1]) * MATERIAL_SIZE[1]))
@@ -485,8 +497,10 @@ def unify(data: "np.ndarray"):
     return final_data
 
 
-def random_choice(data):
-    data_idx = np.random.choice(data.shape[0], 5000, replace=False)
+def random_choice(data,count=5000,true_random=True):
+    if true_random:
+        np.random.seed(int(time() * 10000) % 4294967296)
+    data_idx = np.random.choice(data.shape[0], count, replace=False)
     return data[data_idx]
 
 
@@ -527,14 +541,22 @@ class Algo:
 
 
 def kde_sample(data, count=1000):  # epanechnikov,gaussian
-    kde_ = gaussian_kde((data[:, 1:3]).T, bw_method=1)
+    np.random.seed(int(time() * 10000) % 4294967296)
+    kde_ = gaussian_kde((data[:, 1:3]).T, bw_method=0.1)
     resample_data = kde_.resample(count).T
     resample_data = np.column_stack((np.maximum(resample_data[:, 0], resample_data[:, 1]), np.minimum(resample_data[:, 0], resample_data[:, 1])))
-    resample_data = resample_data[(resample_data[:, 0] > 0) & (resample_data[:, 0] <= MATERIAL_SIZE[0]) &
-                                  (resample_data[:, 1] <= MATERIAL_SIZE[1]) & (resample_data[:, 1] > 0)]
+    resample_data=resample_data.astype(int)
 
-    return_data = np.column_stack((range(resample_data.shape[0]), resample_data))
-    # print(return_data)
+    oversize_data = resample_data[~((resample_data[:, 0] > 0) & (resample_data[:, 1] > 0)
+                                  & (resample_data[:, 0] <= MATERIAL_SIZE[0]) &
+                                  (resample_data[:, 1] <= MATERIAL_SIZE[1]))]
+
+    oversize_data_clipped = np.clip(oversize_data, a_min=[50,50], a_max=list(MATERIAL_SIZE))
+    resample_data = resample_data[(resample_data[:, 0] > 0) & (resample_data[:, 1] > 0)
+                                  & (resample_data[:, 0] <= MATERIAL_SIZE[0]) &
+                                  (resample_data[:, 1] <= MATERIAL_SIZE[1])]
+    resample_data = np.row_stack((resample_data, oversize_data_clipped))
+    return_data:"np.ndarray" = np.column_stack((range(count), resample_data))
     return return_data
 
 

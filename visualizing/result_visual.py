@@ -56,6 +56,11 @@ def compare_different_algo():
     plt.title('Comparison of Algorithm Results')
     plt.show()
 
+def algo_compare():
+    data = []
+
+
+
 if __name__ == "__main__":
     # print(np.load(f"../data/结果/MaxRect_{data_name}_{1000}.npy").reshape(4,40))
     compare_different_algo()

@@ -167,6 +167,7 @@ class Skyline(Algo):
                 return chooseA
     def run(self, debug_mode=False):
         items = sorted(self.items, key=cmp_to_key(self.itemSort_cmp), reverse=True)
+
         plans: "list[Plan]" = []
         for new_item in items:
             scores: "list[ItemScore]" = []
@@ -377,7 +378,6 @@ class Skyline(Algo):
                 else:  # skyline模式
                     # 根据score给的range取出全部横跨的skyline容器,并从freeContainers中删除
                     removed_containers = plan.skyLineContainers[best_score.container_range[0]:best_score.container_range[1]]
-                    # print("removed_containers count",len(removed_containers))
                     for container in removed_containers:
                         plan.skyLineContainers.remove(container)
                         if debug_mode:

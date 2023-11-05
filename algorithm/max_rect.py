@@ -91,6 +91,10 @@ class MaxRect(Algo):
         while len(self.items) > 0:
 
             scores: "list[ItemScore]" = []
+            # if debug_mode:
+            #     for plan in plans:
+            #         print(f"plan.freeContainers count={len(plan.freeContainers)}")
+
 
             for new_item in self.items:
                 for plan in plans:
@@ -104,6 +108,8 @@ class MaxRect(Algo):
                                     plan_id=plan.ID,
                                     score=(container.rect.width - new_item.size.width, container.rect.height - new_item.size.height)
                             )
+                            # if debug_mode:
+                            #     print(min(score.score), end=",")
                             scores.append(score)
                         itemT: "Item" = new_item.transpose()
                         itemT.pos=POS()
@@ -115,6 +121,8 @@ class MaxRect(Algo):
                                     plan_id=plan.ID,
                                     score=(container.rect.width - itemT.size.width, container.rect.height - itemT.size.height)
                             )
+                            # if debug_mode:
+                            #     print(min(score.score), end=",")
                             scores.append(score)
                 new_item.pos = POS()
                 new_container=Container(POS(0, 0), POS(self.material.width, self.material.height))
@@ -126,6 +134,8 @@ class MaxRect(Algo):
                             plan_id=-1,
                             score=(self.material.width - new_item.size.width, self.material.height - new_item.size.height)
                     )
+                    # if debug_mode:
+                    #     print(min(score.score), end=",")
                     scores.append(score)
                 itemT: "Item" = new_item.transpose()
                 itemT.pos=POS()
@@ -137,10 +147,16 @@ class MaxRect(Algo):
                             plan_id=-1,
                             score=(self.material.width - itemT.size.width, self.material.height - itemT.size.height)
                     )
+                    # if debug_mode:
+                    #     print(min(score.score), end=",")
                     scores.append(score)
             if len(scores)==0:
                 raise ValueError(f"scores 空", f"当前itemlist = {self.items}")
+            # if debug_mode:
+            #     print(f"scores size ={len(scores)},item count = {len(self.items)}")
             best_score = min(scores,key=lambda x:min(x.score))
+            # if debug_mode:
+            #     print(f"best_score:{min(best_score.score)},best_item={best_score.item.rect},best_id={best_score.plan_id},best_place={best_score.container.rect}")
             if best_score.plan_id == -1:
                 plan = Plan(ID=len(plans),material=self.material.copy(),item_sequence=[],freeContainers=[])
                 item_rect = best_score.item.size+best_score.item.pos
@@ -167,6 +183,8 @@ class MaxRect(Algo):
                 # 首先找到与插入新矩形有交集的容器,并删除他们,并根据这些容器创建新的不交新矩形的容器
                 for free_c in plan.freeContainers:
                     result = free_c.rect & new_rect
+                    # if debug_mode:
+                    #     print("free_c=",free_c)
                     # 判断新加入的矩形是否和其他空余矩形有交集,如果有,则剔除这个矩形,同时生成它的剩余部分作为新的空余矩形
                     if result == Rect:
                         container_to_remove.append(free_c)
@@ -179,25 +197,35 @@ class MaxRect(Algo):
                             )
                             if top_c.rect == Rect:  # 还需要判断新容器是个有面积的矩形
                                 container_to_append.append(top_c)
+                                # if debug_mode:
+                                #     print(f"container_to_append.append(top_c)={top_c}")
                         # 下部
                         if result.bottomRight.y > free_c.rect.bottomRight.y:
                             bottom_c = Container(free_c.rect.bottomLeft, POS(free_c.rect.bottomRight.x, result.bottomRight.y), plan.ID)
                             if bottom_c.rect == Rect:
                                 container_to_append.append(bottom_c)
+                                # if debug_mode:
+                                #     print(f"container_to_append.append(bottom_c)={bottom_c}")
                         # 右部
                         if result.topRight.x < free_c.rect.topRight.x:
                             left_c = Container(POS(result.bottomRight.x, free_c.rect.bottomLeft.y), free_c.rect.topRight, plan.ID)
                             if left_c.rect == Rect:
                                 container_to_append.append(left_c)
+                                # if debug_mode:
+                                #     print(f"container_to_append.append(left_c)={left_c}")
                         # 左部
                         if result.topLeft.x > free_c.rect.topLeft.x:
                             right_c = Container(free_c.rect.bottomLeft, POS(result.topLeft.x, free_c.rect.topRight.y), plan.ID)
                             if right_c.rect == Rect:
                                 container_to_append.append(right_c)
+                                # if debug_mode:
+                                #     print(f"container_to_append.append(right_c)={right_c}")
                 for container in container_to_remove:
                     if debug_mode:
                         standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"删除容器,{container.rect}")
                     plan.freeContainers.remove(container)
+                    # if debug_mode:
+                    #     print(f"plan.freeContainers.remove(container)={container}")
 
                 container_to_remove = []
                 # 维护矩形
@@ -225,10 +253,12 @@ class MaxRect(Algo):
                     if all(new_c is None for new_c in container_to_append):
                         break
                 for container in container_to_append:
-                    if container is not None:
+                    if container is not None and container not in plan.freeContainers:
                         if debug_mode:
                             standard_draw_plan([plan], is_debug=debug_mode, task_id=self.task_id, text=f"添加容器,{container.rect}")
                         plan.freeContainers.append(container)
+                        # if debug_mode:
+                        #     print(f"plan.freeContainers.append(container)={container}")
 
                 if debug_mode:
                     plan.remain_containers=plan.freeContainers
@@ -241,9 +271,9 @@ class MaxRect(Algo):
                 if plans:
                     standard_draw_plan(debug_plan,is_debug=debug_mode,task_id=self.task_id)
                     debug_plan=[]
+            # if debug_mode:
+            #     print(plan.freeContainers)
 
-        # return plans
-        # print([i.util_rate() for i in plans])
         for plan in plans:
             plan.remain_containers=plan.freeContainers
         self.solution=plans
