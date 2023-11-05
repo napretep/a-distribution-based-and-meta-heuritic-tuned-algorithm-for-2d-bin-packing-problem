@@ -104,6 +104,13 @@ def solution_draw(solution:BinPacking2DAlgo.Algo,text=""):
         standard_draw_plan(new_solution,is_debug=True,task_id=solution.task_id,text=text)
 
 if __name__ == "__main__":
-    d = DE(华为杯_data,"华为数据")
-    x,fun,log = d.run()
-    print(x,fun)
+    start_time = time()
+
+    result = []
+    for data,name in [[华为杯_data,"production_data1"],[外包_data,"production_data2"],[随机_data,"random_data"]]:
+        d = DE(华为杯_data,"华为数据")
+        x,fun,log = d.run()
+        result.append([name,x,1/fun])
+    end_time = time()
+    print("全部训练完成时间(秒):", end_time - start_time)
+    print(result)
