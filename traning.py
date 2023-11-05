@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     result = []
     for data,name in [[华为杯_data,"production_data1"],[外包_data,"production_data2"],[随机_data,"random_data"]]:
-        d = DE(华为杯_data,"华为数据")
+        d = DE(data,name)
         x,fun,log = d.run()
         result.append([name,x,1/fun])
     end_time = time()
