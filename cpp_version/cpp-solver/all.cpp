@@ -838,7 +838,7 @@ float ScoringSys::item_sorting(float item_width, float item_height)const {
     };
     // int result = 0;
     auto p = this->item_sorting_parameters();
-    return abs(std::inner_product(X.begin(), X.end(), p.begin(), 0.0));
+    return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
 
 };
 float ScoringSys::pos_scoring(Item item, Container container)const {
@@ -865,7 +865,7 @@ float ScoringSys::pos_scoring(float item_width, float item_height, float  contai
     };
 
     auto p = this->container_scoring_parameters();
-    return abs(std::inner_product(X.begin(), X.end(), p.begin(), 0.0));
+    return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
 };
 float ScoringSys::gap_scoring( float current_plan_id, float current_max_len, float current_min_len, Container new_container, Container old_container) const {
     auto cutting_rect = Rect(new_container.rect.bottomLeft(), POS(old_container.rect.bottomLeft().x, new_container.rect.topLeft().y));
