@@ -75,7 +75,7 @@ class DE:
         12.485291  ,  -5.69804837,  -8.59492514,  16.3237292 ,
        -20.90848674,  12.97409146,  -6.98694497,  33.31339552,
          2.63707627, -13.39930709,   4.21154261],
-        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=24,tol=0.00001,init=init_92_pop,
+        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=24,tol=0.00001,init="random",
                                         callback=self.callback, maxiter=1000)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
