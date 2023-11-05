@@ -81,9 +81,9 @@ class DE:
 
     def callback(self, xk, convergence):
         self.time_recorder.append(time())
-        # self.training_log.append([len(self.time_recorder),eval(xk)])
+        self.training_log.append([len(self.time_recorder),1/self.eval(xk)])
 
-        print(f'time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {xk}, ratio={1/eval(xk)} , Convergence: {convergence}')
+        print(f'time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {xk}, ratio={1/self.eval(xk)} , Convergence: {convergence}')
 
 
 def solution_draw(solution:BinPacking2DAlgo.Algo,text=""):

@@ -881,7 +881,7 @@ float ScoringSys::gap_scoring( float current_plan_id, float current_max_len, flo
         min(cutting_rect.width(),cutting_rect.height())/ max(cutting_rect.width(),cutting_rect.height())
     };
     auto p = this->gap_merging_parameters();
-    return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
+    return abs(std::inner_product(X.begin(), X.end(), p.begin(), 0.0));
 };
 //-------------------------------MaxRect algo-------------------------------------------------------------
 class MaxRect :public Algo {
