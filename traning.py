@@ -67,7 +67,7 @@ class DE:
         self.time_recorder.append(start_time)
         from scipy.optimize import differential_evolution
 
-        bounds = [[-20, 20]] * self.total_param_num
+        bounds = [[-40, 40]] * self.total_param_num
         result = differential_evolution(self.eval, bounds, workers=-1, atol=0.0001, strategy="randtobest1exp", popsize=24,
                                         callback=self.callback, maxiter=1000)
         end_time = time()
