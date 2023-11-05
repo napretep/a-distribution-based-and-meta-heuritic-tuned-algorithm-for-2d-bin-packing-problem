@@ -68,7 +68,7 @@ class DE:
         from scipy.optimize import differential_evolution
 
         bounds = [[-40, 40]] * self.total_param_num
-        result = differential_evolution(self.eval, bounds, workers=-1, atol=0.0001, strategy="randtobest1exp", popsize=24,
+        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=24,tol=0.00001,
                                         callback=self.callback, maxiter=1000)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
