@@ -69,14 +69,17 @@ class DE:
             return kde_sample(self.data_set, self.data_sample_scale)
 
     def random_mix(self):
-        determ_data = kde_sample(self.data_set, self.data_sample_scale)
+        determ_data = kde_sample(self.data_set, self.data_sample_scale)[:,1:]
         random_item_scale = int(np.random.uniform(*self.random_ratio)*self.data_sample_scale)
-        determ_data = np.random.choice(determ_data,size=self.data_sample_scale-random_item_scale)
-        random_x = (np.random.random(0.1,1,random_item_scale)*MATERIAL_SIZE[0]).astype(int)
-        random_y = (np.random.random(0.1,1,random_item_scale)*MATERIAL_SIZE[1]).astype(int)
-        random_data=np.column_stack(random_x,random_y)
-        return np.row_stack(determ_data,random_data)
-        pass
+        determ_data_idx = np.random.choice(self.data_sample_scale,size=self.data_sample_scale-random_item_scale,replace=False)
+        determ_data=determ_data[determ_data_idx]
+        random_x = (np.random.uniform(0.1,1,random_item_scale)*MATERIAL_SIZE[0]).astype(int)
+        random_y = (np.random.uniform(0.1,1,random_item_scale)*MATERIAL_SIZE[1]).astype(int)
+        random_data=np.column_stack((random_x,random_y))
+        result =  np.row_stack((determ_data,random_data))
+        result = np.column_stack((range(self.data_sample_scale),result))
+        return result
+
 
     def eval(self,param):
         data_for_run = [self.get_sampled_items() for i in range(self.eval_run_count)]
@@ -130,7 +133,7 @@ if __name__ == "__main__":
     result = []
     for data,name in [[华为杯_data,"production_data1"],[外包_data,"production_data2"],[随机_data,"random_data"]]:
         start_time2=time()
-        d = DE(data,name,random_ratio=(0,4))
+        d = DE(data,name,random_ratio=(0,0.4))
         x,fun,log = d.run()
         result.append([name,x,1/fun,f"训练用时(秒):{time()-start_time2}"])
     end_time = time()
