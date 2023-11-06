@@ -99,7 +99,7 @@ class DE:
 
         bounds = [[-40, 40]] * self.total_param_num
 
-        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.00001,init="random",mutation=(0.5,1.5),
+        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.0001,init="random",mutation=(0.5,1.5),recombination=0.9,
                                         callback=self.callback, maxiter=1000)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
