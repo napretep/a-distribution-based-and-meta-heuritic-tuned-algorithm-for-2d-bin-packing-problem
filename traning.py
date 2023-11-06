@@ -53,7 +53,7 @@ def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
 
 
 class DE:
-    def __init__(self,data_set,data_set_name,total_param_num=27,eval_run_count=40,data_sample_scale=300):
+    def __init__(self,data_set,data_set_name,total_param_num=27,eval_run_count=40,data_sample_scale=500,random_ratio=None):
         self.data_set = data_set
         self.data_set_name = data_set_name
         self.total_param_num = total_param_num
@@ -61,10 +61,25 @@ class DE:
         self.data_sample_scale = data_sample_scale
         self.time_recorder=[]
         self.training_log=[]
+        self.random_ratio = random_ratio
+    def get_sampled_items(self):
+        if self.random_ratio is not None:
+            return self.random_mix()
+        else:
+            return kde_sample(self.data_set, self.data_sample_scale)
+
+    def random_mix(self):
+        determ_data = kde_sample(self.data_set, self.data_sample_scale)
+        random_item_scale = int(np.random.uniform(*self.random_ratio)*self.data_sample_scale)
+        determ_data = np.random.choice(determ_data,size=self.data_sample_scale-random_item_scale)
+        random_x = (np.random.random(0.1,1,random_item_scale)*MATERIAL_SIZE[0]).astype(int)
+        random_y = (np.random.random(0.1,1,random_item_scale)*MATERIAL_SIZE[1]).astype(int)
+        random_data=np.column_stack(random_x,random_y)
+        return np.row_stack(determ_data,random_data)
+        pass
 
     def eval(self,param):
-        start_time = time()
-        data_for_run = [kde_sample(self.data_set, self.data_sample_scale) for i in range(self.eval_run_count)]
+        data_for_run = [self.get_sampled_items() for i in range(self.eval_run_count)]
         result = BinPacking2DAlgo.multi_run(data_for_run, MATERIAL_SIZE, parameter_input_array=param,run_count=self.eval_run_count)
         result = np.array(result)
         mean = np.mean(result)
@@ -72,7 +87,6 @@ class DE:
         cutoff = std * 3
         lower, upper = mean - cutoff, mean + cutoff
         result = result[(result > lower) & (result < upper)]
-        end_time = time()
         mean = np.mean(result)
         return 1/mean
     def run(self):
@@ -81,14 +95,8 @@ class DE:
         from scipy.optimize import differential_evolution
 
         bounds = [[-40, 40]] * self.total_param_num
-        init_92_pop = [ -7.67304294,  -9.92977766,  -7.46529028,   9.626162  ,
-        -9.57807714,  29.59119289,   7.35305914, -36.40703173,
-       -33.86667424,  36.52943197, -26.87267794,  -0.44896428,
-        -4.24585924,  12.79648116,  -2.04662513, -37.37942373,
-        12.485291  ,  -5.69804837,  -8.59492514,  16.3237292 ,
-       -20.90848674,  12.97409146,  -6.98694497,  33.31339552,
-         2.63707627, -13.39930709,   4.21154261],
-        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=20,tol=0.00001,init="random",
+
+        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.00001,init="random",mutation=(0.5,1.5),
                                         callback=self.callback, maxiter=1000)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
@@ -121,9 +129,10 @@ if __name__ == "__main__":
 
     result = []
     for data,name in [[华为杯_data,"production_data1"],[外包_data,"production_data2"],[随机_data,"random_data"]]:
-        d = DE(data,name)
+        start_time2=time()
+        d = DE(data,name,random_ratio=(0,4))
         x,fun,log = d.run()
-        result.append([name,x,1/fun])
+        result.append([name,x,1/fun,f"训练用时(秒):{time()-start_time2}"])
     end_time = time()
     print("全部训练完成时间(秒):", end_time - start_time)
     print(result)
