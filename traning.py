@@ -16,22 +16,35 @@ from constant import *
 from visualizing.draw_plan import standard_draw_plan
 import BinPacking2DAlgo
 
-def standard():
-    print("start")
-    start_time = time()
-    np.random.seed(int(time() * 10000) % 4294967296)
-    data_idx = np.random.choice(华为杯_data.shape[0], 300)
-    data = 华为杯_data[data_idx]
-    d = Distribution(data)
-    best_ind, best_score, log = d.fit_DE()
-    print(d.task_id)
-    d.scoring_sys.parameters = best_ind
-    d.run()
-    end_time = time()
-    print("time cost=", end_time - start_time)
-    print(d.avg_util_rate())
-    standard_draw_plan(d.solution, task_id=d.task_id)
-
+"""
+全部训练完成时间(秒): 40707.74426817894
+[
+['production_data1', array([-14.15936449,  -5.51115384, -23.64518177,  -5.15047712,
+        -3.33357418,  19.30223264, -34.12354662, -37.72826772,
+       -22.94565056,  -9.50349139, -34.3961086 ,  17.95800022,
+         8.9030257 ,  15.07774937,  -1.14072358, -26.85316237,
+        -4.21159189,  -9.02667882, -18.79295732, -21.38535338,
+       -33.5686066 , -16.21340102,  21.69621865,   9.50849564,
+        15.90809837,  -3.63610164,  -1.60874255]), 0.93095071464777], 
+训练时间(秒): 11454.134886980057
+['production_data2', array([-11.96752198,  -2.7668223 ,  38.70687562,  13.18271721,
+         3.67444606,  38.25703788, -18.28533271,   3.38803386,
+        -6.55048104, -37.50351178, -14.20464962,   9.0491134 ,
+        -0.42823428,  11.01235021,  -6.35228745, -35.80967409,
+         6.66501912,   2.81858832, -19.88194734,  28.88062709,
+       -33.12758532, -25.59401527,  -4.40720866,  -2.71437647,
+         8.11387952,  23.83868208,   2.78775707]), 0.9397160932421684], 
+训练时间(秒): 16333.756328582764
+['random_data', array([ 16.52380377,   8.77870006,  -2.37123285, -18.76190523,
+        -9.94336197,  -2.19416358, -24.36524343, -17.02973983,
+         1.41957027, -10.40319628,   5.7913216 ,  12.38149365,
+        27.32627864,   1.76764851, -17.20481395,  28.93672477,
+       -16.06091363,  15.07383287,  -9.77274668, -38.1253096 ,
+       -26.23267942, -18.76066081, -36.4631387 ,  -8.67292712,
+       -36.63156038,  -0.94854679,  -0.39558535]), 0.9247190743684768]
+]
+训练时间(秒): 12919.711238145828
+"""
 
 def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
     solution = []
@@ -75,7 +88,7 @@ class DE:
         12.485291  ,  -5.69804837,  -8.59492514,  16.3237292 ,
        -20.90848674,  12.97409146,  -6.98694497,  33.31339552,
          2.63707627, -13.39930709,   4.21154261],
-        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=24,tol=0.00001,init="random",
+        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=20,tol=0.00001,init="random",
                                         callback=self.callback, maxiter=1000)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
