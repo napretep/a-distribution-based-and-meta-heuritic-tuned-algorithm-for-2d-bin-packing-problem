@@ -25,6 +25,8 @@ std::string gen_uuid(std::size_t length = 8) {
 
     return random_string;
 }
+
+class Rect;
 using RectAsVector = vector<float>;
 using PlanPartAsVector = vector<RectAsVector>;
 using ItemSequenceAsVector = PlanPartAsVector;
@@ -33,6 +35,7 @@ using PlanAsVector =pair<ItemSequenceAsVector,RemainContainersAsVector>;
 using PlanPackingLog = vector<PlanAsVector>;
 using SolutionPackingLog = vector<PlanPackingLog>;
 using SolutionAsVector = vector<PlanAsVector>;
+using RectDivided = vector<optional<Rect>>;
 
 class POS {
 public:
@@ -162,78 +165,6 @@ public:
     Rect operator*(float other) const {
         return Rect(start * other, end * other, ID);
     }
-
-    // Methods
-    POS center() const {
-        return (start + end) / 2;
-    }
-    POS topLeft() const {
-        return POS(start.x, end.y);
-    }
-
-    POS topRight() const {
-        return end;
-    }
-
-    POS bottomLeft() const {
-        return start;
-    }
-
-    POS bottomRight() const {
-        return POS(end.x, start.y);
-    }
-
-    POS size() const {
-        return POS(width(), height());
-    }
-
-    float width() const {
-        return end.x - start.x;
-    }
-
-    float height() const {
-        return end.y - start.y;
-    }
-
-    float area() const {
-        return width() * height();
-    }
-
-    Rect transpose() const {
-        POS new_end = POS(height(), width()) + start;
-        return Rect(start, new_end, ID);
-    }
-
-    Rect copy() const {
-        return Rect(start, end, ID);
-    }
-
-    bool operator==(const Rect& other) const {
-        return start == other.start && end == other.end;
-    }
-    bool operator==(const TYPE& other) const {
-        switch (other) {
-        case TYPE::RECT:
-            return end - start > POS(0, 0);
-        case TYPE::LINE:
-            return ((end.x - start.x == 0 && end.y - start.y > 0) ||
-                (end.x - start.x > 0 && end.y - start.y == 0));
-        case TYPE::POS:
-            return end - start == POS(0, 0);
-        default:
-            return false;
-        }
-    }
-    bool operator!=(const Rect& other) const {
-        return !(*this == other);
-    }
-
-    bool contains(const POS& pos) const {
-        return pos >= start && pos <= end;
-    }
-    bool contains(const Rect& rect) const {
-        return rect.start >= start && rect.end <= end;
-    }
     Rect operator&(const Rect& other) const {
         if (this->contains(other)) {
             return Rect(other.start, other.end);
@@ -300,6 +231,151 @@ public:
         }
     }
 
+    RectDivided operator/(Rect other) const {
+        optional<Rect> top, btm, left, right;
+        vector<optional<Rect>> v;
+        auto master = (*this);
+        auto result = master  & other;
+        if (result == TYPE::RECT) {
+            if (result.topRight().y < master.topRight().y) {
+                auto top_c = Rect(POS(master.topLeft().x, result.topLeft().y), master.topRight());
+                if (top_c == TYPE::RECT) {
+                    top = top_c;
+                }
+            }
+            if (result.bottomRight().y > master.bottomRight().y) {
+                auto btm_c = Rect(master.bottomLeft(), POS(master.bottomRight().x, result.bottomRight().y));
+                if (btm_c == TYPE::RECT) {
+                    btm = btm_c;
+                }
+            }
+
+            if (result.topRight().x < master.topRight().x) {
+                auto left_c = Rect(POS(result.bottomRight().x, master.bottomLeft().y), master.topRight());
+                if (left_c == TYPE::RECT) {
+                    left = left_c;
+                }
+            }
+            if (result.topLeft().x > master.topLeft().x) {
+                auto right_c = Rect(master.bottomLeft(), POS(result.topLeft().x, master.topRight().y));
+                if (right_c == TYPE::RECT) {
+                    right = right_c;
+                }
+            }
+        }
+        //if (master.bottomRight().y < other.topRight().y and other.topRight().y < master.topRight().y) {
+        //    auto top_c = Rect(POS(master.topLeft().x, other.topLeft().y), master.topRight());
+        //    if (top_c == TYPE::RECT) {
+        //        top = top_c;
+        //    }
+        //}
+        //if (master.topRight().y > other.bottomRight().y and other.bottomRight().y > master.bottomRight().y) {
+        //    auto btm_c = Rect(master.bottomLeft(), POS(master.bottomRight().x, other.bottomRight().y));
+        //    if (btm_c == TYPE::RECT) {
+        //        btm = btm_c;
+        //    }
+        //}
+
+        //if (master.topLeft().x < other.topRight().x and other.topRight().x < master.topRight().x) {
+        //    auto left_c = Rect(POS(other.bottomRight().x, master.bottomLeft().y), master.topRight());
+        //    if (left_c == TYPE::RECT) {
+        //        left = left_c;
+        //    }
+        //}
+        //if (master.topRight().x >other.topLeft().x and other.topLeft().x > master.topLeft().x) {
+        //    auto right_c = Rect(master.bottomLeft(), POS(other.topLeft().x, master.topRight().y));
+        //    if (right_c == TYPE::RECT) {
+        //        right = right_c;
+        //    }
+        //}
+        v.push_back(top);
+        v.push_back(btm);
+        v.push_back(left);
+        v.push_back(right);
+        return  v;
+        
+
+    }
+    Rect operator|(const Rect& other) const {
+        return Rect(min(this->start.x, other.start.x), min(this->start.y, other.start.y),
+            max(this->end.x, other.end.x), max(this->end.y, other.end.y));
+    }
+
+    bool operator==(const Rect& other) const {
+        return start == other.start && end == other.end;
+    }
+    bool operator==(const TYPE& other) const {
+        switch (other) {
+        case TYPE::RECT:
+            return end - start > POS(0, 0);
+        case TYPE::LINE:
+            return ((end.x - start.x == 0 && end.y - start.y > 0) ||
+                (end.x - start.x > 0 && end.y - start.y == 0));
+        case TYPE::POS:
+            return end - start == POS(0, 0);
+        default:
+            return false;
+        }
+    }
+    bool operator!=(const Rect& other) const {
+        return !(*this == other);
+    }
+    // Methods
+    POS center() const {
+        return (start + end) / 2;
+    }
+    POS topLeft() const {
+        return POS(start.x, end.y);
+    }
+
+    POS topRight() const {
+        return end;
+    }
+
+    POS bottomLeft() const {
+        return start;
+    }
+
+    POS bottomRight() const {
+        return POS(end.x, start.y);
+    }
+
+    POS size() const {
+        return POS(width(), height());
+    }
+
+    float width() const {
+        return end.x - start.x;
+    }
+
+    float height() const {
+        return end.y - start.y;
+    }
+
+    float area() const {
+        return width() * height();
+    }
+
+    Rect transpose() const {
+        POS new_end = POS(height(), width()) + start;
+        return Rect(start, new_end, ID);
+    }
+
+    Rect copy() const {
+        return Rect(start, end, ID);
+    }
+
+    float height_div_width()const{
+        return height() / width();
+    }
+
+    bool contains(const POS& pos) const {
+        return pos >= start && pos <= end;
+    }
+    bool contains(const Rect& rect) const {
+        return rect.start >= start && rect.end <= end;
+    }
+
     std::string to_string() const {
         std::stringstream ss;
         ss << "Rect(" << start.to_string() << "," << end.to_string() << ")";
@@ -312,7 +388,7 @@ class Container {
 public:
     Rect rect;
     int plan_id;
-    Container(Rect rect, int plan_id = -1) {
+    explicit Container(Rect rect, int plan_id = -1) {
         this->rect = rect;
         this->plan_id = plan_id;
     };
@@ -341,11 +417,6 @@ public:
 
 };
 
-//void print_containers(vector<Container> containers) {
-//    
-//
-//
-//}
 
 class Item {
 
@@ -447,12 +518,12 @@ public:
             cout << container.rect.to_string() << endl;
         }
     }
-    PlanAsVector toVector() {
+    PlanAsVector toVector(bool throw_runtime_error=true) {
         ItemSequenceAsVector plan_item;
         for (auto item : item_sequence) {
             plan_item.push_back(item.get_rect().as_vector());
         }
-        auto containers = get_remain_containers(true);
+        auto containers = get_remain_containers(throw_runtime_error);
         RemainContainersAsVector plan_container;
         for (auto container : containers) {
             plan_container.push_back(container.rect.as_vector());
@@ -582,6 +653,15 @@ void test_rect() {
         Rect D = A & B;
         std::cout << "A=" << A.to_string() << ", B=" << B.to_string() << ", A&B=" << D.to_string() << "==C " << (D == C) << std::endl;
     }
+    auto r1 = Rect(0.0, 0.0, 1440.0, 1220.0);
+    auto r2 = Rect(2200.0, 300.0, 2440.0, 800.0);
+    auto r3 = r1 / r2;
+    cout << r1.to_string()<<"/"<<r2.to_string()<<"=[top=" << r3[0].has_value() << ",btm=" << r3[1].has_value() << ",left=" << r3[2].has_value() << ",right=" << r3[3].has_value() << endl;
+     r1 = Rect(0.0, 0.0, 2440.0, 1220.0);
+     r2 = Rect(2200.0, 300.0, 2440.0, 800.0);
+     r3 = r1 / r2;
+    cout << r1.to_string() << "/" << r2.to_string() << "=[top=" << r3[0].has_value() << ",btm=" << r3[1].has_value() << ",left=" << r3[2].has_value() << ",right=" << r3[3].has_value() << endl;
+
 }
 
 vector<float> test_item_data = {
@@ -886,6 +966,299 @@ float ScoringSys::gap_scoring( float current_plan_id, float current_max_len, flo
     auto p = this->gap_merging_parameters();
     return abs(std::inner_product(X.begin(), X.end(), p.begin(), 0.0));
 };
+
+
+
+class Dist2 :public Algo {
+
+public:
+    class ScoringSys {
+    public:
+        Dist2* parent;
+        vector<float>parameters;
+        struct ParameterCount {
+            static constexpr auto pos_scoring = 18;
+            static constexpr auto sort_scoring = 6;
+        };
+        vector<float> get_item_sorting_parameters()const{
+             vector<float> p(this->parameters.begin(),this->parameters.begin() + ParameterCount::sort_scoring);
+             return p;
+        };
+        vector<float> get_container_scoring_parameters()const{
+            vector<float> p(this->parameters.begin() + ParameterCount::sort_scoring, this->parameters.end());
+            return p;
+        }
+
+        float item_sorting(float item_width, float item_height)const {
+            vector<float> X = {
+                    (item_width * item_height) / (parent->minL * parent->maxL),
+                    item_height / item_width,
+                    static_cast<float>((item_width * item_height) / parent->material.area()),
+                    abs(item_width - item_height) / (parent->maxL - parent->minL),
+                    item_height/ parent->maxL,
+                    item_width / parent->minL,
+            };
+            auto p = get_item_sorting_parameters();
+            return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
+        }
+        float pos_scoring(Item item, Container container,int plan_id)const {
+            auto item_rect = item.get_rect();
+            auto container_rect = container.rect;
+            auto remain_rect = container_rect/item_rect;
+            optional<Rect> top_rect,left_rect,bottom_rect,right_rect;
+            top_rect = remain_rect[0];
+            bottom_rect = remain_rect[1];
+            left_rect = remain_rect[2];
+            right_rect = remain_rect[3];
+
+            vector<float> X = {
+                    item_rect.area()/container_rect.area(),
+                    top_rect.has_value() and top_rect.value()==TYPE::RECT?top_rect.value().height_div_width():0,
+                    bottom_rect.has_value() and bottom_rect.value()==TYPE::RECT?bottom_rect.value().height_div_width():0,
+                    left_rect.has_value() and left_rect.value()==TYPE::RECT?left_rect.value().height_div_width():0,
+                    right_rect.has_value() and right_rect.value()==TYPE::RECT?right_rect.value().height_div_width():0,
+                    top_rect.has_value() and top_rect.value()==TYPE::RECT?top_rect.value().area()/container_rect.area():0,
+                    bottom_rect.has_value() and bottom_rect.value()==TYPE::RECT?bottom_rect.value().area()/container_rect.area():0,
+                    left_rect.has_value() and left_rect.value()==TYPE::RECT?left_rect.value().area()/container_rect.area():0,
+                    right_rect.has_value() and right_rect.value()==TYPE::RECT?right_rect.value().area()/container_rect.area():0,
+                    this->parent->current_maxL/container_rect.width(),
+                    this->parent->current_minL/container_rect.height(),
+                    item_rect.width() / container_rect.width(),
+                    item_rect.height() / container_rect.height(),
+                    static_cast<float>(container_rect.area() / parent->material.area()),
+                    static_cast<float>(container_rect.start.x / parent->material.width()),
+                    static_cast<float>(container_rect.start.y / parent->material.height()),
+                    static_cast<float>(parent->material.height() / parent->material.width()),
+                    parent->solution.size() > 0 and plan_id>=0 ? parent->solution[static_cast<int>(plan_id)].get_util_rate() : 0
+            };
+            auto p = get_container_scoring_parameters();
+            return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
+        }
+
+    };
+    ScoringSys scoring_sys;
+    float maxL,minL,current_maxL,current_minL;
+    Dist2(vector<float> items, pair<float, float> material = test_material, string task_id = "", bool is_debug = false) :
+        Algo(items, material, task_id, is_debug){
+        scoring_sys.parameters = vector<float>(ScoringSys::ParameterCount::pos_scoring + ScoringSys::ParameterCount::sort_scoring, 1);
+        scoring_sys.parent = this;
+        maxL = (*max_element(this->items.begin(),this->items.end(),[](const Item a, const Item b){
+            return a.size.width()<b.size.width();
+        })).size.width();
+        minL = (*min_element(this->items.begin(),this->items.end(),[](const Item a, const Item b){
+            return a.size.height()<b.size.height();  
+        })).size.height();
+        current_maxL=maxL;
+        current_minL=minL;
+        
+    }
+    Dist2(vector<float> items, pair<float, float> material = test_material, bool is_debug = false) :Dist2(items, material, "", is_debug) {};
+
+    vector<Item> sorted_items()const {
+        std::vector<Item> temp_sorted_items = items;  
+
+        std::sort(temp_sorted_items.begin(), temp_sorted_items.end(),
+            [this](const Item& a, const Item& b) {
+                //descend
+                return scoring_sys.item_sorting(a.size.width(), a.size.height()) > scoring_sys.item_sorting(b.size.width(), b.size.height());
+            });
+
+        return temp_sorted_items;
+    }
+    int current_item_idx;
+    vector<ItemScore> find_possible_item_candidates(Item item) {
+        vector<ItemScore> score_list;
+        for(auto& plan :this->solution){
+            for(auto& container : plan.remain_containers){
+                checkAndScoreItem(item, container, score_list);
+                auto itemT = item.transpose();
+                checkAndScoreItem(itemT, container, score_list);
+            }
+        }
+        if(score_list.size()==0){
+            auto container = Container(Rect(0, 0, this->material.width(), this->material.height()));
+            checkAndScoreItem(item, container, score_list);
+            auto itemT = item.transpose();
+            checkAndScoreItem(itemT, container, score_list);
+        }
+        return score_list;
+    }
+    void checkAndScoreItem(Item item, Container& container, std::vector<ItemScore>& score_list) {
+        auto topright_pos = container.rect.end-item.size.end;
+        auto btmright_pos = container.rect.bottomRight()+POS(-item.size.width(),0);
+        auto topleft_pos = container.rect.topLeft()+POS(0,-item.size.height());
+        auto btmleft_pos = container.rect.start;
+        if(container.contains(item.size+topright_pos)) {
+            auto item_to_append = item.copy();
+            item_to_append.pos = topright_pos.copy();
+            float score = scoring_sys.pos_scoring(item_to_append, container, container.plan_id);
+            score_list.push_back(ItemScore(item_to_append, container, score));
+        }
+        if(container.contains(item.size+btmright_pos)) {
+            auto item_to_append = item.copy();
+            item_to_append.pos = btmright_pos.copy();
+            float score = scoring_sys.pos_scoring(item_to_append, container, container.plan_id);
+            score_list.push_back(ItemScore(item_to_append, container, score));
+        }
+        if(container.contains(item.size+topleft_pos)) {
+            auto item_to_append = item.copy();
+            item_to_append.pos = topleft_pos.copy();
+            float score = scoring_sys.pos_scoring(item_to_append, container, container.plan_id);
+            score_list.push_back(ItemScore(item_to_append, container, score));
+        }
+        if(container.contains(item.size+btmleft_pos)) {
+            auto item_to_append = item.copy();
+            item_to_append.pos = container.rect.start.copy();
+            float score = scoring_sys.pos_scoring(item_to_append, container, container.plan_id);
+            score_list.push_back(ItemScore(item_to_append, container, score));
+        }
+    }
+    void run() {
+        
+        this->solution.clear();
+        auto sorted_items = this->sorted_items();
+        for (auto i = 0; i < sorted_items.size(); i++) {
+
+            this->current_item_idx = i;
+            auto current_minL = (*std::min_element(sorted_items.begin() + i, sorted_items.end(), [](const Item& a, const Item& b) {
+                return a.size.height() < b.size.height();
+                })).size.height();
+            auto current_maxL = (*std::max_element(sorted_items.begin() + i, sorted_items.end(), [](const Item& a, const Item& b) {
+                return a.size.width() < b.size.width();
+                })).size.width();
+            Item new_item = sorted_items[i];
+
+            vector<ItemScore> score_candidates = this->find_possible_item_candidates(new_item);
+            if (score_candidates.size() == 0) {
+                throw std::runtime_error("score_candidates.size() == 0");
+            }
+
+            ItemScore best_score = *std::max_element(score_candidates.begin(), score_candidates.end(), [](const ItemScore& p1, const ItemScore& p2) {
+                return p1.getScore() < p2.getScore();
+            });
+            auto best_item = best_score.item;
+            auto new_rect = best_item.get_rect();
+            auto remove_rect = best_score.container.rect;
+
+            if (best_score.plan_id == -1) {
+                auto new_plan = ProtoPlan(this->solution.size(), this->material.copy());
+                new_plan.item_sequence.push_back(best_item);
+                auto remainingRectAfterSubtraction = this->material / new_rect;
+                for (auto rect : remainingRectAfterSubtraction) {
+                    if (rect.has_value() and rect.value()==TYPE::RECT) {
+                        new_plan.remain_containers.push_back(Container(rect.value(), new_plan.ID));
+                    }
+                }
+                this->solution.push_back(new_plan);
+                if (is_debug) {
+                    PlanPackingLog plan_packing_log;
+                    plan_packing_log.push_back(new_plan.toVector(false));
+                    this->packinglog.push_back(plan_packing_log);
+                }
+            }
+            else {
+                auto& plan = this->solution[best_score.plan_id];
+                plan.item_sequence.push_back(best_score.item);
+                
+                vector<Container> container_to_remove;
+                vector<optional<Container>> container_to_append;
+                vector<Container> container_to_append_checked;
+                auto item_rect = best_item.get_rect();
+                // split 
+                for (auto& container : plan.remain_containers) {
+                    /*if ((container.rect & item_rect) != TYPE::RECT) {
+                        continue;
+                    }*/
+                    RectDivided result_rects = container.rect/item_rect;
+                    bool remove = false;
+                    for (auto& r : result_rects) {
+                        if (r.has_value() and r.value()==TYPE::RECT) {
+                            remove = true;
+                            container_to_append.push_back(Container(r.value(),plan.ID));
+                        }
+                    }
+                    if (remove) {
+                        container_to_remove.push_back(container);
+                    }
+                    
+                }
+                // remove contained rect from new splited rect
+                for (auto& containerA : container_to_append) {
+                    if (!containerA.has_value()) {
+                        continue;
+                    }
+                    for (auto& containerB : container_to_append) {
+                        if (!containerB.has_value()) {
+                            continue;
+                        }
+                        if (containerA.value() == containerB.value()) {
+                            continue;
+                        }
+                        if (containerA.value().contains(containerB.value())) {
+                            containerB.reset();
+                        }
+                        if (containerB.has_value() and containerB.value().contains(containerA.value())) {
+                            containerA.reset();
+                            break;
+                        }
+                    }
+                }
+                // remove splited rect from old container
+                for(auto& container:container_to_remove){
+                    std::erase(plan.remain_containers, container);
+                    if (is_debug) {
+                        auto plancopy = plan;
+                        this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector(false));
+                    }
+                }
+                
+                // check if new rect is contained
+                for(auto& new_container:container_to_append){
+                    if (!new_container.has_value()) {
+                        continue;
+                    }
+                    for(auto& old_container:plan.remain_containers){
+                        if(old_container.rect.contains(new_container.value().rect)) {
+                            new_container.reset();
+                            break;
+                        }
+                    }
+                    if (new_container.has_value()) {
+                        plan.remain_containers.push_back(new_container.value());
+                        if (is_debug) {
+                            auto plancopy = plan;
+                            this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector(false));
+                        }
+                    }
+                }
+                
+                // sort rect
+                sort(plan.remain_containers.begin(), plan.remain_containers.end(), [](Container c1, Container c2) {
+                    return c1.rect.area() > c2.rect.area();
+                    }
+                );
+                if(is_debug){
+                    auto plancopy = plan;
+                    this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector(false));
+                }
+            }
+        }
+
+    }
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
 //-------------------------------MaxRect algo-------------------------------------------------------------
 class MaxRect :public Algo {
 public:
@@ -1506,12 +1879,10 @@ public:
 };
 
 int main() {
-    auto d = Dist(test_item_data);
+    //test_rect();
+    auto d = Dist2(test_item_data,test_material,true);
+    d.scoring_sys.parameters=vector<float>(24,2);
     d.run();
-    auto x = d.solution_as_vector();
-    int count;
-    for (auto v1 : x) {
-        count = count + v1.first.size();
-    }
+    cout << d.get_avg_util_rate();
     return 0;
 }

@@ -9,7 +9,7 @@ namespace py = pybind11;
 
 
 
-std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type = "Dist") {
+std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type = "Dist",bool is_debug=false) {
     
     if (algo_type == "Dist") {
         if (parameter_input_array.has_value()) {
@@ -35,17 +35,31 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
         d->run();
         return d;
     }
+    else if (algo_type == "Dist2") {
+        if (parameter_input_array.has_value()) {
+            vector<float> parameter_items = parameter_input_array.value();
+            auto d = std::make_unique<Dist2>(items, material,"", is_debug);
+            d->scoring_sys.parameters = parameter_items;
+            d->run();
+            return d;
+        }
+        else {
+            auto d = std::make_unique<Dist2>(items, material,"", is_debug);
+            d->run();
+            return d;
+        }
+    }
     throw runtime_error("Algorithm not found for given algo_type.");
 }
 
 
-std::unique_ptr<Algo>  single_run(py::array_t<float> input_array, pair<float, float>material, std::optional<vector<float>> parameter_input_array=std::nullopt,string algo_type="Dist") {
+std::unique_ptr<Algo>  single_run(py::array_t<float> input_array, pair<float, float>material, std::optional<vector<float>> parameter_input_array=std::nullopt,string algo_type="Dist",bool is_debug=false) {
     py::buffer_info buf_info = input_array.request();
 
     float *ptr = static_cast<float *>(buf_info.ptr);
     int num_elements = buf_info.size;
     std::vector<float> items(ptr, ptr + num_elements);
-    return inner_single_run(items,material,parameter_input_array,algo_type);
+    return inner_single_run(items,material,parameter_input_array,algo_type,is_debug);
 }
 
 vector<float> multi_run(
@@ -91,7 +105,8 @@ PYBIND11_MODULE(BinPacking2DAlgo, m) {
             py::arg("material"),
             py::arg("parameter_input_array")=std::nullopt,
             py::arg("algo_type")="Dist",
-            "algo_type=Dist,MaxRect,Skyline"
+            py::arg("is_debug") = false,
+            "algo_type=Dist,MaxRect,Skyline,Dist2. Dist and Dist2 need learn parameters to performance well"
             );
     m.def("multi_run",&multi_run,
             py::arg("input_array"), 
@@ -100,7 +115,7 @@ PYBIND11_MODULE(BinPacking2DAlgo, m) {
             py::arg("algo_type")="Dist", 
             py::arg("run_count")=27,
             py::arg("need_report")=false,
-            "algo_type=Dist,MaxRect,Skyline"
+            "algo_type=Dist,MaxRect,Skyline,Dist2. Dist and Dist2 need learn parameters to performance well"
     );
 
 }
