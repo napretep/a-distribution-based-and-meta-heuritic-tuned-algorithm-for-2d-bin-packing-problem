@@ -118,7 +118,7 @@ class Skyline(Algo):
                 return -1
             # 先判断占据的容器个数,再判断容器的高度是否满足条件
             for idx in range(begin_idx+1,len(containers)):
-                if item_end_x < containers[idx].rect.end.x and containers[idx].rect.end.y>=item_end_y and item_start_y>=containers[idx].rect.start.y:
+                if item_end_x <= containers[idx].rect.end.x and containers[idx].rect.end.y>=item_end_y and item_start_y>=containers[idx].rect.start.y:
                     end_idx=idx
                     break
             if end_idx==begin_idx:

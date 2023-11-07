@@ -11,6 +11,7 @@ import os
 import uuid
 from time import time
 
+import BinPacking2DAlgo
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -504,6 +505,17 @@ def random_choice(data,count=5000,true_random=True):
     return data[data_idx]
 
 
+def random_mix(data:"np.ndarray",random_ratio):
+    random_item_scale = int(np.random.uniform(*random_ratio) * data.shape[0])
+    determ_data_idx = np.random.choice(data.shape[0], size=data.shape[0] - random_item_scale, replace=False)
+    determ_data = data[determ_data_idx]
+    random_x = (np.random.uniform(0.1, 1, random_item_scale) * MATERIAL_SIZE[0]).astype(int)
+    random_y = (np.random.uniform(0.1, 1, random_item_scale) * MATERIAL_SIZE[1]).astype(int)
+    random_data = np.column_stack((random_x, random_y))
+    result = np.row_stack((determ_data, random_data))
+    result = np.column_stack((range(data.shape[0]), result))
+    return result
+
 # 随机_data = np.column_stack((np.zeros(samples.shape[0]),samples))
 
 # def kde(data):
@@ -551,7 +563,7 @@ def kde_sample(data, count=1000):  # epanechnikov,gaussian
                                   & (resample_data[:, 0] <= MATERIAL_SIZE[0]) &
                                   (resample_data[:, 1] <= MATERIAL_SIZE[1]))]
 
-    oversize_data_clipped = np.clip(oversize_data, a_min=[50,50], a_max=list(MATERIAL_SIZE))
+    oversize_data_clipped = np.clip(oversize_data, a_min=[20,20], a_max=list(MATERIAL_SIZE))
     resample_data = resample_data[(resample_data[:, 0] > 0) & (resample_data[:, 1] > 0)
                                   & (resample_data[:, 0] <= MATERIAL_SIZE[0]) &
                                   (resample_data[:, 1] <= MATERIAL_SIZE[1])]
@@ -616,6 +628,10 @@ param_wb_300_107 = [ 19.54349797,  -8.08577713,  -8.30230933,   6.99432589,
        -18.71292422, -15.99165935,  -2.50475771, -17.89194201,
         17.7640952 ,  13.17242401,  -4.56488583, -16.71416094,
        -10.50712621,  -3.95408833] # 1.0732741257505072
+
+
+
+
 
 
 if __name__ == "__main__":

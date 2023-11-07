@@ -10,7 +10,7 @@ namespace py = pybind11;
 
 
 std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type = "Dist") {
-
+    
     if (algo_type == "Dist") {
         if (parameter_input_array.has_value()) {
             vector<float> parameter_items = parameter_input_array.value();

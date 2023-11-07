@@ -40,5 +40,5 @@ if __name__ == "__main__":
 
     pass
     setup(name=module_name,
-    version='1.0',
+    version='1.1',
     description='Python package with superfastcode2 C++ extension (PyBind11)',ext_modules=[functions_module])

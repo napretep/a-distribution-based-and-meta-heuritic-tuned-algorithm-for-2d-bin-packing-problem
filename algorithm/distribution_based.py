@@ -187,7 +187,7 @@ class Distribution(Algo):
         for at_i in range(len(sorted_items)):
 
             new_item: Item = sorted_items[at_i]
-            print(f"id={at_i},{new_item.size}")
+            # print(f"id={at_i},{new_item.size}")
             # print("current item count = ",item_remain)
             pre_score_list: list[ItemScore] = []
             # new_material_candidates =
@@ -271,15 +271,12 @@ class Distribution(Algo):
                 raise ValueError("pre_score_list is empty", new_item)
 
             bestscore: "ItemScore" = max(pre_score_list, key=lambda x: x.score)
-            print(f"best_score.container.plan_id={bestscore.plan_id},item_pos={bestscore.item.rect}")
             new_rect = bestscore.item.rect
             remove_rect = bestscore.container.rect
             new_BR_corner = Container(new_rect.bottomRight,
                                       POS(remove_rect.topRight.x, new_rect.topRight.y),
                                       bestscore.plan_id)
             new_top_corner = Container(new_rect.topLeft, remove_rect.topRight, bestscore.plan_id)
-            print(f"new_BR_corner={new_BR_corner.rect}")
-            print(f"new_top_corner={new_top_corner.rect}")
 
             current_minL = min(sorted_items[at_i:], key=lambda x: min(x.size.height, x.size.width)).size.height
             current_maxL = max(sorted_items[at_i:], key=lambda x: max(x.size.height, x.size.width)).size.width
@@ -319,7 +316,7 @@ class Distribution(Algo):
                         if is_debug:
                             standard_draw_plan([new_plan], is_debug=is_debug, task_id=self.task_id, text=f"插入容器{new_top_corner.rect}")
                 self.solution.append(new_plan)
-                print(f"plan_id={new_plan.ID},plan_container_count={len(new_plan.remain_containers)}")
+
             else:  # 原有
                 plan = self.solution[bestscore.plan_id]
                 plan.remain_containers.remove(bestscore.container)
@@ -334,11 +331,9 @@ class Distribution(Algo):
                         break
                     if new_BR_corner is not None:
                         new_BR_corner = self.container_merge_thinking(is_debug,current_minL,current_maxL,plan,new_BR_corner,container)
-                        print(f"new_BR_corner,是否被合并-{new_BR_corner is None}")
 
                     if new_top_corner is not None:
                         new_top_corner = self.container_merge_thinking(is_debug,current_minL,current_maxL,plan,new_top_corner,container)
-                        print(f"new_top_corner,是否被合并-{new_top_corner is None}")
 
                 if new_BR_corner is not None:
                     plan.remain_containers.append(new_BR_corner)
@@ -348,11 +343,7 @@ class Distribution(Algo):
                     plan.remain_containers.append(new_top_corner)
                     if is_debug:
                         standard_draw_plan([plan], is_debug=is_debug, task_id=self.task_id, text=f"添加容器{new_top_corner.rect}")
-                print(f"now_plan_id={plan.ID},containers=")
-                for container in plan.remain_containers:
-                    print(container.rect)
-                print("")
-                print(f"plan_id={plan.ID},plan_container_count={len(plan.remain_containers)}")
+
             if is_debug:
                 standard_draw_plan([self.solution[-1]], is_debug=is_debug, task_id=self.task_id, text=f"最终效果")
 

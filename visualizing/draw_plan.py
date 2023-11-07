@@ -91,6 +91,7 @@ def standard_draw_plan(plans:list[ProtoPlan], is_debug=False, task_id=None,text=
         print(f"\rdraw task_id={task_id} plan_{plan.ID} ok", end="", flush=True)
         ax.cla()
     plot.close()
+    print("")
     #
 
 if __name__ == '__main__':

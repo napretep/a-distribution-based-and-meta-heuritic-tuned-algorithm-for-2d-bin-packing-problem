@@ -665,17 +665,20 @@ public:
                     auto new_rect = best_item.get_rect();
                     auto remove_rect = best_score.container.rect;
 
-                    std::optional<Container> new_BR_corner = Container(Rect(new_rect.bottomRight(), POS(remove_rect.topRight().x, new_rect.topRight().y)), best_score.plan_id);
-                    std::optional<Container> new_top_corner = Container(Rect(new_rect.topLeft(), remove_rect.topRight()), best_score.plan_id);
-                    if ((new_BR_corner.value().rect.end.y - new_BR_corner.value().rect.start.y) < current_minL) {
-                        new_BR_corner.reset();
-                    }
-                    if ((new_top_corner.value().rect.end.y - new_top_corner.value().rect.start.y) < current_minL) {
-                        if (new_BR_corner.has_value()) {
-                            new_BR_corner.value().rect.end = new_top_corner.value().rect.end;
-                            new_top_corner.reset();
-                        }
-                    }
+                    //std::optional<Container> new_BR_corner = Container(Rect(new_rect.bottomRight(), POS(remove_rect.topRight().x, new_rect.topRight().y)), best_score.plan_id);
+                    //std::optional<Container> new_top_corner = Container(Rect(new_rect.topLeft(), remove_rect.topRight()), best_score.plan_id);
+                    std::optional<Container> new_BR_corner = Container(Rect(new_rect.bottomRight(),remove_rect.topRight()), best_score.plan_id);
+                    std::optional<Container> new_top_corner = Container(Rect(new_rect.topLeft(), POS(new_rect.bottomRight().x, remove_rect.topRight().y)), best_score.plan_id);
+
+                    //if ((new_BR_corner.value().rect.end.y - new_BR_corner.value().rect.start.y) < current_minL) {
+                    //    new_BR_corner.reset();
+                    //}
+                    //if ((new_top_corner.value().rect.end.y - new_top_corner.value().rect.start.y) < current_minL) {
+                    //    if (new_BR_corner.has_value()) {
+                    //        new_BR_corner.value().rect.end = new_top_corner.value().rect.end;
+                    //        new_top_corner.reset();
+                    //    }
+                    //}
                     if (best_score.plan_id == -1) {
                         auto new_plan = ProtoPlan(this->solution.size(), this->material.copy(), vector<Item>{}, vector<Container>{});
                         new_plan.item_sequence.push_back(best_item);
@@ -1505,5 +1508,10 @@ public:
 int main() {
     auto d = Dist(test_item_data);
     d.run();
+    auto x = d.solution_as_vector();
+    int count;
+    for (auto v1 : x) {
+        count = count + v1.first.size();
+    }
     return 0;
 }

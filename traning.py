@@ -85,6 +85,7 @@ class DE:
         data_for_run = [self.get_sampled_items() for i in range(self.eval_run_count)]
         result = BinPacking2DAlgo.multi_run(data_for_run, MATERIAL_SIZE, parameter_input_array=param,run_count=self.eval_run_count)
         result = np.array(result)
+        # print(result)
         mean = np.mean(result)
         std = np.std(result)
         cutoff = std * 3
@@ -100,7 +101,7 @@ class DE:
         bounds = [[-40, 40]] * self.total_param_num
 
         result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.0001,init="random",mutation=(0.5,1.5),recombination=0.9,
-                                        callback=self.callback, maxiter=1000)
+                                        callback=self.callback, maxiter=10)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
         to_save = [end_time, result.x, result.fun]
@@ -133,7 +134,7 @@ if __name__ == "__main__":
     result = []
     for data,name in [[华为杯_data,"production_data1"],[外包_data,"production_data2"],[随机_data,"random_data"]]:
         start_time2=time()
-        d = DE(data,name,random_ratio=(0,0.4))
+        d = DE(data,name)
         x,fun,log = d.run()
         result.append([name,x,1/fun,f"训练用时(秒):{time()-start_time2}"])
     end_time = time()
