@@ -17,33 +17,29 @@ from visualizing.draw_plan import standard_draw_plan
 import BinPacking2DAlgo
 
 """
-全部训练完成时间(秒): 40707.74426817894
-[
-['production_data1', array([-14.15936449,  -5.51115384, -23.64518177,  -5.15047712,
-        -3.33357418,  19.30223264, -34.12354662, -37.72826772,
-       -22.94565056,  -9.50349139, -34.3961086 ,  17.95800022,
-         8.9030257 ,  15.07774937,  -1.14072358, -26.85316237,
-        -4.21159189,  -9.02667882, -18.79295732, -21.38535338,
-       -33.5686066 , -16.21340102,  21.69621865,   9.50849564,
-        15.90809837,  -3.63610164,  -1.60874255]), 0.93095071464777], 
-训练时间(秒): 11454.134886980057
-['production_data2', array([-11.96752198,  -2.7668223 ,  38.70687562,  13.18271721,
-         3.67444606,  38.25703788, -18.28533271,   3.38803386,
-        -6.55048104, -37.50351178, -14.20464962,   9.0491134 ,
-        -0.42823428,  11.01235021,  -6.35228745, -35.80967409,
-         6.66501912,   2.81858832, -19.88194734,  28.88062709,
-       -33.12758532, -25.59401527,  -4.40720866,  -2.71437647,
-         8.11387952,  23.83868208,   2.78775707]), 0.9397160932421684], 
-训练时间(秒): 16333.756328582764
-['random_data', array([ 16.52380377,   8.77870006,  -2.37123285, -18.76190523,
-        -9.94336197,  -2.19416358, -24.36524343, -17.02973983,
-         1.41957027, -10.40319628,   5.7913216 ,  12.38149365,
-        27.32627864,   1.76764851, -17.20481395,  28.93672477,
-       -16.06091363,  15.07383287,  -9.77274668, -38.1253096 ,
-       -26.23267942, -18.76066081, -36.4631387 ,  -8.67292712,
-       -36.63156038,  -0.94854679,  -0.39558535]), 0.9247190743684768]
-]
-训练时间(秒): 12919.711238145828
+全部训练完成时间(秒): 44895.768300294876
+[['production_data1', array([-16.41974521,   4.13125489,   9.4103478 ,   8.65741829,
+         5.02985403,  19.21117061, -28.81263701, -25.21020407,
+       -24.71024175,  -2.48939642,   3.37488031,  35.33964669,
+        -5.51130956,   9.95235236,  -0.2135157 , -11.66015814,
+       -23.33683873, -25.0762704 ,  18.61611493,   8.3654269 ,
+         1.33890311,  10.61668881,  35.66663008,  -4.75955503,
+       -26.80569794,  36.15368499, -23.72988799]), 0.9486099237050767, '训练用时(秒):12662.613681316376'], 
+       ['production_data2', array([ -8.19959874,   0.74081101,  19.7382237 ,  -6.70081883,
+         0.58326179,  36.21222725, -29.69989999, -13.60351553,
+       -35.21268337,  -0.07994774,  23.35236385,  12.62602927,
+       -18.78039989,  39.88120253,  -5.54283985, -30.85749554,
+       -32.96410889, -30.84110472,  22.12749834,  28.93317737,
+        -6.11984355,  11.06597756,   2.6359345 ,  16.91978761,
+       -17.76328212,  33.70208676,  37.81276862]), 0.959110730733627, '训练用时(秒):15911.02594947815'], 
+       ['random_data', array([ 9.99485403e+00, -2.99377785e+00,  3.83139265e+01, -1.97170595e+01,
+       -2.58937215e+01,  9.24819159e+00, -3.52827168e+01, -2.10362191e+00,
+       -6.95937537e+00, -6.65119904e+00,  1.20648340e+01,  2.52599056e+01,
+        1.15373925e+01,  1.35539582e+01, -4.17721234e-03, -4.52321952e+00,
+       -2.30055485e+01, -3.77783095e+01,  1.92449964e+01, -1.45313887e+01,
+       -1.87820336e+01,  2.64781432e+01,  2.98700118e+00,  2.42949570e+00,
+        1.35628839e+01, -2.71968612e+01, -2.37904332e+01]), 0.9212146951602056, '训练用时(秒):16322.128669500351']]
+
 """
 
 def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
@@ -53,7 +49,7 @@ def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
 
 
 class DE:
-    def __init__(self,data_set,data_set_name,total_param_num=27,eval_run_count=40,data_sample_scale=500,random_ratio=None):
+    def __init__(self,data_set,data_set_name,total_param_num=27,eval_run_count=40,data_sample_scale=500,random_ratio=None,algo_name="Dist2",max_iter=500):
         self.data_set = data_set
         self.data_set_name = data_set_name
         self.total_param_num = total_param_num
@@ -62,6 +58,8 @@ class DE:
         self.time_recorder=[]
         self.training_log=[]
         self.random_ratio = random_ratio
+        self.algo_name=algo_name
+        self.max_iter=max_iter
     def get_sampled_items(self):
         if self.random_ratio is not None:
             return self.random_mix()
@@ -83,7 +81,7 @@ class DE:
 
     def eval(self,param):
         data_for_run = [self.get_sampled_items() for i in range(self.eval_run_count)]
-        result = BinPacking2DAlgo.multi_run(data_for_run, MATERIAL_SIZE, parameter_input_array=param,run_count=self.eval_run_count)
+        result = BinPacking2DAlgo.multi_run(data_for_run, MATERIAL_SIZE, parameter_input_array=param,run_count=self.eval_run_count,algo_type=self.algo_name)
         result = np.array(result)
         # print(result)
         mean = np.mean(result)
@@ -93,6 +91,7 @@ class DE:
         result = result[(result > lower) & (result < upper)]
         mean = np.mean(result)
         return 1/mean
+
     def run(self):
         start_time = time()
         self.time_recorder.append(start_time)
@@ -101,12 +100,12 @@ class DE:
         bounds = [[-40, 40]] * self.total_param_num
 
         result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.0001,init="random",mutation=(0.5,1.5),recombination=0.9,
-                                        callback=self.callback, maxiter=10)
+                                        callback=self.callback, maxiter=self.max_iter)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
         to_save = [end_time, result.x, result.fun]
         print(to_save)
-        np.save(f"{self.data_set_name}_{self.data_sample_scale}_traning_log__{round(end_time)}.npy", np.array(self.training_log))
+        np.save(f"{self.algo_name}_{self.data_set_name}_{('random_'+self.random_ratio.__str__() )if self.random_ratio is not None else ''}_{self.data_sample_scale}_traning_log__{round(end_time)}.npy", np.array(self.training_log))
         return result.x, result.fun, self.training_log
 
         pass
