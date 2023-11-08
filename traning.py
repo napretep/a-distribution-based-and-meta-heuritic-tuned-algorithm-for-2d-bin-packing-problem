@@ -49,7 +49,7 @@ def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
 
 
 class DE:
-    def __init__(self,data_set,data_set_name,total_param_num=27,eval_run_count=40,data_sample_scale=500,random_ratio=None,algo_name="Dist2",max_iter=500):
+    def __init__(self,data_set,data_set_name,total_param_num=24 ,eval_run_count=40,data_sample_scale=500,random_ratio=None,algo_name="Dist2",max_iter=500):
         self.data_set = data_set
         self.data_set_name = data_set_name
         self.total_param_num = total_param_num

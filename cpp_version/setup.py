@@ -40,5 +40,5 @@ if __name__ == "__main__":
 
     pass
     setup(name=module_name,
-    version='1.2.6',
+    version='1.2.7',
     description='new dist2 algo',ext_modules=[functions_module])
