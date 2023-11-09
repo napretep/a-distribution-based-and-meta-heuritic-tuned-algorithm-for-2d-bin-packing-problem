@@ -649,6 +649,12 @@ class EVAL:
         print(f"{round(time() - start, 4)}s,{round(result* 100, 4) }%",end=", ")
         return result
 
+    def run_time_cost(self,dataset):
+        start = time()
+        result = BinPacking2DAlgo.single_run(dataset, MATERIAL_SIZE, algo_type=self.algo_type, parameter_input_array=self.params).get_avg_util_rate()
+        end = time()
+        print(f"{round(time() - start, 4)}s,{round(result * 100, 4)}%", end=", ")
+        return end-start
 
 params = {
         "standard": {

@@ -59,7 +59,7 @@ data_sets = {
         "random_data"     : 随机_data,
 }
 data_types = ["standard", "random"]
-scales = [8000,10000]
+scales = [100,300,500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]
 algo_types = ["MaxRect"]
 run_count = 24
 def run_experiment():
@@ -70,10 +70,13 @@ def run_experiment():
                     start = time()
                     eval_fun = EVAL(algo_type, run_count, params["random"][data_set])
                     input_data = [kde_sample(data_sets[data_set], scale) for _ in range(run_count)]
-                    results = p.map(eval_fun.run_single, input_data)
+                    results = p.map(eval_fun.run_time_cost, input_data)
                     path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
                     np.save(path, np.array(results))
                     print("\n", time() - start,"\n",path)
+
+
+
 
 def run_compare():
     for algo_type in algo_types:
@@ -96,6 +99,7 @@ def run_compare():
     plt.ylabel('mean runtime (second)')
     plt.title('Comparison of Algorithms runtime')
     plt.legend()  # Show line names
+    plt.savefig("3_algos_runtime_comparison_i711700KF_5ghz_16thread.png")
     plt.show()
 
 
@@ -105,5 +109,5 @@ def run_compare():
 
 
 if __name__ == "__main__":
-    run_experiment()
+    run_compare()
     pass
