@@ -27,5 +27,5 @@ def show_determ():
     plt.show()
 
 if __name__ == "__main__":
-    show_determ()
+    print(np.load("random_ratio(0,30)_Dist2_production_data1_3000_.npy").shape)
     pass

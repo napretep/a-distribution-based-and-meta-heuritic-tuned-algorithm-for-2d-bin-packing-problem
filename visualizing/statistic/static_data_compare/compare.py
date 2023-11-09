@@ -202,17 +202,18 @@ def start_singlerun_compare_job():
                 print(algo_type)
                 eval_obj = EVAL(algo_type, run_count, params["random"][data_set])
                 for scale in scales:
-                    results=[]
                     timestart = time()
                     file_name = f"random_ratio(0,30)_{algo_type}_{data_set}_{scale}_.npy"
-                    for j in range(run_count):
-                        for i in range(30):
-                            print(file_name,f"run_count={j},random interval=(0,{(i+1)/100})")
-                            input_data = [random_mix(kde_sample(data_sets[data_set], scale)[:, 1:], random_ratio=(0,(i+1) / 100)) for _ in range(run_count)]
-                            result = p.map(eval_obj.run_single, input_data)
-                            results.append(result)
-                            print("\n")
-                    np.save(file_name, np.array(result))
+                    # 每个随机比例都有
+                    # for j in range(run_count):
+                    run_results=[]
+                    for i in range(30):
+                        print(file_name,f"random interval=(0,{(i+1)/100})")
+                        input_data = [random_mix(kde_sample(data_sets[data_set], scale)[:, 1:], random_ratio=(0,(i+1) / 100)) for _ in range(run_count)]
+                        result = p.map(eval_obj.run_single, input_data)
+                        run_results.append(result)
+                        print("\n")
+                    np.save(file_name, np.array(run_results))
                     print(file_name, "done",time()-timestart)
 
 
