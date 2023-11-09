@@ -89,6 +89,8 @@ class DE:
         self.random_ratio = random_ratio
         self.algo_name=algo_name
         self.max_iter=max_iter
+        self.current_gen = 0
+
 
     def get_sampled_items(self):
 
@@ -149,6 +151,10 @@ class DE:
 
     def callback(self, xk, convergence):
         self.time_recorder.append(time())
+        self.training_log.append([len(self.time_recorder),1/self.eval(xk)])
+        self.current_gen += 1
+        print(f'current_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/self.eval(xk)} , Convergence: {convergence}')
+
         eval_value = self.get_eval()(xk)
         self.training_log.append([len(self.time_recorder),1/eval_value])
 
