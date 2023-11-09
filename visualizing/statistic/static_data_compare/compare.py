@@ -211,6 +211,7 @@ def start_singlerun_compare_job():
                             input_data = [random_mix(kde_sample(data_sets[data_set], scale)[:, 1:], random_ratio=(0,(i+1) / 100)) for _ in range(run_count)]
                             result = p.map(eval_obj.run_single, input_data)
                             results.append(result)
+                            print("\n")
                     np.save(file_name, np.array(result))
                     print(file_name, "done",time()-timestart)
 
