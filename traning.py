@@ -176,40 +176,40 @@ def solution_draw(solution:BinPacking2DAlgo.Algo,text=""):
             new_solution.append(plan)
         standard_draw_plan(new_solution,is_debug=True,task_id=solution.task_id,text=text)
 
-def train_on_determData():
-    start_time = time()
 
-    result = []
-    for data, name in [
-            [华为杯_data, "production_data1"],
-            # [外包_data, "production_data2"],
-            # [随机_data, "random_data"]
-    ]:
-        start_time2 = time()
-        d = DE(data, name, max_iter=1000, data_sample_scale=1500, eval_selector="single")
-        x, fun, log = d.run()
-        result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
-        np.save(f"Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
-    end_time = time()
-    print("全部训练完成时间(秒):", end_time - start_time)
-    print(result)
 
-def train_on_noisedData():
-    start_time = time()
 
-    result = []
-    for data, name in [
-            [华为杯_data, "production_data1"],
-            [外包_data, "production_data2"],
-            [随机_data, "random_data"]
-    ]:
-        start_time2 = time()
-        d = DE(data, name, random_ratio=(0, 0.3), max_iter=1000, data_sample_scale=1500, eval_selector="single")
-        x, fun, log = d.run()
-        result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
-    end_time = time()
-    print("全部训练完成时间(秒):", end_time - start_time)
-    print(result)
+class Training:
+
+    def __init__(self,data_set,training_type="determ",):
+        """
+
+        :param training_type: "determ","noised"
+        """
+        self.training_type = training_type
+        self.data_set=data_set
+
+    def run(self):
+        start_time = time()
+
+        result = []
+        for data, name in self.data_set:
+            start_time2 = time()
+            d = DE(data, name, random_ratio=(0, 0.3) if self.training_type=="noised" else None, max_iter=1000, data_sample_scale=1500, eval_selector="single")
+            x, fun, log = d.run()
+            result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
+            np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
+        end_time = time()
+        print("全部训练完成时间(秒):", end_time - start_time)
+        print(result)
+
 
 if __name__ == "__main__":
-    train_on_determData()
+    t = Training([
+            [华为杯_data, "production_data1"],
+            [外包_data, "production_data2"]
+            [随机_data, "random_data"]
+    ],
+            training_type="determ"
+    )
+    t.run()
