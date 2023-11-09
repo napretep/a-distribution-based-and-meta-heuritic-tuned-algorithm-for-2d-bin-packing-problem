@@ -151,14 +151,17 @@ class DE:
 
     def callback(self, xk, convergence):
         self.time_recorder.append(time())
-        self.training_log.append([len(self.time_recorder),1/self.eval(xk)])
-        self.current_gen += 1
-        print(f'current_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/self.eval(xk)} , Convergence: {convergence}')
-
         eval_value = self.get_eval()(xk)
+        self.training_log.append([len(self.time_recorder),1/eval_value])
+        self.current_gen += 1
+        print(f'current_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/eval_value} , Convergence: {convergence}')
+
+
         self.training_log.append([len(self.time_recorder),1/eval_value])
 
         print(f'time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/eval_value} , Convergence: {convergence}\n')
+
+
     def get_eval(self):
         if self.eval_selector=="single":
             return self.single_eval
