@@ -67,9 +67,8 @@ def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
 
 
 class DE:
-    def __init__(self,data_set,data_set_name,total_param_num=24 ,eval_run_count=40,data_sample_scale=500,random_ratio=None,algo_name="Dist2",max_iter=500):
+    def __init__(self,data_set,data_set_name,eval_selector="multi",total_param_num=24 ,eval_run_count=40,data_sample_scale=500,random_ratio=None,algo_name="Dist2",max_iter=500):
         """
-
         :param data_set:
         :param data_set_name:
         :param total_param_num:
@@ -79,6 +78,7 @@ class DE:
         :param algo_name:
         :param max_iter:
         """
+        self.eval_selector = eval_selector # "multi" "single"
         self.data_set = data_set
         self.data_set_name = data_set_name
         self.total_param_num = total_param_num
@@ -89,7 +89,9 @@ class DE:
         self.random_ratio = random_ratio
         self.algo_name=algo_name
         self.max_iter=max_iter
+
     def get_sampled_items(self):
+
         if self.random_ratio is not None:
             return self.random_mix()
         else:
@@ -108,7 +110,7 @@ class DE:
         return result
 
 
-    def eval(self,param):
+    def multi_eval(self,param):
         data_for_run = [self.get_sampled_items() for i in range(self.eval_run_count)]
         result = BinPacking2DAlgo.multi_run(data_for_run, MATERIAL_SIZE, parameter_input_array=param,run_count=self.eval_run_count,algo_type=self.algo_name)
         result = np.array(result)
@@ -121,6 +123,12 @@ class DE:
         mean = np.mean(result)
         return 1/mean
 
+    def single_eval(self,param):
+        result:"BinPacking2DAlgo.Algo" = BinPacking2DAlgo.single_run(self.get_sampled_items(), MATERIAL_SIZE, parameter_input_array=param,
+                                             algo_type=self.algo_name)
+        value = result.get_avg_util_rate()
+        print(round(value*100,2),end=", ")
+        return 1 / value
     def run(self):
         start_time = time()
         self.time_recorder.append(start_time)
@@ -128,7 +136,7 @@ class DE:
 
         bounds = [[-40, 40]] * self.total_param_num
 
-        result = differential_evolution(self.eval, bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.0001,init="random",mutation=(0.5,1.5),recombination=0.9,
+        result = differential_evolution(self.get_eval(), bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.0001,init="random",mutation=(0.5,1.5),recombination=0.95,
                                         callback=self.callback, maxiter=self.max_iter)
         end_time = time()
         print("训练时间(秒):",end_time - start_time)
@@ -141,10 +149,15 @@ class DE:
 
     def callback(self, xk, convergence):
         self.time_recorder.append(time())
-        self.training_log.append([len(self.time_recorder),1/self.eval(xk)])
+        eval_value = self.get_eval()(xk)
+        self.training_log.append([len(self.time_recorder),1/eval_value])
 
-        print(f'time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/self.eval(xk)} , Convergence: {convergence}')
-
+        print(f'time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/eval_value} , Convergence: {convergence}\n')
+    def get_eval(self):
+        if self.eval_selector=="single":
+            return self.single_eval
+        else:
+            return self.multi_eval
 
 def solution_draw(solution:BinPacking2DAlgo.Algo,text=""):
     for i in range(len(solution.packinglog)-1,-1,-1):
@@ -162,7 +175,7 @@ if __name__ == "__main__":
     result = []
     for data,name in [[华为杯_data,"production_data1"],[外包_data,"production_data2"],[随机_data,"random_data"]]:
         start_time2=time()
-        d = DE(data,name,random_ratio= (0,0.3),max_iter=250)
+        d = DE(data,name,random_ratio= (0,0.3),max_iter=1000,data_sample_scale=1500,eval_selector="single")
         x,fun,log = d.run()
         result.append([name,x,1/fun,f"训练用时(秒):{time()-start_time2}"])
     end_time = time()

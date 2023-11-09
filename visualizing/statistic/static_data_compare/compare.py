@@ -60,11 +60,11 @@ params = {
 
 data_sets = {
         "production_data1": 华为杯_data,
-        # "production_data2": 外包_data,
-        # "random_data"     : 随机_data,
+        "production_data2": 外包_data,
+        "random_data"     : 随机_data,
 }
 data_types = ["standard", "random"]
-scales = [3000, 5000]
+scales = [100,300,500,1000,3000,5000]
 algo_types = ["Dist2"]
 run_count = 36
 
@@ -155,10 +155,10 @@ def start_singlerun_compare_job():
             print(data_set)
             for algo_type in algo_types:
                 print(algo_type)
-                eval_obj = EVAL(algo_type, run_count, params["random"][data_set])
+                eval_obj = EVAL(algo_type, run_count, params["standard"][data_set])
                 for scale in scales:
                     timestart = time()
-                    file_name = f"random_ratio(0,30)_{algo_type}_{data_set}_{scale}_.npy"
+                    file_name = f"random_ratio(0,30)_determ{algo_type}_{data_set}_{scale}_.npy"
                     # 每个随机比例都有
                     # for j in range(run_count):
                     run_results=[]
