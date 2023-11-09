@@ -182,7 +182,11 @@ def train_on_determData():
     start_time = time()
 
     result = []
-    for data, name in [[华为杯_data, "production_data1"], [外包_data, "production_data2"], [随机_data, "random_data"]]:
+    for data, name in [
+            [华为杯_data, "production_data1"],
+            # [外包_data, "production_data2"],
+            # [随机_data, "random_data"]
+    ]:
         start_time2 = time()
         d = DE(data, name, max_iter=1000, data_sample_scale=1500, eval_selector="single")
         x, fun, log = d.run()
@@ -195,7 +199,11 @@ def train_on_noisedData():
     start_time = time()
 
     result = []
-    for data, name in [[华为杯_data, "production_data1"], [外包_data, "production_data2"], [随机_data, "random_data"]]:
+    for data, name in [
+            [华为杯_data, "production_data1"],
+            [外包_data, "production_data2"],
+            [随机_data, "random_data"]
+    ]:
         start_time2 = time()
         d = DE(data, name, random_ratio=(0, 0.3), max_iter=1000, data_sample_scale=1500, eval_selector="single")
         x, fun, log = d.run()
