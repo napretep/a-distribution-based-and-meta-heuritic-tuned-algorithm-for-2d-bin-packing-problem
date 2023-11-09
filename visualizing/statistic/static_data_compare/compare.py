@@ -60,8 +60,8 @@ params = {
 
 data_sets = {
         "production_data1": 华为杯_data,
-        "production_data2": 外包_data,
-        "random_data"     : 随机_data,
+        # "production_data2": 外包_data,
+        # "random_data"     : 随机_data,
 }
 data_types = ["standard", "random"]
 scales = [3000, 5000]
@@ -203,14 +203,16 @@ def start_singlerun_compare_job():
                 eval_obj = EVAL(algo_type, run_count, params["random"][data_set])
                 for scale in scales:
                     results=[]
+                    timestart = time()
                     file_name = f"random_ratio(0,30)_{algo_type}_{data_set}_{scale}_.npy"
-                    for i in range(30):
-                        print(file_name,f"random interval=(0,{(i+1)/100})")
-                        input_data = [random_mix(kde_sample(data_sets[data_set], scale)[:, 1:], random_ratio=(0,(i+1) / 100)) for _ in range(run_count)]
-                        result = p.map(eval_obj.run_single, input_data)
-                        results.append(result)
+                    for j in range(run_count):
+                        for i in range(30):
+                            print(file_name,f"run_count={j},random interval=(0,{(i+1)/100})")
+                            input_data = [random_mix(kde_sample(data_sets[data_set], scale)[:, 1:], random_ratio=(0,(i+1) / 100)) for _ in range(run_count)]
+                            result = p.map(eval_obj.run_single, input_data)
+                            results.append(result)
                     np.save(file_name, np.array(result))
-                    print(file_name, "done")
+                    print(file_name, "done",time()-timestart)
 
 
 
