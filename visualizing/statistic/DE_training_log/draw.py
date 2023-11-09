@@ -17,7 +17,7 @@ def run():
     data1 = "Dist2_production_data1__500_traning_log__.npy"
     data2 = "Dist2_production_data2__500_traning_log__.npy"
     data3 = "Dist2_random_data__500_traning_log__.npy"
-    data1_random = "Dist2_production_data1_random_(0, 0.3)_500_traning_log__.npy"
+    data1_random = "Dist2_production_data1_random_(0, 0.3)_1500_traning_log__.npy" #"Dist2_production_data1_random_(0, 0.3)_500_traning_log__.npy"
     data2_random = "Dist2_production_data2_random_(0, 0.3)_500_traning_log__.npy"
     dist3_random = "Dist2_random_data_random_(0, 0.3)_500_traning_log__.npy"
 

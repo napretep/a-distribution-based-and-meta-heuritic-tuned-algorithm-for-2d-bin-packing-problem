@@ -189,6 +189,7 @@ def train_on_determData():
         d = DE(data, name, max_iter=1000, data_sample_scale=1500, eval_selector="single")
         x, fun, log = d.run()
         result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
+        np.save(f"Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
     end_time = time()
     print("全部训练完成时间(秒):", end_time - start_time)
     print(result)
