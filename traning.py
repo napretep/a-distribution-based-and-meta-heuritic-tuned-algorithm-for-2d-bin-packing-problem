@@ -175,15 +175,31 @@ def solution_draw(solution:BinPacking2DAlgo.Algo,text=""):
             new_solution.append(plan)
         standard_draw_plan(new_solution,is_debug=True,task_id=solution.task_id,text=text)
 
-if __name__ == "__main__":
+def train_on_determData():
     start_time = time()
 
     result = []
-    for data,name in [[华为杯_data,"production_data1"],[外包_data,"production_data2"],[随机_data,"random_data"]]:
-        start_time2=time()
-        d = DE(data,name,random_ratio= (0,0.3),max_iter=1000,data_sample_scale=1500,eval_selector="single")
-        x,fun,log = d.run()
-        result.append([name,x,1/fun,f"训练用时(秒):{time()-start_time2}"])
+    for data, name in [[华为杯_data, "production_data1"], [外包_data, "production_data2"], [随机_data, "random_data"]]:
+        start_time2 = time()
+        d = DE(data, name, max_iter=1000, data_sample_scale=1500, eval_selector="single")
+        x, fun, log = d.run()
+        result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
     end_time = time()
     print("全部训练完成时间(秒):", end_time - start_time)
     print(result)
+
+def train_on_noisedData():
+    start_time = time()
+
+    result = []
+    for data, name in [[华为杯_data, "production_data1"], [外包_data, "production_data2"], [随机_data, "random_data"]]:
+        start_time2 = time()
+        d = DE(data, name, random_ratio=(0, 0.3), max_iter=1000, data_sample_scale=1500, eval_selector="single")
+        x, fun, log = d.run()
+        result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
+    end_time = time()
+    print("全部训练完成时间(秒):", end_time - start_time)
+    print(result)
+
+if __name__ == "__main__":
+    train_on_determData()
