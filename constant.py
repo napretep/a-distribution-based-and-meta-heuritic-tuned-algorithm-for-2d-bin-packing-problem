@@ -629,6 +629,24 @@ param_wb_300_107 = [ 19.54349797,  -8.08577713,  -8.30230933,   6.99432589,
         17.7640952 ,  13.17242401,  -4.56488583, -16.71416094,
        -10.50712621,  -3.95408833] # 1.0732741257505072
 
+class EVAL:
+    def __init__(self, algo_type, run_count, params):
+        self.algo_type = algo_type
+        self.run_count = run_count
+        self.params = params
+
+    def run(self,dataset):
+        start = time()
+        result = BinPacking2DAlgo.multi_run(dataset,MATERIAL_SIZE,run_count=self.run_count,algo_type=self.algo_type,parameter_input_array=self.params)
+        print(result)
+        print(time()-start)
+        return result
+
+    def run_single(self,dataset):
+        start = time()
+        result = BinPacking2DAlgo.single_run(dataset, MATERIAL_SIZE, algo_type=self.algo_type, parameter_input_array=self.params).get_avg_util_rate()
+        print(time()-start,"s,",result,"util",end=", ")
+        return result
 
 
 
