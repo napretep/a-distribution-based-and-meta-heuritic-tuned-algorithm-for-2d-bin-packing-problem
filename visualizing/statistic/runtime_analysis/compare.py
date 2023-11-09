@@ -59,8 +59,8 @@ data_sets = {
         "random_data"     : 随机_data,
 }
 data_types = ["standard", "random"]
-scales = [100, 300, 500, 700, 900, 1200, 1500, 2000, 3000,5000]
-algo_types = ["Skyline","Dist2","MaxRect"]
+scales = [8000,10000]
+algo_types = ["MaxRect"]
 run_count = 24
 def run_experiment():
     with Pool() as p:
@@ -70,27 +70,34 @@ def run_experiment():
                     start = time()
                     eval_fun = EVAL(algo_type, run_count, params["random"][data_set])
                     input_data = [kde_sample(data_sets[data_set], scale) for _ in range(run_count)]
-                    results = p.map(eval_fun.run, input_data)
+                    results = p.map(eval_fun.run_single, input_data)
                     path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
                     np.save(path, np.array(results))
                     print("\n", time() - start,"\n",path)
 
 def run_compare():
+    for algo_type in algo_types:
+        mean_datas = []
+        for scale in scales:
+            data: "np.ndarray|None" = None
+            for data_set in data_sets:
+                path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
+                if data is None:
+                    data = np.load(path)
+                else:
+                    data = np.row_stack((data, np.load(path)))
 
+            mean_datas.append(data.mean())
+        plt.plot(scales, mean_datas, label=f'{algo_type} on all dataset avg')
+        for i in range(len(scales)):
+            plt.annotate(f"{mean_datas[i]:.2f}", (scales[i], mean_datas[i]))
 
+    plt.xlabel('Scale')
+    plt.ylabel('mean runtime (second)')
+    plt.title('Comparison of Algorithms runtime')
+    plt.legend()  # Show line names
+    plt.show()
 
-class EVAL:
-    def __init__(self, algo_type, run_count, params):
-        self.algo_type = algo_type
-        self.run_count = run_count
-        self.params = params
-
-    def run(self,dataset):
-        start = time()
-        result:"BinPacking2DAlgo.Algo" = BinPacking2DAlgo.single_run(dataset,MATERIAL_SIZE,algo_type=self.algo_type,parameter_input_array=self.params)
-        time_cost = time()-start
-        print(time_cost,end=" ")
-        return time_cost
 
 
 
@@ -98,5 +105,5 @@ class EVAL:
 
 
 if __name__ == "__main__":
-    run()
+    run_experiment()
     pass
