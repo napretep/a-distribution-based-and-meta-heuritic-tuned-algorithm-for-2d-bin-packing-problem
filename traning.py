@@ -107,8 +107,8 @@ class DE:
         self.current_gen = 0
         self.pop_size = pop_size
         self.task_id = "task_"+str(uuid.uuid4())[:8]
-        self.log_save_name = f"{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_traning_log__{self.task_id}.npy"
-        self.param_save_name =lambda fun: f"param_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{round(1/fun,2)}_{self.task_id}.npy"
+        self.log_save_name = f"_traning_log_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{self.task_id}.npy"
+        self.param_save_name =lambda fun: f"_param_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{round(1/fun,2)}_{self.task_id}.npy"
 
 
     def run_v2(self):
