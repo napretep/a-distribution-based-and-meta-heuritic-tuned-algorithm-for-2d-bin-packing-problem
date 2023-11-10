@@ -37,11 +37,12 @@ def run_compare():
         for key, grp in df_subset.groupby(['algo_name']):
             grp = grp.sort_values(by='noise_ratio(%)')
             plt.plot(grp['noise_ratio(%)'], grp['result'], label=key)
+
             # 计算线性回归
             slope, intercept, r_value, p_value, std_err = linregress(grp['noise_ratio(%)'], grp['result'])
 
             # 绘制回归线
-            plt.plot(grp['noise_ratio(%)'], intercept + slope * grp['noise_ratio(%)'])
+            plt.plot(grp['noise_ratio(%)'], intercept + slope * grp['noise_ratio(%)'], linestyle='--',label=key[0]+"_linreg")
         plt.xlabel('noise_ratio(%)')
         plt.ylabel('Result Mean')
         plt.title(f'Comparison of Algorithms for {data_set}')

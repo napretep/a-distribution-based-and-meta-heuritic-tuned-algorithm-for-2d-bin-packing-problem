@@ -703,6 +703,7 @@ params = {
                                      -29.75812519, 24.37060543, -13.10154752, -6.09719204,
                                      7.50557726, -8.27136646, 36.6475308, 3.24912781,
                                      -4.3851668, 2.2489736, 35.10086676, 6.805312], # 这组参数非常强大,打败了各种情况
+
         "single_trained":{
                 "standard":{
                         "production_data1":np.load(r"D:\workshop\2d-bin-packing-solver\determ_param_Dist_production_data1_1.0151604089512312__1699576099.npy"),
