@@ -438,13 +438,13 @@ for i in range(5):
 # 设置随机种子以保证结果可复现
 np.random.seed(0)
 
-mu, sigma = 0.1, 50  # 设置均值和标准差
-x_samples = np.random.normal(mu, sigma, 1000)
+mu, sigma = 0.1, 2  # 设置均值和标准差
+x_samples = np.random.normal(mu+1, sigma, 1000)
 y_samples = np.random.normal(mu, sigma, 1000)
 samples1 = np.column_stack((x_samples, y_samples))
 mu, sigma = 0.1, 0.1  # 设置均值和标准差
-x_samples = np.random.normal(mu, sigma, 500)
-y_samples = np.random.normal(mu, sigma, 500)
+x_samples = np.random.normal(mu, sigma, 1000)
+y_samples = np.random.normal(mu, sigma, 1000)
 samples2 = np.column_stack((x_samples, y_samples))
 mu, sigma = 0.1, 0.1  # 设置均值和标准差
 x_samples = np.random.normal(mu, sigma, 500)
@@ -454,15 +454,20 @@ x_samples = np.random.uniform(0, 1, 200)
 y_samples = np.random.uniform(0, 1, 200)
 samples4 = np.column_stack((x_samples, y_samples))
 x_samples = np.random.uniform(0, 1, 200)
-y_samples = np.random.uniform(0.55, 0.65, 200)
+y_samples = np.random.uniform(0.45, 0.65, 200)
 samples5 = np.column_stack((x_samples, y_samples))
 x_samples = np.random.uniform(0, 1, 200)
-y_samples = np.random.uniform(0.35, 0.4, 200)
+y_samples = np.random.uniform(0.25, 0.4, 200)
 samples6 = np.column_stack((x_samples, y_samples))
-samples = np.row_stack((samples2, samples1, samples3, samples4,samples5,samples6))
+mu, sigma = 0.1, 0.1  # 设置均值和标准差
+x_samples = np.random.normal(0.327,1,500)
+y_samples = np.random.normal(0.2, 1, 500)
+samples7 = np.column_stack((x_samples, y_samples))
+samples = np.row_stack((samples2, samples1, samples3, samples4,samples5,samples6,samples7))
 samples = samples[(0 <= samples[:, 0]) & (samples[:, 0] <= 1) & (0 <= samples[:, 1]) & (samples[:, 1] <= 1)]
 
 随机_data: "np.ndarray" = np.column_stack((np.zeros(samples.shape[0]), np.maximum(samples[:, 0], samples[:, 1]) * MATERIAL_SIZE[0], np.minimum(samples[:, 0], samples[:, 1]) * MATERIAL_SIZE[1]))
+
 随机_data = 随机_data.astype(int)
 
 # 随机_data[:,1:3] = 随机_data[:,1:3]

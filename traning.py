@@ -108,7 +108,7 @@ class DE:
         self.pop_size = pop_size
         self.task_id = "task_"+str(uuid.uuid4())[:8]
         self.log_save_name = f"_traning_log_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{self.task_id}.npy"
-        self.param_save_name =lambda fun: f"_param_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{round(1/fun,2)}_{self.task_id}.npy"
+        self.param_save_name =lambda fun: f"_param_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{round(fun,2)}_{self.task_id}.npy"
 
 
     def run_v2(self):
@@ -294,7 +294,7 @@ class Training:
         result = []
         for data, name in self.data_set:
             start_time2 = time()
-            d = DE(data, name, random_ratio=(0, 0.3) if self.training_type=="noised" else None, max_iter=500, data_sample_scale=1500)
+            d = DE(data, name, random_ratio=(0, 0.3) if self.training_type=="noised" else None, max_iter=500)
             # x, fun, log = d.run()
             d.run_v2()
             # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
@@ -304,10 +304,10 @@ class Training:
 
 if __name__ == "__main__":
     t = Training([
-            [华为杯_data, "production_data1"],
-            [外包_data, "production_data2"],
+            # [华为杯_data, "production_data1"],
+            # [外包_data, "production_data2"],
             [随机_data, "random_data"]
     ],
-            training_type="noised"
+            training_type="determ"
     )
     t.run()
