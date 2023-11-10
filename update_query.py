@@ -12,7 +12,7 @@ import os
 import subprocess
 
 # 配置参数
-ACCESS_TOKEN ="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" # os.environ.get("GITHUB_TOKEN")  # 从环境变量获取令牌
+ACCESS_TOKEN ="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" # os.environ.get("GITHUB_TOKEN")  # 从环境变量获取令牌
 REPO = "napretep/a-distribution-based-and-meta-heuritic-tuned-algorithm-for-2d-bin-packing-problem"  # GitHub 仓库，格式为'用户名/仓库名'
 BRANCH = "main"  # 目标分支
 POLL_INTERVAL = 8  # 轮询间隔（秒）
@@ -28,6 +28,8 @@ def get_latest_commit_sha():
         return response.json()['sha']
     else:
         print("Error fetching the latest commit")
+        print("Status Code:", response.status_code)
+        print("Response:", response.text)
         return None
 
 def pull_latest_changes():
