@@ -91,7 +91,7 @@ class DE:
         self.input_data = None
         self.bounds = [[0,1]]*total_param_num
         self.mutation = 0.8
-        self.crossover = 0.7
+        self.crossover = 0.9
         self.p = Pool()
         self.eval_selector = eval_selector # "multi" "single"
         self.data_set = data_set
