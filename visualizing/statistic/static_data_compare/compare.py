@@ -80,15 +80,15 @@ if __name__ == "__main__":
     start_time = time()
     job = JOB(
         data_sets= {
-            "production_data1": 华为杯_data,
-            "production_data2": 外包_data,
+            # "production_data1": 华为杯_data,
+            # "production_data2": 外包_data,
             "random_data"     : 随机_data,
         },
-        algo_types=["Dist2"],
+        algo_types=["Skyline","MaxRect"],
         param_source=params,
         scales=(100,300,500,1000,3000,5000),
         data_type="random",
-        algo_prefix="determ",
+        algo_prefix="",
         run_count=36
     )
     job.DO()
