@@ -158,7 +158,7 @@ class DE:
         eval_value = self.get_eval()(xk)
         self.training_log.append([len(self.time_recorder),1/eval_value])
         self.current_gen += 1
-        if self.current_gen%100==0:
+        if self.current_gen%50==0:
             np.save(f"at_gen_{self.current_gen}"+self.save_name, np.array(self.training_log))
         print(f'\ncurrent_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/eval_value} , Convergence: {convergence}\n')
 
