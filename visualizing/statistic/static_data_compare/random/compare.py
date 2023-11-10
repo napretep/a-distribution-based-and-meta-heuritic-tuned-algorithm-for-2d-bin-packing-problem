@@ -8,11 +8,11 @@ __time__ = '2023/11/10 4:25'
 """
 
 from constant import *
-
+from scipy.stats import linregress
 
 scales = [100,300,500,1000,3000,5000]
 
-algo_types = ["superParamDist2","determDist2","noisedDist2","MaxRect","Skyline"]
+algo_types = ["determDist2","noisedDist2","MaxRect","Skyline"]
 # determ param dist algo on random ratio dataset
 def run_compare():
     results = []
@@ -32,10 +32,16 @@ def run_compare():
     df = pd.DataFrame(results)
     for data_set in data_sets:
         df_subset = df[df['data_set'] == data_set]
+
         plt.figure(figsize=(10, 6))
         for key, grp in df_subset.groupby(['algo_name']):
             grp = grp.sort_values(by='noise_ratio(%)')
             plt.plot(grp['noise_ratio(%)'], grp['result'], label=key)
+            # 计算线性回归
+            slope, intercept, r_value, p_value, std_err = linregress(grp['noise_ratio(%)'], grp['result'])
+
+            # 绘制回归线
+            plt.plot(grp['noise_ratio(%)'], intercept + slope * grp['noise_ratio(%)'])
         plt.xlabel('noise_ratio(%)')
         plt.ylabel('Result Mean')
         plt.title(f'Comparison of Algorithms for {data_set}')

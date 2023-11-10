@@ -11,9 +11,9 @@ import seaborn as sns
 import  matplotlib.pyplot as plt
 import pandas as pd
 def run():
-    algo_type=["superParamDist2","noiseParam_Dist2","Dist2","Skyline","MaxRect"]
+    algo_type=["single_trained_Dist2","superParamDist2","noiseParam_Dist2","Dist2","Skyline","MaxRect"]
 
-    data_sets=["production_data1","production_data2","random_data"]
+    data_sets=["production_data1","production_data2"]#,"random_data"]
     scales = [100,300,500,1000,3000,5000]
     results = []
     for data in data_sets:
