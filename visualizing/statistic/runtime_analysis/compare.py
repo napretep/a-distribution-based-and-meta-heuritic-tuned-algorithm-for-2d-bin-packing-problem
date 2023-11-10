@@ -60,7 +60,7 @@ data_sets = {
 }
 data_types = ["standard", "random"]
 scales = [100,300,500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]
-algo_types = ["MaxRect"]
+algo_types = ["Skyline","Dist2"]#,"MaxRect"]
 run_count = 24
 def run_experiment():
     with Pool() as p:
@@ -99,7 +99,7 @@ def run_compare():
     plt.ylabel('mean runtime (second)')
     plt.title('Comparison of Algorithms runtime')
     plt.legend()  # Show line names
-    plt.savefig("3_algos_runtime_comparison_i711700KF_5ghz_16thread.png")
+    plt.savefig("2_algos_runtime_comparison_i711700KF_5ghz_16thread.png")
     plt.show()
 
 

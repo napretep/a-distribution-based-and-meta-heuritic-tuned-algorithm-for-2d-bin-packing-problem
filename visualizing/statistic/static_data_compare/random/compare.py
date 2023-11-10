@@ -12,7 +12,7 @@ from constant import *
 
 scales = [100,300,500,1000,3000,5000]
 
-algo_types = ["determDist2","noisedDist2","MaxRect","Skyline"]
+algo_types = ["superParamDist2","determDist2","noisedDist2","MaxRect","Skyline"]
 # determ param dist algo on random ratio dataset
 def run_compare():
     results = []

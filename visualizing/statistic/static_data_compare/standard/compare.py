@@ -11,27 +11,18 @@ import seaborn as sns
 import  matplotlib.pyplot as plt
 import pandas as pd
 def run():
-    algo_type=["Dist2","Skyline","MaxRect"]
+    algo_type=["superParamDist2","noiseParam_Dist2","Dist2","Skyline","MaxRect"]
+
     data_sets=["production_data1","production_data2","random_data"]
     scales = [100,300,500,1000,3000,5000]
     results = []
-    for data in data_sets:
-        for scale in scales:
-            input_data = np.load(f"./standard_noiseParam_Dist2_{data}_{scale}_.npy")
-            for i_data in input_data:
-                results.append({
-                        "algo_name":"nosied_Dist2",
-                        "data_set":data,
-                        "scale":scale,
-                        "result":i_data
-                })
     for data in data_sets:
         for algo in algo_type:
             for scale in scales:
                 result = np.load(f"./standard_{algo}_{data}_{scale}_.npy")
                 for result_i in result:
                     results.append({
-                            "algo_name":algo if algo!="Dist2" else "determParam_Dist",
+                            "algo_name":algo,
                             "data_set":data,
                             "scale":scale,
                             "result":result_i
