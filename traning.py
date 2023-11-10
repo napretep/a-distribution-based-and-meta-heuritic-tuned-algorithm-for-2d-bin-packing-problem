@@ -292,10 +292,7 @@ class Training:
             # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
         end_time = time()
         print("全部训练完成时间(秒):", end_time - start_time)
-        print(result)
 
-
-        return 1 / value
 if __name__ == "__main__":
     t = Training([
             [华为杯_data, "production_data1"],
