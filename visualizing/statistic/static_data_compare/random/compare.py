@@ -42,6 +42,10 @@ def run_compare():
         plt.legend()
         plt.show()
 
+
+
+
+
 if __name__ == "__main__":
     run_compare()
     pass

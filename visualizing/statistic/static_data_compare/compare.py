@@ -24,7 +24,7 @@ data_sets = {
 data_types = ["standard", "random"]
 scales = [100,300,500,1000,3000,5000]
 algo_types = ["Dist2"]
-scales = [3000, 5000]
+# scales = [3000, 5000]
 run_count = 36
 
 
@@ -108,7 +108,7 @@ def gen_sample_data(data,scale,i):
 
 
 
-def start_singlerun_compare_job():
+def random_ratio_singlerun_compare_job():
     with Pool() as p:
         for data_set in data_sets:
             print(data_set)
@@ -118,6 +118,29 @@ def start_singlerun_compare_job():
                 for scale in scales:
                     timestart = time()
                     file_name = f"random_ratio(0,30)_determ{algo_type}_{data_set}_{scale}_.npy"
+                    # 每个随机比例都有
+                    # for j in range(run_count):
+                    run_results=[]
+                    for i in range(30):
+                        print(file_name,f"random interval=(0,{(i+1)/100})")
+                        input_data = [random_mix(kde_sample(data_sets[data_set], scale)[:, 1:], random_ratio=(0,(i+1) / 100)) for _ in range(run_count)]
+                        result = p.map(eval_obj.run_single, input_data)
+                        run_results.append(result)
+                        print("\n")
+                    np.save(file_name, np.array(run_results))
+                    print(file_name, "done",time()-timestart)
+
+
+def superParam_singlerun_compare_job():
+    with Pool() as p:
+        for data_set in data_sets:
+            print(data_set)
+            for algo_type in algo_types:
+                print(algo_type)
+                eval_obj = EVAL(algo_type, run_count, params["superParam"])
+                for scale in scales:
+                    timestart = time()
+                    file_name = f"random_ratio(0,30)_superParam{algo_type}_{data_set}_{scale}_.npy"
                     # 每个随机比例都有
                     # for j in range(run_count):
                     run_results=[]
@@ -145,8 +168,12 @@ def compare_noise_param():
                 np.save(file_name, np.array(result[i]))
                 print(file_name, "done")
 
+
+
+
+
 if __name__ == "__main__":
     start_time = time()
-    start_singlerun_compare_job()
+    superParam_singlerun_compare_job()
     print(time()-start_time)
     pass
