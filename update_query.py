@@ -13,10 +13,10 @@ import subprocess
 
 # 配置参数
 ACCESS_TOKEN = os.environ.get("GITHUB_TOKEN")  # 从环境变量获取令牌
-REPO = "username/repo"  # GitHub 仓库，格式为'用户名/仓库名'
+REPO = "napretep/a-distribution-based-and-meta-heuritic-tuned-algorithm-for-2d-bin-packing-problem"  # GitHub 仓库，格式为'用户名/仓库名'
 BRANCH = "main"  # 目标分支
-POLL_INTERVAL = 300  # 轮询间隔（秒）
-LOCAL_REPO_PATH = "/path/to/your/local/repo"  # 本地仓库路径
+POLL_INTERVAL = 10  # 轮询间隔（秒）
+LOCAL_REPO_PATH = os.path.split(os.path.abspath(__file__))[0] # 本地仓库路径
 
 # GitHub API URL
 API_URL = f"https://api.github.com/repos/{REPO}/commits/{BRANCH}"
