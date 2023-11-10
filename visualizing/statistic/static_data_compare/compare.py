@@ -152,7 +152,20 @@ def superParam_singlerun_compare_job():
                         print("\n")
                     np.save(file_name, np.array(run_results))
                     print(file_name, "done",time()-timestart)
-
+def superParam_determ_singlerun_compare_job():
+    with Pool() as p:
+        for data_set in data_sets:
+            print(data_set)
+            for algo_type in algo_types:
+                print(algo_type)
+                eval_obj = EVAL(algo_type, run_count, params["superParam"])
+                for scale in scales:
+                    timestart = time()
+                    file_name = f"standard_superParam{algo_type}_{data_set}_{scale}_.npy"
+                    input_data = [kde_sample(data_sets[data_set], scale) for _ in range(run_count)]
+                    result = p.map(eval_obj.run_single, input_data)
+                    np.save(file_name, np.array(result))
+                    print(file_name, "done",time()-timestart)
 
 
 
