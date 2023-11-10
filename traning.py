@@ -75,7 +75,7 @@ def single_eval(param):
     end = time()
     print(f"{round(end-start,2)}s,{round(value*100,2)}%",end=", ")
 class DE:
-    def __init__(self,data_set,data_set_name,eval_selector="multi",total_param_num=24,pop_size=12,eval_run_count=40,data_sample_scale=1000,random_ratio=None,algo_name="Dist2",max_iter=500,
+    def __init__(self,data_set,data_set_name,eval_selector="multi",total_param_num=24,pop_size=20,eval_run_count=40,data_sample_scale=1000,random_ratio=None,algo_name="Dist2",max_iter=500,
 
                  ):
         """
