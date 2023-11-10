@@ -6,7 +6,6 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/11/10 20:44'
 """
-import requests
 import time
 import os
 import subprocess
