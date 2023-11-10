@@ -89,8 +89,8 @@ class DE:
         :param max_iter:
         """
         self.input_data = None
-        self.bounds = [[0,1]]*total_param_num
-        self.mutation = 0.8
+        self.bounds = [[-2,2]]*total_param_num
+        self.mutation = 0.4
         self.crossover = 0.9
         self.p = Pool()
         self.eval_selector = eval_selector # "multi" "single"
@@ -114,12 +114,16 @@ class DE:
     def run_v2(self):
         self.time_recorder.append(time())
         # current_best = None
-        for x,fitness in self.optimizing():
+
+        best_score:"np.ndarray|None" = None
+        for best_x,best_fitness,avg_fitness in self.optimizing():
             self.time_recorder.append((time()))
-            print(f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1]-self.time_recorder[-2],2)}s,score={round(1/fitness*100,3)}%,x={x}")
-            self.training_log.append(1/fitness)
+            if best_score is None:
+                best_score = np.array([])
+            print(f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1]-self.time_recorder[-2],2)}s,score={round(1/best_fitness*100,3)}%,x={best_x}")
+            self.training_log.append([1/best_fitness,1/avg_fitness])
             if self.current_gen>0 and self.current_gen%100==0:
-                np.save(f"at_gen{self.current_gen}"+self.param_save_name(1/fitness),x)
+                np.save(f"at_gen{self.current_gen}"+self.param_save_name(1/best_fitness),best_x)
                 np.save(f"at_gen{self.current_gen}"+self.log_save_name,np.array(self.training_log))
 
         pass
@@ -133,12 +137,14 @@ class DE:
         fitness = np.asarray([self.mutli_process_single_eval(ind) for ind in pop_denorm])
         best_idx = np.argmin(fitness)
         best = pop_denorm[best_idx]
+        #整体平均和历史最高
         for i in range(self.max_iter):
             self.current_gen=i
-            for j in range(self.pop_size):
+            selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7,1)), replace=False)
+            for j in selected_indices:
                 idxs = [idx for idx in range(self.pop_size) if idx != j]
                 a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
-                mutant = np.clip(a + self.mutation * (b - c), 0, 1)
+                mutant = np.clip(a + np.random.uniform(self.mutation,1) * (b - c), min_b,max_b)
                 cross_points = np.random.rand(dimensions) < self.crossover
                 if not np.any(cross_points):
                     cross_points[np.random.randint(0, dimensions)] = True
@@ -151,7 +157,8 @@ class DE:
                     if f < fitness[best_idx]:
                         best_idx = j
                         best = trial_denorm
-            yield best, fitness[best_idx]
+
+            yield best, fitness[best_idx],np.mean(fitness)
 
     def get_sampled_items(self):
 
@@ -180,11 +187,11 @@ class DE:
         result = np.array(result)
         # print(result)
         mean = np.mean(result)
-        std = np.std(result)
-        cutoff = std * 3
-        lower, upper = mean - cutoff, mean + cutoff
-        result = result[(result > lower) & (result < upper)]
-        mean = np.mean(result)
+        # std = np.std(result)
+        # cutoff = std * 3
+        # lower, upper = mean - cutoff, mean + cutoff
+        # result = result[(result > lower) & (result < upper)]
+        # mean = np.mean(result)
         end = time()
         print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
         return 1 / mean
