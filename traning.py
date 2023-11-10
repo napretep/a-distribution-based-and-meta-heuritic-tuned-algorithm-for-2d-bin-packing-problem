@@ -90,7 +90,8 @@ class DE:
         self.algo_name=algo_name
         self.max_iter=max_iter
         self.current_gen = 0
-
+        self.task_id = "task_"+str(uuid.uuid4())[:8]
+        self.save_name = f"{self.algo_name}_{self.data_set_name}_{('random_'+self.random_ratio.__str__() )if self.random_ratio is not None else ''}_{self.data_sample_scale}_traning_log__{self.task_id}.npy"
 
     def get_sampled_items(self):
 
@@ -136,7 +137,7 @@ class DE:
         self.time_recorder.append(start_time)
         from scipy.optimize import differential_evolution
 
-        bounds = [[-40, 40]] * self.total_param_num
+        bounds = [[-1, 1]] * self.total_param_num
 
         result = differential_evolution(self.get_eval(), bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.0001,init="random",mutation=(0.5,1.5),recombination=0.95,
                                         callback=self.callback, maxiter=self.max_iter)
@@ -144,7 +145,7 @@ class DE:
         print("训练时间(秒):",end_time - start_time)
         to_save = [end_time, result.x, result.fun]
         print(to_save)
-        np.save(f"{self.algo_name}_{self.data_set_name}_{('random_'+self.random_ratio.__str__() )if self.random_ratio is not None else ''}_{self.data_sample_scale}_traning_log__{round(end_time)}.npy", np.array(self.training_log))
+        np.save(self.save_name, np.array(self.training_log))
         return result.x, result.fun, self.training_log
 
         pass
@@ -154,6 +155,8 @@ class DE:
         eval_value = self.get_eval()(xk)
         self.training_log.append([len(self.time_recorder),1/eval_value])
         self.current_gen += 1
+        if self.current_gen%100==0:
+            np.save(f"at_gen_{self.current_gen}"+self.save_name, np.array(self.training_log))
         print(f'current_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/eval_value} , Convergence: {convergence}\n')
 
         self.training_log.append([len(self.time_recorder),1/eval_value])
