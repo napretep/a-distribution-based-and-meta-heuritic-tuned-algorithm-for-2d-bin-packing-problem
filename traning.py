@@ -118,7 +118,7 @@ class DE:
             self.time_recorder.append((time()))
             print(f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1]-self.time_recorder[-2],2)}s,score={round(1/fitness*100,3)}%,x={x}")
             self.training_log.append(1/fitness)
-            if self.current_gen>0 and self.current_gen%50==0:
+            if self.current_gen>0 and self.current_gen%100==0:
                 np.save(f"at_gen{self.current_gen}"+self.param_save_name(1/fitness),x)
                 np.save(f"at_gen{self.current_gen}"+self.log_save_name,np.array(self.training_log))
 
