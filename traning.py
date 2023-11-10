@@ -67,7 +67,7 @@ def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
 
 
 class DE:
-    def __init__(self,data_set,data_set_name,eval_selector="multi",total_param_num=24 ,eval_run_count=40,data_sample_scale=500,random_ratio=None,algo_name="Dist2",max_iter=500):
+    def __init__(self,data_set,data_set_name,eval_selector="multi",total_param_num=24 ,eval_run_count=40,data_sample_scale=1000,random_ratio=None,algo_name="Dist2",max_iter=500):
         """
         :param data_set:
         :param data_set_name:
@@ -114,6 +114,7 @@ class DE:
 
 
     def multi_eval(self,param):
+        start = time()
         data_for_run = [self.get_sampled_items() for i in range(self.eval_run_count)]
         result = BinPacking2DAlgo.multi_run(data_for_run, MATERIAL_SIZE, parameter_input_array=param,run_count=self.eval_run_count,algo_type=self.algo_name)
         result = np.array(result)
@@ -124,6 +125,8 @@ class DE:
         lower, upper = mean - cutoff, mean + cutoff
         result = result[(result > lower) & (result < upper)]
         mean = np.mean(result)
+        end = time()
+        print(f"{round(end-start,2)}s,{round(mean*100,2)}%",end=", ")
         return 1/mean
 
     def single_eval(self,param):
@@ -157,7 +160,7 @@ class DE:
         self.current_gen += 1
         if self.current_gen%100==0:
             np.save(f"at_gen_{self.current_gen}"+self.save_name, np.array(self.training_log))
-        print(f'current_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/eval_value} , Convergence: {convergence}\n')
+        print(f'\ncurrent_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1/eval_value} , Convergence: {convergence}\n')
 
         self.training_log.append([len(self.time_recorder),1/eval_value])
 
@@ -198,7 +201,7 @@ class Training:
         result = []
         for data, name in self.data_set:
             start_time2 = time()
-            d = DE(data, name, random_ratio=(0, 0.3) if self.training_type=="noised" else None, max_iter=500, data_sample_scale=1500, eval_selector="single")
+            d = DE(data, name, random_ratio=(0, 0.3) if self.training_type=="noised" else None, max_iter=500, data_sample_scale=1500)
             x, fun, log = d.run()
             result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
             np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
@@ -213,6 +216,6 @@ if __name__ == "__main__":
             [外包_data, "production_data2"],
             [随机_data, "random_data"]
     ],
-            training_type="determ"
+            training_type="noised"
     )
     t.run()
