@@ -120,7 +120,7 @@ class DE:
             self.time_recorder.append((time()))
             if best_score is None:
                 best_score = np.array([])
-            print(f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1]-self.time_recorder[-2],2)}s,score={round(1/best_fitness*100,3)}%,x={best_x}")
+            print(f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1]-self.time_recorder[-2],2)}s,avg_score={round(1/avg_fitness*100,3)}%,hist_best_score={round(1/best_fitness*100,3)}%,x={best_x}")
             self.training_log.append([1/best_fitness,1/avg_fitness])
             if self.current_gen>0 and self.current_gen%100==0:
                 np.save(f"at_gen{self.current_gen}"+self.param_save_name(1/best_fitness),best_x)
@@ -140,6 +140,7 @@ class DE:
         #整体平均和历史最高
         for i in range(self.max_iter):
             self.current_gen=i
+            current_generation_fitness = []
             selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7,1)), replace=False)
             for j in selected_indices:
                 idxs = [idx for idx in range(self.pop_size) if idx != j]
@@ -151,6 +152,7 @@ class DE:
                 trial = np.where(cross_points, mutant, pop[j])
                 trial_denorm = min_b + trial * diff
                 f = self.mutli_process_single_eval(trial_denorm)
+                current_generation_fitness.append(f)
                 if f < fitness[j]:
                     fitness[j] = f
                     pop[j] = trial
@@ -158,7 +160,7 @@ class DE:
                         best_idx = j
                         best = trial_denorm
 
-            yield best, fitness[best_idx],np.mean(fitness)
+            yield best, fitness[best_idx],np.mean(current_generation_fitness)
 
     def get_sampled_items(self):
 
