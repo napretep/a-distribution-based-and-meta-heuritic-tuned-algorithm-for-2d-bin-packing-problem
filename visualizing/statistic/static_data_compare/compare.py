@@ -46,12 +46,12 @@ class JOB:
                 for algo_type in self.algo_types:
                     for scale in self.scales:
                         timestart = time()
-                        for data_type in self.data_type:
-                            for prefix in self.algo_prefix:
+                        for prefix in self.algo_prefix:
+                            for data_type in self.data_type:
                                 print(data_type,data_set,prefix,algo_type,scale)
                                 eval_obj = EVAL(algo_type, self.run_count, self.param_source[prefix][data_set] if prefix in self.param_source else self.param_source[data_type][data_set])
                                 file_name = f"{data_type}_{data_set}_{prefix}{algo_type}_{scale}_.npy"
-                                if self.data_type != STANDARD:
+                                if data_type == NOISED:
                                     self.noised_work(p, file_name, data_set, scale, eval_obj,timestart)
                                     pass
                                 else:
