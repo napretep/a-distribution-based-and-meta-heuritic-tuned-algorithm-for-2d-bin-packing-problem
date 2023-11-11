@@ -247,7 +247,7 @@ class Training:
         result = []
         for data, name in self.data_set:
             start_time2 = time()
-            print(name,"start")
+            print(self.training_type,name,"start")
             d = DE(data, name, random_ratio=(0, 0.3) if self.training_type==NOISED else None)
             # x, fun, log = d.run()
             d.run_v2()
