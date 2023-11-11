@@ -21,7 +21,7 @@ def gen_sample_data(data, scale, i):
 
 
 class JOB:
-    def __init__(self, data_sets, algo_types, param_source, scales=(100, 300, 500, 1000, 3000, 5000), data_type: "list[str]|str" = "standard", algo_prefix:"list|str"="", run_count=36):
+    def __init__(self, data_sets, algo_types, param_source, scales=(100, 300, 500, 1000, 3000, 5000), data_type: "iter[str]" = (STANDARD,), algo_prefix:"iter"=("",), run_count=36):
         """
 
         :param data_sets:
@@ -43,53 +43,37 @@ class JOB:
     def DO(self):
         with Pool() as p:
             for data_set in self.data_sets:
-                print(data_set)
                 for algo_type in self.algo_types:
-                    print(algo_type)
-
                     for scale in self.scales:
                         timestart = time()
-                        if type(self.data_type) == list:
-                            for data_type in self.data_type:
-                                eval_obj = EVAL(algo_type, self.run_count, self.param_source[data_type][data_set])
-                                file_name = f"{data_type}_{data_set}_{self.algo_prefix}{algo_type}_{scale}_.npy"
-                                if data_type !=STANDARD:
-
-                                    run_results = []
-                                    for i in range(30):
-                                        print(file_name, f"random interval=(0,{(i + 1) / 100})")
-                                        input_data = [random_mix(kde_sample(self.data_sets[data_set], scale)[:, 1:], random_ratio=(0, (i + 1) / 100)) for _ in range(self.run_count)]
-                                        result = p.map(eval_obj.run_single, input_data)
-                                        run_results.append(result)
-                                        print("\n")
-                                    np.save(os.path.join(SYNC_PATH, file_name), np.array(run_results))
-                                    print(file_name, "done", time() - timestart)
+                        for data_type in self.data_type:
+                            for prefix in self.algo_prefix:
+                                print(data_type,data_set,prefix,algo_type,scale)
+                                eval_obj = EVAL(algo_type, self.run_count, self.param_source[prefix][data_set] if prefix in self.param_source else self.param_source[data_type][data_set])
+                                file_name = f"{data_type}_{data_set}_{prefix}{algo_type}_{scale}_.npy"
+                                if self.data_type != STANDARD:
+                                    self.noised_work(p, file_name, data_set, scale, eval_obj,timestart)
+                                    pass
                                 else:
+                                    self.standard_work(p, file_name, data_set, scale, eval_obj,timestart)
+                                    pass
 
-                                    input_data = [kde_sample(self.data_sets[data_set], scale) for _ in range(self.run_count)]
-                                    result = p.map(eval_obj.run_single, input_data)
-                                    np.save(os.path.join(SYNC_PATH, file_name), np.array(result))
-                                    print(file_name, "done", time() - timestart)
-                        else:
-                            eval_obj = EVAL(algo_type, self.run_count, self.param_source[data_type][data_set])
-                            file_name = f"{self.data_type}_{data_set}_{self.algo_prefix}{algo_type}_{scale}_.npy"
-                            if self.data_type != STANDARD:
+    def noised_work(self,p,file_name,data_set,scale,eval_obj:EVAL,timestart):
+        run_results = []
+        for i in range(30):
+            print(file_name, f"random interval=(0,{(i + 1) / 100})")
+            input_data = [random_mix(kde_sample(self.data_sets[data_set], scale)[:, 1:], random_ratio=(0, (i + 1) / 100)) for _ in range(self.run_count)]
+            result = p.map(eval_obj.run_single, input_data)
+            run_results.append(result)
+            print("\n")
+        np.save(os.path.join(SYNC_PATH, file_name), np.array(run_results))
+        print(file_name, "done", time() - timestart)
 
-                                run_results = []
-                                for i in range(30):
-                                    print(file_name, f"random interval=(0,{(i + 1) / 100})")
-                                    input_data = [random_mix(kde_sample(self.data_sets[data_set], scale)[:, 1:], random_ratio=(0, (i + 1) / 100)) for _ in range(self.run_count)]
-                                    result = p.map(eval_obj.run_single, input_data)
-                                    run_results.append(result)
-                                    print("\n")
-                                np.save(os.path.join(SYNC_PATH, file_name), np.array(run_results))
-                                print(file_name, "done", time() - timestart)
-                            else:
-
-                                input_data = [kde_sample(self.data_sets[data_set], scale) for _ in range(self.run_count)]
-                                result = p.map(eval_obj.run_single, input_data)
-                                np.save(os.path.join(SYNC_PATH, file_name), np.array(result))
-                                print(file_name, "done", time() - timestart)
+    def standard_work(self,p,file_name,data_set,scale,eval_obj:EVAL,timestart):
+        input_data = [kde_sample(self.data_sets[data_set], scale) for _ in range(self.run_count)]
+        result = p.map(eval_obj.run_single, input_data)
+        np.save(os.path.join(SYNC_PATH, file_name), np.array(result))
+        print(file_name, "done", time() - timestart)
 
 
 if __name__ == "__main__":
@@ -103,7 +87,8 @@ if __name__ == "__main__":
             algo_types=["Dist2"],
             param_source=params,
             data_type=[STANDARD,NOISED],
-            algo_prefix=STANDARD,
+            algo_prefix=[STANDARD,NOISED],
+            scales=(100,1000,3000,5000)
     )
     job.DO()
     print(time() - start_time)
