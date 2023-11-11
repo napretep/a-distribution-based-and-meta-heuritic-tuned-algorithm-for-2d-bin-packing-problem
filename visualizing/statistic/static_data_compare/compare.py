@@ -54,7 +54,7 @@ class JOB:
                                 eval_obj = EVAL(algo_type, self.run_count, self.param_source[data_type][data_set])
                                 file_name = f"{data_type}_{data_set}_{self.algo_prefix}{algo_type}_{scale}_.npy"
                                 if data_type !=STANDARD:
-                                    file_name = NOISED + "_" + file_name
+
                                     run_results = []
                                     for i in range(30):
                                         print(file_name, f"random interval=(0,{(i + 1) / 100})")
@@ -65,7 +65,7 @@ class JOB:
                                     np.save(os.path.join(SYNC_PATH, file_name), np.array(run_results))
                                     print(file_name, "done", time() - timestart)
                                 else:
-                                    file_name = STANDARD + "_" + file_name
+
                                     input_data = [kde_sample(self.data_sets[data_set], scale) for _ in range(self.run_count)]
                                     result = p.map(eval_obj.run_single, input_data)
                                     np.save(os.path.join(SYNC_PATH, file_name), np.array(result))
@@ -74,7 +74,7 @@ class JOB:
                             eval_obj = EVAL(algo_type, self.run_count, self.param_source[data_type][data_set])
                             file_name = f"{self.data_type}_{data_set}_{self.algo_prefix}{algo_type}_{scale}_.npy"
                             if self.data_type != STANDARD:
-                                file_name=NOISED+"_"+file_name
+
                                 run_results = []
                                 for i in range(30):
                                     print(file_name, f"random interval=(0,{(i + 1) / 100})")
@@ -85,7 +85,7 @@ class JOB:
                                 np.save(os.path.join(SYNC_PATH, file_name), np.array(run_results))
                                 print(file_name, "done", time() - timestart)
                             else:
-                                file_name = STANDARD + "_" + file_name
+
                                 input_data = [kde_sample(self.data_sets[data_set], scale) for _ in range(self.run_count)]
                                 result = p.map(eval_obj.run_single, input_data)
                                 np.save(os.path.join(SYNC_PATH, file_name), np.array(result))
