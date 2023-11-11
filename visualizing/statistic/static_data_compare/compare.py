@@ -84,10 +84,10 @@ if __name__ == "__main__":
             # "production_data2": 外包_data,
             "random_data"     : 随机_data,
         },
-        algo_types=["Skyline","MaxRect"],
+        algo_types=["MaxRect"],
         param_source=params,
         scales=(100,300,500,1000,3000,5000),
-        data_type="random",
+        data_type="standard",
         algo_prefix="",
         run_count=36
     )

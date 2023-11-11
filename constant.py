@@ -7,7 +7,7 @@ __email__ = '564298339@qq.com'
 __time__ = '2023/10/2 4:23'
 """
 import dataclasses
-import os
+import os,json
 import uuid
 from time import time
 
@@ -23,6 +23,8 @@ import pandas as pd
 
 
 PROJECT_ROOT_PATH = os.path.split(__file__)[0]
+
+FILESAVE_PATH = json.load(open("config.json"))["data_sync_path"]
 
 DATA_PATH = os.path.join(PROJECT_ROOT_PATH, 'data')
 
