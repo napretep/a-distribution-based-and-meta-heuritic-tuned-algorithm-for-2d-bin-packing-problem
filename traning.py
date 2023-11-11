@@ -306,7 +306,7 @@ if __name__ == "__main__":
     t = Training([
             # [华为杯_data, "production_data1"],
             # [外包_data, "production_data2"],
-            [随机_data, "random_data"]
+            [随机_data, "randomGen_data"]
     ],
             training_type="determ"
     )
