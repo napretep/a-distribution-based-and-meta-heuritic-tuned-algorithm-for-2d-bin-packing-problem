@@ -24,7 +24,7 @@ import pandas as pd
 
 PROJECT_ROOT_PATH = os.path.split(__file__)[0]
 
-SYNC_PATH = json.load(open("config.json"))["data_sync_path"]
+SYNC_PATH = json.load(open("config.json","r",encoding="utf-8"))["data_sync_path"]
 
 DATA_PATH = os.path.join(PROJECT_ROOT_PATH, 'data')
 
