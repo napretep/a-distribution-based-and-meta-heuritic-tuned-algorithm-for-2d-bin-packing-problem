@@ -21,8 +21,9 @@ import inspect
 from scipy.stats import gaussian_kde
 import pandas as pd
 
-PROJECT_ROOT_PATH = os.path.split(__file__)[0]
+PROJECT_ROOT_PATH = os.path.split(os.path.abspath(__file__))[0]
 
+PARAM_PATH = os.path.join(PROJECT_ROOT_PATH,"param")
 SYNC_PATH = json.load(open(os.path.join(PROJECT_ROOT_PATH, "config.json"), "r", encoding="utf-8"))["data_sync_path"]
 
 DATA_PATH = os.path.join(PROJECT_ROOT_PATH, 'data')
@@ -681,7 +682,7 @@ params = {}
 for data_type in [STANDARD, NOISED]:
     params[data_type] = {}
     for data_set_name in [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]:
-        params[data_type][data_set_name] = np.load(f"./param/param_{data_type}_{data_set_name}_sample1000_gen500.npy")
+        params[data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"param_{data_type}_{data_set_name}_sample1000_gen500.npy"))
 
 # params = {
 #        STANDARD: {

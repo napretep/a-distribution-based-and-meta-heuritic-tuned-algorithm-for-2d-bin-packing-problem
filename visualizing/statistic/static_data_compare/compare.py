@@ -21,7 +21,7 @@ def gen_sample_data(data, scale, i):
 
 
 class JOB:
-    def __init__(self, data_sets, algo_types, param_source, scales=(100, 300, 500, 1000, 3000, 5000), data_type: "list[str]|str" = "standard", algo_prefix="", run_count=36):
+    def __init__(self, data_sets, algo_types, param_source, scales=(100, 300, 500, 1000, 3000, 5000), data_type: "list[str]|str" = "standard", algo_prefix:"list|str"="", run_count=36):
         """
 
         :param data_sets:
@@ -100,10 +100,10 @@ if __name__ == "__main__":
                     PRODUCTION_DATA2: 外包_data,
                     RANDOMGEN_DATA  : 随机_data,
             },
-            algo_types=["Skyline", "Dist2", "MaxRect"],
+            algo_types=["Dist2"],
             param_source=params,
             data_type=[STANDARD,NOISED],
-            algo_prefix="",
+            algo_prefix=STANDARD,
     )
     job.DO()
     print(time() - start_time)
