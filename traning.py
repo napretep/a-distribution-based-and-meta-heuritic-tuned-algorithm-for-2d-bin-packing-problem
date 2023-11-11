@@ -118,6 +118,10 @@ class DE:
             if (self.current_gen+1)%100==0:
                 np.save(os.path.join(SYNC_PATH, self.param_save_name(1 / best_fitness) + f"_atgen{self.current_gen + 1}"), best_x)
                 np.save(os.path.join(SYNC_PATH, self.log_save_name + f"_atgen{self.current_gen + 1}"), np.array(self.training_log))
+            if self.current_gen+1 == self.max_iter:
+                np.save(os.path.join(SYNC_PATH,f"param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"))
+                np.save(os.path.join(SYNC_PATH,f"traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"))
+
 
         pass
 
@@ -265,3 +269,4 @@ if __name__ == "__main__":
             training_type=STANDARD
     )
     t.run()
+    # print(params[STANDARD][PRODUCTION_DATA2])
