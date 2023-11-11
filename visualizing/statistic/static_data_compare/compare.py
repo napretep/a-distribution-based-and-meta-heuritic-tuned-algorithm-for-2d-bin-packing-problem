@@ -46,13 +46,15 @@ class JOB:
                 print(data_set)
                 for algo_type in self.algo_types:
                     print(algo_type)
-                    eval_obj = EVAL(algo_type, run_count, self.param_source[self.data_type][data_set])
+
                     for scale in self.scales:
                         timestart = time()
                         if type(self.data_type) == list:
                             for data_type in self.data_type:
-                                file_name = f"{data_type}_{self.algo_prefix}{algo_type}_{data_set}_{scale}_.npy"
-                                if data_type != "standard":
+                                eval_obj = EVAL(algo_type, self.run_count, self.param_source[data_type][data_set])
+                                file_name = f"{data_type}_{data_set}_{self.algo_prefix}{algo_type}_{scale}_.npy"
+                                if data_type !=STANDARD:
+                                    file_name = NOISED + "_" + file_name
                                     run_results = []
                                     for i in range(30):
                                         print(file_name, f"random interval=(0,{(i + 1) / 100})")
@@ -63,13 +65,16 @@ class JOB:
                                     np.save(os.path.join(SYNC_PATH, file_name), np.array(run_results))
                                     print(file_name, "done", time() - timestart)
                                 else:
+                                    file_name = STANDARD + "_" + file_name
                                     input_data = [kde_sample(self.data_sets[data_set], scale) for _ in range(self.run_count)]
                                     result = p.map(eval_obj.run_single, input_data)
                                     np.save(os.path.join(SYNC_PATH, file_name), np.array(result))
                                     print(file_name, "done", time() - timestart)
                         else:
-                            file_name = f"{self.data_type}_{self.algo_prefix}{algo_type}_{data_set}_{scale}_.npy"
-                            if self.data_type != "standard":
+                            eval_obj = EVAL(algo_type, self.run_count, self.param_source[data_type][data_set])
+                            file_name = f"{self.data_type}_{data_set}_{self.algo_prefix}{algo_type}_{scale}_.npy"
+                            if self.data_type != STANDARD:
+                                file_name=NOISED+"_"+file_name
                                 run_results = []
                                 for i in range(30):
                                     print(file_name, f"random interval=(0,{(i + 1) / 100})")
@@ -80,6 +85,7 @@ class JOB:
                                 np.save(os.path.join(SYNC_PATH, file_name), np.array(run_results))
                                 print(file_name, "done", time() - timestart)
                             else:
+                                file_name = STANDARD + "_" + file_name
                                 input_data = [kde_sample(self.data_sets[data_set], scale) for _ in range(self.run_count)]
                                 result = p.map(eval_obj.run_single, input_data)
                                 np.save(os.path.join(SYNC_PATH, file_name), np.array(result))
@@ -90,13 +96,13 @@ if __name__ == "__main__":
     start_time = time()
     job = JOB(
             data_sets={
-                    "production_data1": 华为杯_data,
-                    "production_data2": 外包_data,
-                    "randomGen_data"  : 随机_data,
+                    PRODUCTION_DATA1: 华为杯_data,
+                    PRODUCTION_DATA2: 外包_data,
+                    RANDOMGEN_DATA  : 随机_data,
             },
             algo_types=["Skyline", "Dist2", "MaxRect"],
             param_source=params,
-            data_type=["standard", "noised"],
+            data_type=[STANDARD,NOISED],
             algo_prefix="",
     )
     job.DO()
