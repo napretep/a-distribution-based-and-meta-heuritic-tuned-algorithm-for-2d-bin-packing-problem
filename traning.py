@@ -123,8 +123,8 @@ class DE:
             print(f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1]-self.time_recorder[-2],2)}s,avg_score={round(1/avg_fitness*100,3)}%,hist_best_score={round(1/best_fitness*100,3)}%,x={best_x}")
             self.training_log.append([1/best_fitness,1/avg_fitness])
             if (self.current_gen+1)%100==0:
-                np.save(f"at_gen{self.current_gen+1}"+self.param_save_name(1/best_fitness),best_x)
-                np.save(f"at_gen{self.current_gen+1}"+self.log_save_name,np.array(self.training_log))
+                np.save(os.path.join(SYNC_PATH,f"at_gen{self.current_gen+1}"+self.param_save_name(1/best_fitness)),  best_x)
+                np.save(os.path.join(f"at_gen{self.current_gen+1}"+self.log_save_name),   np.array(self.training_log))
 
         pass
 
