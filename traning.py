@@ -107,8 +107,8 @@ class DE:
         self.current_gen = 0
         self.pop_size = pop_size
         self.task_id = "task_"+str(uuid.uuid4())[:8]
-        self.log_save_name = f"_traning_log_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{self.task_id}.npy"
-        self.param_save_name =lambda fun: f"_param_{self.algo_name}_{self.data_set_name}_{('random_' + self.random_ratio.__str__())if self.random_ratio is not None else ''}_{self.data_sample_scale}_{round(fun,2)}_{self.task_id}.npy"
+        self.log_save_name = f"traning_log_{ 'noised_' if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
+        self.param_save_name =lambda fun: f"{'noised_' if self.random_ratio is not None else ''}_{self.data_set_name}_param_{self.algo_name}_{self.data_sample_scale}_{round(fun,2)}.npy"
 
 
     def run_v2(self):
@@ -123,8 +123,8 @@ class DE:
             print(f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1]-self.time_recorder[-2],2)}s,avg_score={round(1/avg_fitness*100,3)}%,hist_best_score={round(1/best_fitness*100,3)}%,x={best_x}")
             self.training_log.append([1/best_fitness,1/avg_fitness])
             if (self.current_gen+1)%100==0:
-                np.save(os.path.join(SYNC_PATH,f"at_gen{self.current_gen+1}"+self.param_save_name(1/best_fitness)),  best_x)
-                np.save(os.path.join(f"at_gen{self.current_gen+1}"+self.log_save_name),   np.array(self.training_log))
+                np.save(os.path.join(SYNC_PATH, self.param_save_name(1 / best_fitness) + f"_atgen{self.current_gen + 1}"), best_x)
+                np.save(os.path.join(SYNC_PATH, self.log_save_name + f"_atgen{self.current_gen + 1}"), np.array(self.training_log))
 
         pass
 
