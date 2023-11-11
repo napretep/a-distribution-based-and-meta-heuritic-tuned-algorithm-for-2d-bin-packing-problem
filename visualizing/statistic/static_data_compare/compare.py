@@ -15,10 +15,8 @@ import seaborn as sns
 import matplotlib as plt
 from multiprocessing import Pool
 
-scales = [100,300,500,1000,3000,5000]
 algo_types = ["Dist2"]
 # scales = [3000, 5000]
-run_count = 36
 
 
 
@@ -30,7 +28,7 @@ def gen_sample_data(data,scale,i):
 
 
 class JOB:
-    def __init__(self,data_sets,algo_types,param_source,scales=(100,300,500,1000,3000,5000),data_type="standard",algo_prefix="",run_count=36):
+    def __init__(self,data_sets,algo_types,param_source,scales=(100,300,500,1000,3000,5000),data_type:"list[str]|str"="standard",algo_prefix="",run_count=36):
         """
 
         :param data_sets:
@@ -104,10 +102,8 @@ if __name__ == "__main__":
         },
         algo_types=["Skyline","Dist2","MaxRect"],
         param_source=params,
-        scales=(100,300,500,1000,3000,5000),
-        data_type="standard",
+        data_type=["standard","noised"],
         algo_prefix="",
-        run_count=36
     )
     job.DO()
     print(time()-start_time)
