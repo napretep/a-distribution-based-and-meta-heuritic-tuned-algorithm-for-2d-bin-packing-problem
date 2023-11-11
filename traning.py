@@ -67,13 +67,6 @@ def packing_log_vector_to_obj(packinglog:"List[List[List[List[float]]]]"):
         plan_log = packinglog[i]
 
 
-def single_eval(param):
-    start = time()
-    result:"BinPacking2DAlgo.Algo" = BinPacking2DAlgo.single_run(param[0], MATERIAL_SIZE, parameter_input_array=param[1],
-                                         algo_type="Dist2")
-    value = result.get_avg_util_rate()
-    end = time()
-    print(f"{round(end-start,2)}s,{round(value*100,2)}%",end=", ")
 class DE:
     def __init__(self,data_set,data_set_name,eval_selector="multi",total_param_num=24,pop_size=20,eval_run_count=40,data_sample_scale=1000,random_ratio=None,algo_name="Dist2",max_iter=500,
 
@@ -107,8 +100,8 @@ class DE:
         self.current_gen = 0
         self.pop_size = pop_size
         self.task_id = "task_"+str(uuid.uuid4())[:8]
-        self.log_save_name = f"traning_log_{ 'noised_' if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
-        self.param_save_name =lambda fun: f"{'noised_' if self.random_ratio is not None else ''}_{self.data_set_name}_param_{self.algo_name}_{self.data_sample_scale}_{round(fun,2)}.npy"
+        self.log_save_name = f"traning_log_{ (NOISED+'_') if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
+        self.param_save_name =lambda fun: f"{(NOISED+'_') if self.random_ratio is not None else ''}_{self.data_set_name}_param_{self.algo_name}_{self.data_sample_scale}_{round(fun,2)}.npy"
 
 
     def run_v2(self):
@@ -197,21 +190,6 @@ class DE:
         end = time()
         print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
         return 1 / mean
-    def multi_eval(self,param):
-        start = time()
-        data_for_run = [self.get_sampled_items() for i in range(self.eval_run_count)]
-        result = BinPacking2DAlgo.multi_run(data_for_run, MATERIAL_SIZE, parameter_input_array=param,run_count=self.eval_run_count,algo_type=self.algo_name)
-        result = np.array(result)
-        # print(result)
-        mean = np.mean(result)
-        std = np.std(result)
-        cutoff = std * 3
-        lower, upper = mean - cutoff, mean + cutoff
-        result = result[(result > lower) & (result < upper)]
-        mean = np.mean(result)
-        end = time()
-        print(f"{round(end-start,2)}s,{round(mean*100,2)}%",end=", ")
-        return 1/mean
 
 
     @staticmethod
@@ -226,28 +204,9 @@ class DE:
 
 
 
-    def run(self):
-        start_time = time()
-        self.time_recorder.append(start_time)
-        from scipy.optimize import differential_evolution
-
-        bounds = [[-1, 1]] * self.total_param_num
-
-        result = differential_evolution(self.get_eval(), bounds, workers=-1,  strategy="randtobest1exp", popsize=12,tol=0.0001,init="random",mutation=(0.5,1.5),recombination=0.95,
-                                        callback=self.callback, maxiter=self.max_iter)
-        end_time = time()
-        print("训练时间(秒):",end_time - start_time)
-        to_save = [end_time, result.x, result.fun]
-        print(to_save)
-        np.save(self.log_save_name, np.array(self.training_log))
-        np.save(self.param_save_name(result.fun), result.x)
-        return result.x, result.fun, self.training_log
-
-        pass
-
     def callback(self, xk, convergence):
         self.time_recorder.append(time())
-        eval_value = self.get_eval()(xk)
+        eval_value = self.mutli_process_single_eval(xk)
         self.training_log.append([len(self.time_recorder),1/eval_value])
         self.current_gen += 1
         if self.current_gen%50==0:
@@ -258,12 +217,6 @@ class DE:
         self.training_log.append([len(self.time_recorder),1/eval_value])
 
 
-
-    def get_eval(self):
-        if self.eval_selector=="single":
-            return self.single_eval
-        else:
-            return self.multi_eval
 
 def solution_draw(solution:BinPacking2DAlgo.Algo,text=""):
     for i in range(len(solution.packinglog)-1,-1,-1):
@@ -280,7 +233,7 @@ def solution_draw(solution:BinPacking2DAlgo.Algo,text=""):
 
 class Training:
 
-    def __init__(self,data_set,training_type="determ",):
+    def __init__(self,data_set,training_type=STANDARD,):
         """
 
         :param training_type: "determ","noised"
@@ -294,7 +247,7 @@ class Training:
         result = []
         for data, name in self.data_set:
             start_time2 = time()
-            d = DE(data, name, random_ratio=(0, 0.3) if self.training_type=="noised" else None, max_iter=500)
+            d = DE(data, name, random_ratio=(0, 0.3) if self.training_type==NOISED else None)
             # x, fun, log = d.run()
             d.run_v2()
             # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
@@ -304,10 +257,10 @@ class Training:
 
 if __name__ == "__main__":
     t = Training([
-            # [华为杯_data, "production_data1"],
-            # [外包_data, "production_data2"],
-            [随机_data, "randomGen_data"]
+            [华为杯_data, PRODUCTION_DATA1],
+            [外包_data, PRODUCTION_DATA2],
+            [随机_data, RANDOMGEN_DATA]
     ],
-            training_type="determ"
+            training_type=STANDARD
     )
     t.run()
