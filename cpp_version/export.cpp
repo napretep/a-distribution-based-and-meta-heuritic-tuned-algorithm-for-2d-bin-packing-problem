@@ -6,12 +6,14 @@
 #include <pybind11/numpy.h>
 namespace py = pybind11;
 
-
-
-
-std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type = "Dist",bool is_debug=false) {
+auto Dist = "Dist"
+auto Dist_MaxRect = "Dist_MaxRect";
+auto Dist_Skyline = "Dist_Skyline"
+auto MaxRect = "MaxRect"
+auto Skyline = "Skyline"
+std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type =Dist,bool is_debug=false) {
     
-    if (algo_type == "Dist") {
+    if (algo_type == Dist) {
         if (parameter_input_array.has_value()) {
             vector<float> parameter_items = parameter_input_array.value();
             auto d = std::make_unique<Dist>(items, material);
@@ -25,17 +27,17 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
             return d;
         }
     }
-    else if (algo_type == "MaxRect") {
+    else if (algo_type == MaxRect) {
         auto d = std::make_unique<MaxRect>(items, material);
         d->run();
         return d;
     }
-    else if (algo_type == "Skyline") {
+    else if (algo_type == Skyline) {
         auto d = std::make_unique<Skyline>(items, material);
         d->run();
         return d;
     }
-    else if (algo_type == "Dist-MaxRect") {
+    else if (algo_type == Dist_MaxRect) {
         if (parameter_input_array.has_value()) {
             vector<float> parameter_items = parameter_input_array.value();
             auto d = std::make_unique<Dist2>(items, material,"", is_debug);
@@ -49,7 +51,7 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
             return d;
         }
     }
-    else if (algo_type == "Dist-Skyline") {
+    else if (algo_type == Dist_Skyline) {
         if (parameter_input_array.has_value()) {
             vector<float> parameter_items = parameter_input_array.value();
             auto d = std::make_unique<Dist3>(items, material, "", is_debug);
@@ -120,7 +122,7 @@ PYBIND11_MODULE(BinPacking2DAlgo, m) {
             py::arg("parameter_input_array")=std::nullopt,
             py::arg("algo_type")="Dist",
             py::arg("is_debug") = false,
-            "algo_type=Dist,MaxRect,Skyline,Dist2. Dist and Dist2 need learn parameters to performance well"
+            "algo_type=Dist,MaxRect,Skyline,Dist_MaxRect,Dist_Skyline. Dist and Dist2 need learn parameters to performance well"
             );
     m.def("multi_run",&multi_run,
             py::arg("input_array"), 
@@ -129,7 +131,7 @@ PYBIND11_MODULE(BinPacking2DAlgo, m) {
             py::arg("algo_type")="Dist", 
             py::arg("run_count")=27,
             py::arg("need_report")=false,
-            "algo_type=Dist,MaxRect,Skyline,Dist2. Dist and Dist2 need learn parameters to performance well"
+            "algo_type=Dist,MaxRect,Skyline,Dist_MaxRect,Dist_Skyline. Dist and Dist2 need learn parameters to performance well"
     );
 
 }
