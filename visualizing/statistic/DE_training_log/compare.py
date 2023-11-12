@@ -26,8 +26,8 @@ def run():
             axs[idx].set_ylabel('util_rate')  # 添加 y 轴名称
             axs[idx].set_title(f'training of {data_type} {data_name}')
             axs[idx].legend()  # 在每个子图上添加图例
-        plt.show()
         plt.savefig(f'training of {data_type}')
+        plt.show()
 if __name__ == "__main__":
     run()
     pass

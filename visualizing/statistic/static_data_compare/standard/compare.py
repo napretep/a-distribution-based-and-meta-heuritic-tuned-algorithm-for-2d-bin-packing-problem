@@ -11,13 +11,13 @@ import seaborn as sns
 import  matplotlib.pyplot as plt
 import pandas as pd
 from constant import *
-def run_4data():
-    algo_type = [f"{NOISED}Dist2", f"{STANDARD}Dist2", "Skyline", "MaxRect"]
+def run_data(end_pos=4):
+    algo_type = [ "MaxRect","Skyline", f"{STANDARD}Dist2",f"{NOISED}Dist2"][:end_pos]
 
     data_sets = [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]
     scales = [100, 300, 500, 1000, 3000, 5000]
     results = []
-    for data in data_sets:
+    for data in data_sets[:end_pos]:
         for algo in algo_type:
             for scale in scales:
                 result = np.load(f"./standard_{data}_{algo}_{scale}_.npy")
@@ -41,11 +41,11 @@ def run_4data():
         axs[idx].set_title(f"Boxplot for {data} with noisedParam_Dist")
 
     plt.tight_layout()  # 自动调整子图参数，使得子图之间的间距适中
-    plt.savefig("4data_compare_on_all_data")
+    plt.savefig(f"./pic/{end_pos} algos compare on all data")
     plt.show()
-def run_3data():
-    pass
+
 
 if __name__ == "__main__":
-    run_4data()
+    run_data(4)
+    run_data(3)
     pass

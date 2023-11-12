@@ -66,5 +66,5 @@ def change_name3():
             os.rename(os.path.join(current_path, filename), os.path.join(current_path, new_filename))
 
 if __name__ == "__main__":
-    change_name3()
+    change_name2()
     pass

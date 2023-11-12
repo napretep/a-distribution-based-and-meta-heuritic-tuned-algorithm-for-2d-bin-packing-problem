@@ -35,7 +35,7 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
         d->run();
         return d;
     }
-    else if (algo_type == "Dist2") {
+    else if (algo_type == "Dist-MaxRect") {
         if (parameter_input_array.has_value()) {
             vector<float> parameter_items = parameter_input_array.value();
             auto d = std::make_unique<Dist2>(items, material,"", is_debug);
@@ -45,6 +45,20 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
         }
         else {
             auto d = std::make_unique<Dist2>(items, material,"", is_debug);
+            d->run();
+            return d;
+        }
+    }
+    else if (algo_type == "Dist-Skyline") {
+        if (parameter_input_array.has_value()) {
+            vector<float> parameter_items = parameter_input_array.value();
+            auto d = std::make_unique<Dist3>(items, material, "", is_debug);
+            d->scoring_sys.parameters = parameter_items;
+            d->run();
+            return d;
+        }
+        else {
+            auto d = std::make_unique<Dist3>(items, material, "", is_debug);
             d->run();
             return d;
         }
