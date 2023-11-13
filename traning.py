@@ -165,6 +165,8 @@ class DE:
                     cross_points[np.random.randint(0, dimensions)] = True
                 trial = np.where(cross_points, mutant, pop[j])
                 trial_denorm = min_b + trial * diff
+                trial_denorm = np.where(trial_denorm < min_b, min_b, trial_denorm)
+                trial_denorm = np.where(trial_denorm > max_b, max_b, trial_denorm)
                 f = self.mutli_process_single_eval(trial_denorm)
                 current_generation_fitness.append(f)
                 if f < fitness[j]:
