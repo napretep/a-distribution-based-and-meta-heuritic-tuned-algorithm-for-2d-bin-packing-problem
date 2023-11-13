@@ -747,19 +747,12 @@ class AlgoName:
 algo_types = [AlgoName.Skyline, AlgoName.MaxRect, AlgoName.Dist_Skyline, AlgoName.Dist_MaxRect, AlgoName.Dist_Shelf]
 data_types = [NOISED, STANDARD]
 
-for algo_name in [AlgoName.Dist_MaxRect]:
+for algo_name,gencount in [(AlgoName.Dist_MaxRect,500),(AlgoName.Dist_Skyline,100)]:
     params[algo_name] = {}
     for data_type in [STANDARD, NOISED]:
         params[algo_name][data_type] = {}
         for data_set_name in [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]:
-            params[algo_name][data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"{algo_name}_param_{data_type}_{data_set_name}_sample1000_gen500.npy"))
-
-# for algo_name in [AlgoName.Dist_Skyline]:
-#     params[algo_name] = {}
-#     for data_type in [STANDARD, NOISED]:
-#         params[algo_name][data_type] = {}
-#         for data_set_name in [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]:
-#             params[algo_name][data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"param_{data_type}_{data_set_name}_sample1000_gen100.npy"))
+            params[algo_name][data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"{algo_name}_param_{data_type}_{data_set_name}_sample1000_gen{gencount}.npy"))
 
 
 if __name__ == "__main__":

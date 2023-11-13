@@ -81,8 +81,8 @@ if __name__ == "__main__":
     job = JOB(
             data_sets={
                     PRODUCTION_DATA1: 华为杯_data,
-                    # PRODUCTION_DATA2: 外包_data,
-                    # RANDOMGEN_DATA  : 随机_data,
+                    PRODUCTION_DATA2: 外包_data,
+                    RANDOMGEN_DATA  : 随机_data,
             },
             algo_types=[AlgoName.Dist_MaxRect],
             param_source=params,
