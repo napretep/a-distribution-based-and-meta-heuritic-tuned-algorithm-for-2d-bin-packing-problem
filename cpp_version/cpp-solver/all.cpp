@@ -1358,10 +1358,10 @@ public:
             auto container_rect = container.rect;
             auto remain_rect = container_rect / item_rect;
             optional<Rect> top_rect, left_rect, bottom_rect, right_rect;
-            top_rect = remain_rect[0];
-            bottom_rect = remain_rect[1];
-            left_rect = remain_rect[2];
-            right_rect = remain_rect[3];
+            top_rect = remain_rect.at(0);
+            bottom_rect = remain_rect.at(1);
+            left_rect = remain_rect.at(2);
+            right_rect = remain_rect.at(3);
 
             vector<float> X = {
                     item_rect.area() / container_rect.area(),
@@ -1381,7 +1381,7 @@ public:
                     static_cast<float>(container_rect.start.x / parent->material.width()),
                     static_cast<float>(container_rect.start.y / parent->material.height()),
                     static_cast<float>(parent->material.height() / parent->material.width()),
-                    parent->solution.size() > 0 and plan_id >= 0 ? parent->solution[static_cast<int>(plan_id)].get_util_rate() : 0
+                    parent->solution.size() > 0 and plan_id >= 0 ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
             };
             auto p = get_skyline_pos_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1392,10 +1392,10 @@ public:
             auto container_rect = container.rect;
             auto remain_rect = container_rect / item_rect;
             optional<Rect> top_rect, left_rect, bottom_rect, right_rect;
-            top_rect = remain_rect[0];
-            bottom_rect = remain_rect[1];
-            left_rect = remain_rect[2];
-            right_rect = remain_rect[3];
+            top_rect = remain_rect.at(0);
+            bottom_rect = remain_rect.at(1);
+            left_rect = remain_rect.at(2);
+            right_rect = remain_rect.at(3);
 
             vector<float> X = {
                     item_rect.area() / container_rect.area(),
@@ -1415,7 +1415,7 @@ public:
                     static_cast<float>(container_rect.start.x / parent->material.width()),
                     static_cast<float>(container_rect.start.y / parent->material.height()),
                     static_cast<float>(parent->material.height() / parent->material.width()),
-                    parent->solution.size() > 0 and plan_id >= 0 ? parent->solution[static_cast<int>(plan_id)].get_util_rate() : 0
+                    parent->solution.size() > 0 and plan_id >= 0 ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
             };
             auto p = get_wastemap_pos_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1899,7 +1899,7 @@ public:
 
         vector<float> X = { // 14 parameter
             float(run_count) / float(items.size()),
-            solution.size()>0?float(containers[0].plan_id+1) / float(solution.size()):0,
+            solution.size()>0?float(containers.at(0).plan_id+1) / float(solution.size()):0,
             maybe_rect_top.has_value() ? float(maybe_rect_top.value().area()) / material.area() : 0.0f,
             maybe_rect_right.has_value() ? float(maybe_rect_right.value().area() / material.area()) : 0.0f,
             maybe_rect_top.has_value() ? maybe_rect_top.value().aspect_ratio() : 0.0f,
@@ -1913,7 +1913,7 @@ public:
             ideal_waste_rect.aspect_ratio(),
             containers.size() > 1 and max_gap > 0 ? (max_gap - min_gap) / max_gap : 0.0f,
             item_rect.width() / container_total_len,
-            item_rect.height() / containers[begin_idx].rect.height(),
+            item_rect.height() / containers.at(begin_idx).rect.height(),
             control_term
         };
 
@@ -2088,7 +2088,7 @@ public:
                 }
             }
             else {
-                auto& plan = solution[best_score.plan_id];
+                auto& plan = solution.at(best_score.plan_id);
                 plan.item_sequence.push_back(best_score.item);
                 auto new_item = best_score.item;
                 auto container = best_score.container;
@@ -2107,7 +2107,7 @@ public:
 
         for (auto i = 0; i < items.size(); i++)
         {
-            Item& item = items[i];
+            Item& item = items.at(i);
             // from existing containers
             for (ProtoPlan& plan : solution)
             {
