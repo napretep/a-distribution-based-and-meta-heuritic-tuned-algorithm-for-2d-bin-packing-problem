@@ -175,8 +175,7 @@ class DE:
         history_best_fitness = []
         print("\niter start")
         for i in range(self.max_iter):
-            if (i + 1) % 20 == 0:
-                if np.var(history_best_fitness[-20:])<1e-5:
+            if len(history_best_fitness)>20 and np.var(history_best_fitness[-20:])<1e-5:
                     print("\nrestart")
                     best_avg_fitness = np.min(history_mean_fitness[-20:])
                     for k in range(self.pop_size):
@@ -202,7 +201,7 @@ class DE:
                     trial = np.where(cross_points, mutant, pop[j])
                     trial_denorm = min_b + trial * diff
                     f = self.mutli_process_single_eval(trial_denorm)
-
+                    current_generation_fitness.append(f)
                     if f < fitness[j]:
                         fitness[j] = f
                         pop[j] = trial
@@ -215,13 +214,14 @@ class DE:
                 input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
                 results = self.p.map(self.multi_process_multi_eval, input_env)
                 for trial_f,trial_denorm, idvl_idx in results:
+                    current_generation_fitness.append(trial_f)
                     if trial_f < fitness[idvl_idx]:
                         fitness[idvl_idx] = trial_f
                         pop[idvl_idx] = trial_denorm
                         if trial_f < fitness[best_idx]:
                             best_idx = idvl_idx
                             best = trial_denorm
-            history_mean_fitness.append(np.mean(fitness))
+            history_mean_fitness.append(np.mean(current_generation_fitness))
             history_best_fitness.append(fitness[best_idx])
             yield best, fitness[best_idx], history_mean_fitness[-1]
 
