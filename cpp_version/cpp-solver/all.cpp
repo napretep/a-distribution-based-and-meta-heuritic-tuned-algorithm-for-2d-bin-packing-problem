@@ -2841,7 +2841,7 @@ int get_algo_parameters_length(string algo_type) {
 int main() {
     //test_rect();
 
-    for (auto j = 0; j < 400; j++) {
+    for (auto j = 0; j < 1; j++) {
         vector<float>input_data;
         for (auto i = 0; i < 100; i++) {
             for (auto e : test_item_data) {
