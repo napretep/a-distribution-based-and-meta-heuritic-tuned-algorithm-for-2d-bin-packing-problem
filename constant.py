@@ -752,7 +752,7 @@ for algo_name in [AlgoName.Dist_MaxRect]:
     for data_type in [STANDARD, NOISED]:
         params[algo_name][data_type] = {}
         for data_set_name in [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]:
-            params[algo_name][data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"param_{data_type}_{data_set_name}_sample1000_gen500.npy"))
+            params[algo_name][data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"{algo_name}_param_{data_type}_{data_set_name}_sample1000_gen500.npy"))
 
 # for algo_name in [AlgoName.Dist_Skyline]:
 #     params[algo_name] = {}
