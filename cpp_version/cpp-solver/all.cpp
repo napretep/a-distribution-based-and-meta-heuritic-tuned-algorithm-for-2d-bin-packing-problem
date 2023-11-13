@@ -9,6 +9,7 @@
 #include <optional>
 #include <algorithm>
 #include <cmath>
+#include <random>
 #include <math.h>
 //#include <Eigen/Dense>
 #include <stdexcept>
@@ -1381,7 +1382,7 @@ public:
                     static_cast<float>(container_rect.start.x / parent->material.width()),
                     static_cast<float>(container_rect.start.y / parent->material.height()),
                     static_cast<float>(parent->material.height() / parent->material.width()),
-                    parent->solution.size() > 0 and plan_id >= 0 ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
+                    parent->solution.size() > 0 and plan_id >= 0 and plan_id<parent->solution.size() ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
             };
             auto p = get_skyline_pos_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1415,7 +1416,7 @@ public:
                     static_cast<float>(container_rect.start.x / parent->material.width()),
                     static_cast<float>(container_rect.start.y / parent->material.height()),
                     static_cast<float>(parent->material.height() / parent->material.width()),
-                    parent->solution.size() > 0 and plan_id >= 0 ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
+                    parent->solution.size() > 0 and plan_id >= 0 and plan_id < parent->solution.size() ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
             };
             auto p = get_wastemap_pos_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1515,14 +1516,14 @@ public:
                     if (waste_rect.contains(new_item.size + waste_rect.start)) {
                         auto item_to_append = new_item.copy();
                         item_to_append.pos = waste_rect.start.copy();
-                        auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i)));
+                        auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i),plan.ID));
                         scores.push_back(score);
                     }
                     auto itemT = new_item.transpose();
                     if (waste_rect.contains(itemT.size + waste_rect.start)) {
                         auto item_to_append = itemT.copy();
                         item_to_append.pos = waste_rect.start.copy();
-                        auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i)));
+                        auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i), plan.ID));
                         scores.push_back(score);
                     }
                 }
@@ -1535,7 +1536,7 @@ public:
                         if (idx >= 0) {
                             auto item_to_append = new_item.copy();
                             item_to_append.pos = skyline_rect.start.copy();
-                            float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers);
+                            float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers, plan.ID);
                             auto score = Score(item_to_append, { i,idx + 1 }, plan.ID, ContainerType::Skyline, score_calc);
                             scores.push_back(score);
                         }
@@ -1544,7 +1545,7 @@ public:
                         if (idx >= 0) {
                             auto item_to_append = itemT.copy();
                             item_to_append.pos = skyline_rect.start.copy();
-                            float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers);
+                            float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers, plan.ID);
                             auto score = Score(item_to_append, { i,idx + 1 }, plan.ID, ContainerType::Skyline, score_calc);
                             scores.push_back(score);
                         }
@@ -1556,14 +1557,14 @@ public:
                 int idx = get_placable_area(new_item, 0, fake_container);
                 if (idx >= 0) {
                     auto item_to_append = new_item.copy();
-                    auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container));
+                    auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container,-1));
                     scores.push_back(score);
                 }
                 auto itemT = new_item.transpose();
                 idx = get_placable_area(itemT, 0, fake_container);
                 if (idx >= 0) {
                     auto item_to_append = itemT.copy();
-                    auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container));
+                    auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container,-1));
                     scores.push_back(score);
                 }
 
@@ -1851,7 +1852,7 @@ public:
             }
         }
     }
-    float calc_skyline_score(Item item, int begin_idx, int end_idx, vector<Container>containers) {
+    float calc_skyline_score(Item item, int begin_idx, int end_idx, vector<Container>containers, int plan_id) {
         if (this->is_debug)
         {
             cout << "calc_skyline_score.begin_idx=" << begin_idx << ",end_idx=" << end_idx << ",containers.size" << containers.size() << endl;
@@ -1899,7 +1900,7 @@ public:
 
         vector<float> X = { // 14 parameter
             float(run_count) / float(items.size()),
-            solution.size()>0?float(containers.at(0).plan_id+1) / float(solution.size()):0,
+            solution.size()>0?float(plan_id+1) / float(solution.size()):0,
             maybe_rect_top.has_value() ? float(maybe_rect_top.value().area()) / material.area() : 0.0f,
             maybe_rect_right.has_value() ? float(maybe_rect_right.value().area() / material.area()) : 0.0f,
             maybe_rect_top.has_value() ? maybe_rect_top.value().aspect_ratio() : 0.0f,
@@ -1943,7 +1944,7 @@ public:
 
 
     }
-    float calc_wastemap_score(Item item, Container container) {
+    float calc_wastemap_score(Item item, Container container,int plan_id) {
         /*
         item_id/items.size
         plan_id/solution.size
@@ -1964,13 +1965,13 @@ public:
         
         auto control_term = 1.0f;
         auto item_rect = item.get_rect();
-        auto wastemap_containers = solution.at(container.plan_id).WasteMap;
+        auto wastemap_containers = solution.at(plan_id).WasteMap;
         auto all_waste_area = accumulate(wastemap_containers.begin(), wastemap_containers.end(), 0, [](float total_area , Container b) {
                 return total_area+b.rect.area();
             });
         vector<float> X = { //10 params
             float(run_count) / float(items.size()),
-            solution.size() > 0 ? float(container.plan_id + 1) / float(solution.size()) : 0,
+            solution.size() > 0 ? float(plan_id + 1) / float(solution.size()) : 0,
             float(item_rect.area()) / float(container.rect.area()),
             1-float(item_rect.area()) / float(container.rect.area()),
             item_rect.width() / container.rect.width(),
@@ -2849,22 +2850,33 @@ int get_algo_parameters_length(string algo_type) {
 
 int main() {
     //test_rect();
+    std::default_random_engine generator;
+    for (auto x = 0; x < 500; x++) {
+        cout << "iter=" << x << endl;
+        for (auto j = 0; j < 40; j++) {
+            vector<float>input_data;
+            for (auto i = 0; i < 5; i++) {
+                for (auto k = 0; k < test_item_data.size(); k++) {
+                    auto e = test_item_data.at(k);
+                    int random_number = 0;
+                    if (k % 3 != 0) {
+                        std::uniform_int_distribution<int> distribution(0, 100);
+                        random_number = distribution(generator);
+                    }
 
-    for (auto j = 0; j < 1; j++) {
-        vector<float>input_data;
-        for (auto i = 0; i < 50; i++) {
-            for (auto e : test_item_data) {
-                input_data.push_back(e);
+                    input_data.push_back(e + random_number);
+                }
             }
+            cout << input_data.size() << endl;
+            auto d = Dist3(input_data, test_material, "", false);
+            d.scoring_sys.parameters = vector<float>(Dist3::ScoringSys::ParameterCount::total, 1.5);
+            d.run();
+            cout << d.get_avg_util_rate() << endl;
         }
-        cout << input_data.size() << endl;
-        
-        
-        auto d = Dist3(input_data, test_material, "", false);
-        d.scoring_sys.parameters = vector<float>(Dist3::ScoringSys::ParameterCount::total, 1.5);
-        d.run();
-        cout << d.get_avg_util_rate() << endl;
+
+
     }
+    
     
     
     
