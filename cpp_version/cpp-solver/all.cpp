@@ -685,47 +685,104 @@ void test_algo() {
 
 //-------------------------------Dist algo-------------------------------------------------------------
 
-class Dist;
+//class Dist;
 
-class ScoringSys {
-public:
-
-    Dist* algo;
-    int item_sorting_param_count = 4;
-    int container_scoring_param_count = 14;
-    int gap_merging_param_count = 9;
-    vector<float> parameters;
-    ScoringSys(Dist& algo);
-
-    vector<float> container_scoring_parameters()const {
-        vector<float> p(this->parameters.begin(), this->parameters.begin() + container_scoring_param_count);
-        return p;
-    }
-    vector<float>item_sorting_parameters()const {
-        vector<float> p(this->parameters.begin() + container_scoring_param_count, this->parameters.begin() + container_scoring_param_count + item_sorting_param_count);
-        return p;
-    }
-    vector<float>gap_merging_parameters()const {
-        vector<float> p(this->parameters.begin() + container_scoring_param_count + item_sorting_param_count, this->parameters.end());
-        return p;
-    }
-    float item_sorting(float item_width, float item_height)const;
-    float pos_scoring(Item item, Container container)const;
-    float pos_scoring(float item_width, float item_height, float  container_begin_x, float  container_begin_y, float  container_width, float  container_height, float  plan_id)const;
-    float gap_scoring(float current_plan_id, float current_max_len, float current_min_len, Container new_container, Container old_container)const;
-};
 
 
 class Dist :public Algo {
 
 public:
-    ScoringSys* scoring_sys;
+    class ScoringSys {
+    public:
+
+        Dist* algo;
+        static const int item_sorting_param_count = 4;
+        static const int container_scoring_param_count = 14;
+        static const int gap_merging_param_count = 9;
+        static const int total_param_count = item_sorting_param_count + container_scoring_param_count + gap_merging_param_count;
+        vector<float> parameters;
+        
+
+        vector<float> container_scoring_parameters()const {
+            vector<float> p(this->parameters.begin(), this->parameters.begin() + container_scoring_param_count);
+            return p;
+        }
+        vector<float>item_sorting_parameters()const {
+            vector<float> p(this->parameters.begin() + container_scoring_param_count, this->parameters.begin() + container_scoring_param_count + item_sorting_param_count);
+            return p;
+        }
+        vector<float>gap_merging_parameters()const {
+            vector<float> p(this->parameters.begin() + container_scoring_param_count + item_sorting_param_count, this->parameters.end());
+            return p;
+        }
+        /*float item_sorting(float item_width, float item_height)const;
+        float pos_scoring(Item item, Container container)const;
+        float pos_scoring(float item_width, float item_height, float  container_begin_x, float  container_begin_y, float  container_width, float  container_height, float  plan_id)const;
+        float gap_scoring(float current_plan_id, float current_max_len, float current_min_len, Container new_container, Container old_container)const;*/
+        float item_sorting(float item_width, float item_height)const {
+            vector<float> X = {
+                (item_width * item_height) / (this->algo->minL * this->algo->maxL),
+                item_height / item_width,
+               static_cast<float>((item_width * item_height) / this->algo->material.area()),
+                abs(item_width - item_height) / (this->algo->maxL - this->algo->minL)
+            };
+            // int result = 0;
+            auto p = this->item_sorting_parameters();
+            return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
+
+        };
+        float pos_scoring(Item item, Container container)const {
+            Rect cr = container.rect;
+            Rect ir = item.size;
+            return this->pos_scoring(ir.width(), ir.height(), cr.start.x, cr.start.y, cr.width(), cr.height(), container.plan_id);
+        }
+        float pos_scoring(float item_width, float item_height, float  container_begin_x, float  container_begin_y, float  container_width, float  container_height, float  plan_id)const {
+            vector<float> X = {
+                (item_width * item_height) / (this->algo->minL * this->algo->maxL),
+                item_height / item_width,
+               static_cast<float>((item_width * item_height) / this->algo->material.area()),
+                abs(item_width - item_height) / (this->algo->maxL - this->algo->minL),
+                this->algo->solution.size() > 0 ? (plan_id + 1) / (this->algo->solution.size()) : 0,
+                (item_width * item_height) / (container_width * container_height),
+                1 - (item_width * item_height) / (container_width * container_height),
+                1 - item_width / container_width,
+                1 - item_height / container_height,
+                static_cast<float>((container_width * container_height) / this->algo->material.area()),
+                static_cast<float>(container_begin_x / this->algo->material.width()),
+                static_cast<float>(container_begin_y / this->algo->material.height()),
+                static_cast<float>(this->algo->material.height() / this->algo->material.width()),
+                plan_id >= 0 ? algo->solution[static_cast<int>(plan_id)].get_util_rate() : 0,
+            };
+
+            auto p = this->container_scoring_parameters();
+            return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
+        };
+        float gap_scoring(float current_plan_id, float current_max_len, float current_min_len, Container new_container, Container old_container) const {
+            auto cutting_rect = Rect(new_container.rect.bottomLeft(), POS(old_container.rect.bottomLeft().x, new_container.rect.topLeft().y));
+            vector<float> X = {
+                float(this->algo->current_item_idx) / this->algo->items.size(),
+                current_plan_id / this->algo->solution.size(),
+                cos((new_container.rect.start.x - old_container.rect.start.x) / current_max_len),
+                min(new_container.rect.width(),new_container.rect.height()) / max(new_container.rect.width(),new_container.rect.height()),
+                min(old_container.rect.width(),old_container.rect.height()) / max(old_container.rect.width(),old_container.rect.height()),
+                cos((current_max_len - current_min_len) / this->algo->material.width()),
+                1 - new_container.rect.height() / current_max_len,
+                cos(cutting_rect.area() / (current_max_len * current_min_len)),
+                min(cutting_rect.width(),cutting_rect.height()) / max(cutting_rect.width(),cutting_rect.height())
+            };
+            auto p = this->gap_merging_parameters();
+            return abs(std::inner_product(X.begin(), X.end(), p.begin(), 0.0));
+        };
+    };
+
+    ScoringSys scoring_sys;
     int current_item_idx;
 
     Dist(vector<float> items, pair<float, float> material = { 2440,1220 }, string task_id = "", bool is_debug = false) :
         Algo(items, material, task_id, is_debug)
     {
-        this->scoring_sys = new ScoringSys(*this);
+        scoring_sys.algo = this;
+        scoring_sys.parameters = vector<float>(ScoringSys::total_param_count, 1);
     };
 
     void run() {
@@ -828,14 +885,14 @@ public:
                 if (container.contains(item.size + corner_start)) {
                     auto item_to_append = item.copy();
                     item_to_append.pos = corner_start.copy();
-                    float score = scoring_sys->pos_scoring(item_to_append, container);
+                    float score = scoring_sys.pos_scoring(item_to_append, container);
                     score_list.push_back(ItemScore(item_to_append, container, score));
                 }
                 auto itemT = item.transpose();
                 if (container.contains(itemT.size + corner_start)) {
                     auto item_to_append = itemT.copy();
                     item_to_append.pos = corner_start.copy();
-                    float score = scoring_sys->pos_scoring(item_to_append, container);
+                    float score = scoring_sys.pos_scoring(item_to_append, container);
                     score_list.push_back(ItemScore(item_to_append, container, score));
                 }
             }
@@ -847,14 +904,14 @@ public:
             if (container.contains(item.size + corner_start)) {
                 auto item_to_append = item.copy();
                 item_to_append.pos = corner_start;
-                float score = scoring_sys->pos_scoring(item_to_append, container);
+                float score = scoring_sys.pos_scoring(item_to_append, container);
                 score_list.push_back(ItemScore(item_to_append, container, score));
             }
             auto itemT = item.transpose();
             if (container.contains(itemT.size + corner_start)) {
                 auto item_to_append = itemT.copy();
                 item_to_append.pos = corner_start;
-                float score = scoring_sys->pos_scoring(item_to_append, container);
+                float score = scoring_sys.pos_scoring(item_to_append, container);
                 score_list.push_back(ItemScore(item_to_append, container, score));
             }
         }
@@ -866,7 +923,7 @@ public:
 
         std::sort(temp_sorted_items.begin(), temp_sorted_items.end(),
             [this](const Item& a, const Item& b) {
-                return scoring_sys->item_sorting(a.size.width(), a.size.height()) < scoring_sys->item_sorting(b.size.width(), b.size.height());
+                return scoring_sys.item_sorting(a.size.width(), a.size.height()) < scoring_sys.item_sorting(b.size.width(), b.size.height());
             });
 
         return temp_sorted_items;
@@ -877,7 +934,7 @@ public:
         auto compare_corner = optional_compare_corner.value();
         auto result = container.rect & compare_corner.rect;
         bool merged = false;
-        float merge_gap = this->scoring_sys->gap_scoring(float(plan.ID), current_maxL, current_minL, compare_corner, container);
+        float merge_gap = scoring_sys.gap_scoring(float(plan.ID), current_maxL, current_minL, compare_corner, container);
         if (result == TYPE::LINE) {
             auto diff = result.end - result.start;
             if (diff.x == 0) {
@@ -916,65 +973,7 @@ public:
         return merged ? std::nullopt : std::optional<Container>(compare_corner);
     }
 };
-ScoringSys::ScoringSys(Dist& algo)
-{
-    this->parameters = vector(this->container_scoring_param_count + this->container_scoring_param_count + this->gap_merging_param_count, 1.0f);
-    this->algo = &algo;
-}
-float ScoringSys::item_sorting(float item_width, float item_height)const {
-    vector<float> X = {
-        (item_width * item_height) / (this->algo->minL * this->algo->maxL),
-        item_height / item_width,
-       static_cast<float>((item_width * item_height) / this->algo->material.area()),
-        abs(item_width - item_height) / (this->algo->maxL - this->algo->minL)
-    };
-    // int result = 0;
-    auto p = this->item_sorting_parameters();
-    return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
 
-};
-float ScoringSys::pos_scoring(Item item, Container container)const {
-    Rect cr = container.rect;
-    Rect ir = item.size;
-    return this->pos_scoring(ir.width(), ir.height(), cr.start.x, cr.start.y, cr.width(), cr.height(), container.plan_id);
-}
-float ScoringSys::pos_scoring(float item_width, float item_height, float  container_begin_x, float  container_begin_y, float  container_width, float  container_height, float  plan_id)const {
-    vector<float> X = {
-        (item_width * item_height) / (this->algo->minL * this->algo->maxL),
-        item_height / item_width,
-       static_cast<float>((item_width * item_height) / this->algo->material.area()),
-        abs(item_width - item_height) / (this->algo->maxL - this->algo->minL),
-        this->algo->solution.size() > 0 ? (plan_id + 1) / (this->algo->solution.size()) : 0,
-        (item_width * item_height) / (container_width * container_height),
-        1 - (item_width * item_height) / (container_width * container_height),
-        1 - item_width / container_width,
-        1 - item_height / container_height,
-        static_cast<float>((container_width * container_height) / this->algo->material.area()),
-        static_cast<float>(container_begin_x / this->algo->material.width()),
-        static_cast<float>(container_begin_y / this->algo->material.height()),
-        static_cast<float>(this->algo->material.height() / this->algo->material.width()),
-        plan_id >= 0 ? algo->solution[static_cast<int>(plan_id)].get_util_rate() : 0,
-    };
-
-    auto p = this->container_scoring_parameters();
-    return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
-};
-float ScoringSys::gap_scoring(float current_plan_id, float current_max_len, float current_min_len, Container new_container, Container old_container) const {
-    auto cutting_rect = Rect(new_container.rect.bottomLeft(), POS(old_container.rect.bottomLeft().x, new_container.rect.topLeft().y));
-    vector<float> X = {
-        float(this->algo->current_item_idx) / this->algo->items.size(),
-        current_plan_id / this->algo->solution.size(),
-        cos((new_container.rect.start.x - old_container.rect.start.x) / current_max_len),
-        min(new_container.rect.width(),new_container.rect.height()) / max(new_container.rect.width(),new_container.rect.height()),
-        min(old_container.rect.width(),old_container.rect.height()) / max(old_container.rect.width(),old_container.rect.height()),
-        cos((current_max_len - current_min_len) / this->algo->material.width()),
-        1 - new_container.rect.height() / current_max_len,
-        cos(cutting_rect.area() / (current_max_len * current_min_len)),
-        min(cutting_rect.width(),cutting_rect.height()) / max(cutting_rect.width(),cutting_rect.height())
-    };
-    auto p = this->gap_merging_parameters();
-    return abs(std::inner_product(X.begin(), X.end(), p.begin(), 0.0));
-};
 
 
 
@@ -1366,7 +1365,6 @@ public:
             auto p = get_wastemap_pos_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
         }
-
 
     };
 
@@ -2642,9 +2640,78 @@ public:
 
 };
 
+struct AlgoName {
+    static constexpr const char* Dist = "Dist";
+    static constexpr const char* Dist_MaxRect = "Dist_MaxRect";
+    static constexpr const char* Dist_Skyline = "Dist_Skyline";
+    static constexpr const char* MaxRect = "MaxRect";
+    static constexpr const char* Skyline = "Skyline";
+};
+
+
+std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type = AlgoName::Dist, bool is_debug = false) {
+
+    /*if (algo_type == Dist) {
+        if (parameter_input_array.has_value()) {
+            vector<float> parameter_items = parameter_input_array.value();
+            auto d = std::make_unique<Dist>(items, material);
+            d->scoring_sys->parameters = parameter_items;
+            d->run();
+            return d;
+        }
+        else {
+            auto d = std::make_unique<Dist>(items, material);
+            d->run();
+            return d;
+        }
+    }
+    else*/ 
+    if (algo_type == AlgoName::MaxRect) {
+        auto d = std::make_unique<MaxRect>(items, material);
+        d->run();
+        return d;
+    }
+    else if (algo_type == AlgoName::Skyline) {
+        auto d = std::make_unique<Skyline>(items, material);
+        d->run();
+        return d;
+    }
+    else if (algo_type == AlgoName::Dist_MaxRect) {
+        if (parameter_input_array.has_value()) {
+            vector<float> parameter_items = parameter_input_array.value();
+            auto d = std::make_unique<Dist2>(items, material, "", is_debug);
+            d->scoring_sys.parameters = parameter_items;
+            d->run();
+            return d;
+        }
+        else {
+            auto d = std::make_unique<Dist2>(items, material, "", is_debug);
+            d->run();
+            return d;
+        }
+    }
+    else if (algo_type == AlgoName::Dist_Skyline) {
+        if (parameter_input_array.has_value()) {
+            vector<float> parameter_items = parameter_input_array.value();
+            auto d = std::make_unique<Dist3>(items, material, "", is_debug);
+            d->scoring_sys.parameters = parameter_items;
+            d->run();
+            return d;
+        }
+        else {
+            auto d = std::make_unique<Dist3>(items, material, "", is_debug);
+            d->run();
+            return d;
+        }
+    }
+    throw runtime_error("Algorithm not found for given algo_type.");
+}
+
+
+
 int main() {
     //test_rect();
-    auto d = Dist3(test_item_data,test_material,"",false);
+    auto d = Dist(test_item_data,test_material,"",false);
     d.scoring_sys.parameters=vector<float>(Dist3::ScoringSys::ParameterCount::total,1.5);
     d.run();
     cout << d.get_avg_util_rate();

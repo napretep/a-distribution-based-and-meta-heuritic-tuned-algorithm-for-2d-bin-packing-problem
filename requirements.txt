@@ -3,4 +3,4 @@ pandas
 scipy
 matplotlib
 seaborn
-./BinPacking2DAlgo-1.2.7-cp310-cp310-win_amd64.whl
+pybind11

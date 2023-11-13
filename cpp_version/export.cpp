@@ -6,67 +6,6 @@
 #include <pybind11/numpy.h>
 namespace py = pybind11;
 
-auto Dist = "Dist"
-auto Dist_MaxRect = "Dist_MaxRect";
-auto Dist_Skyline = "Dist_Skyline"
-auto MaxRect = "MaxRect"
-auto Skyline = "Skyline"
-std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type =Dist,bool is_debug=false) {
-    
-    if (algo_type == Dist) {
-        if (parameter_input_array.has_value()) {
-            vector<float> parameter_items = parameter_input_array.value();
-            auto d = std::make_unique<Dist>(items, material);
-            d->scoring_sys->parameters = parameter_items;
-            d->run();
-            return d;
-        }
-        else {
-            auto d = std::make_unique<Dist>(items, material);
-            d->run();
-            return d;
-        }
-    }
-    else if (algo_type == MaxRect) {
-        auto d = std::make_unique<MaxRect>(items, material);
-        d->run();
-        return d;
-    }
-    else if (algo_type == Skyline) {
-        auto d = std::make_unique<Skyline>(items, material);
-        d->run();
-        return d;
-    }
-    else if (algo_type == Dist_MaxRect) {
-        if (parameter_input_array.has_value()) {
-            vector<float> parameter_items = parameter_input_array.value();
-            auto d = std::make_unique<Dist2>(items, material,"", is_debug);
-            d->scoring_sys.parameters = parameter_items;
-            d->run();
-            return d;
-        }
-        else {
-            auto d = std::make_unique<Dist2>(items, material,"", is_debug);
-            d->run();
-            return d;
-        }
-    }
-    else if (algo_type == Dist_Skyline) {
-        if (parameter_input_array.has_value()) {
-            vector<float> parameter_items = parameter_input_array.value();
-            auto d = std::make_unique<Dist3>(items, material, "", is_debug);
-            d->scoring_sys.parameters = parameter_items;
-            d->run();
-            return d;
-        }
-        else {
-            auto d = std::make_unique<Dist3>(items, material, "", is_debug);
-            d->run();
-            return d;
-        }
-    }
-    throw runtime_error("Algorithm not found for given algo_type.");
-}
 
 
 std::unique_ptr<Algo>  single_run(py::array_t<float> input_array, pair<float, float>material, std::optional<vector<float>> parameter_input_array=std::nullopt,string algo_type="Dist",bool is_debug=false) {
@@ -99,8 +38,8 @@ vector<float> multi_run(
     }
     vector<float> results;
     for(auto item: item_queue){
-        auto algo = inner_single_run(item, material, parameter_input_array, algo_type);
-        auto r = algo->get_avg_util_rate();
+        std::unique_ptr<Algo> algo = inner_single_run(item, material, parameter_input_array, algo_type);
+        float r = algo->get_avg_util_rate();
         if (need_report) {
             cout << algo->task_id << " done";
         }

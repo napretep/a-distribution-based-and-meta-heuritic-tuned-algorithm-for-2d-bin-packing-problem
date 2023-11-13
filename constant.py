@@ -733,8 +733,18 @@ data_sets = {
         PRODUCTION_DATA2: 外包_data,
         RANDOMGEN_DATA  : 随机_data,
 }
+
+class AlgoName:
+    Dist_Skyline = "Dist_Skyline"
+    Dist_MaxRect = "Dist_MaxRect"
+    Dist_Shelf = "Dist_Shelf"
+    Skyline = "Skyline"
+    MaxRect = "MaxRect"
+
 algo_types = ["Skyline", "Dist2", "MaxRect"]
 data_types = [NOISED, STANDARD]
+
+
 if __name__ == "__main__":
     test_rect()
 
