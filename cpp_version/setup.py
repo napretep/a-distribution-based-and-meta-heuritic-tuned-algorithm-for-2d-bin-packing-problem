@@ -8,9 +8,12 @@ __time__ = '2023/10/29 0:29'
 """
 from setuptools import setup, Extension
 import pybind11
-import re
-
+import re,os
+from datetime import datetime
 source_file = "setup.cpp"
+
+ROOT_PATH = os.path.split(os.path.abspath(__file__))[0]
+
 
 def get_module_name():
     all_cpp_path = "./cpp-solver/all.cpp"
@@ -32,13 +35,20 @@ functions_module = Extension(
     name=module_name,
     sources=[source_file],
     language='c++',
-    include_dirs=[pybind11.get_include()],
+    include_dirs=[pybind11.get_include(),os.path.join(ROOT_PATH,"cpp-solver","eigen-3.4.0")],
     extra_compile_args=cpp_args,
 )
 
 if __name__ == "__main__":
+    # 创建一个datetime对象，表示某个特定的日期和时间
+    dt = datetime.now() # 年，月，日，时，分，秒
 
-    pass
+    # 获取年份
+    year = dt.year-2000
+
+    # 获取该日期在当年的秒数
+    seconds =int((dt - datetime(dt.year, 1, 1)).total_seconds())
+
     setup(name=module_name,
-    version='1.2.11',
+    version=f"{year}.{seconds}",
     description='new dist3 algo',ext_modules=[functions_module])

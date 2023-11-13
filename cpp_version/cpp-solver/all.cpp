@@ -10,7 +10,52 @@
 #include <algorithm>
 #include <cmath>
 #include <math.h>
+#include <Eigen/Dense>
+#include <stdexcept>
 using namespace std;
+
+
+Eigen::MatrixXf sigmoid(const Eigen::MatrixXf& z) {
+    return z.unaryExpr([](float elem) { return 1.0f / (1.0f + std::exp(-elem)); });
+}
+// 计算MLP前向传播
+Eigen::MatrixXf forwardPropagation(const std::vector<int>& net_arch, const std::vector<float>& weights) {
+    std::size_t currentWeightIndex = 0;
+    Eigen::MatrixXf output;
+
+    // 检查架构与权重数量是否匹配
+    std::size_t totalWeightsNeeded = 0;
+    for (std::size_t i = 1; i < net_arch.size(); ++i) {
+        totalWeightsNeeded += (net_arch[i - 1] + 1) * net_arch[i]; // +1 for bias
+    }
+    if (weights.size() != totalWeightsNeeded) {
+        throw std::invalid_argument("Mismatch between architecture and number of weights");
+    }
+
+    // 遍历每一层
+    for (std::size_t i = 1; i < net_arch.size(); ++i) {
+        int inputSize = net_arch[i - 1];
+        int outputSize = net_arch[i];
+
+        // 提取当前层的权重和偏置
+        Eigen::MatrixXf layerWeights = Eigen::Map<const Eigen::MatrixXf>(weights.data() + currentWeightIndex, inputSize, outputSize);
+        currentWeightIndex += inputSize * outputSize;
+
+        Eigen::VectorXf layerBias = Eigen::Map<const Eigen::VectorXf>(weights.data() + currentWeightIndex, outputSize);
+        currentWeightIndex += outputSize;
+
+        // 计算当前层的输出
+        if (i == 1) {
+            output = layerWeights; // 第一层的输入是权重本身
+        }
+        else {
+            output = sigmoid((output * layerWeights).rowwise() + layerBias.transpose()); // 后续层的输入是前一层的输出
+        }
+    }
+
+    return output;
+}
+
 std::string gen_uuid(std::size_t length = 8) {
     const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -117,7 +162,7 @@ public:
             start = end;
             end = new_end;
         }
-        diag = sqrt(pow(width(), 2) + pow(height(), 2));
+        //diag = sqrt(pow(width(), 2) + pow(height(), 2));
         maxL = max(width(), height());
         minL = min(width(), height());
     }
@@ -374,8 +419,8 @@ public:
         return height() / width();
     }
 
-    float maxlen_div_diag()const {
-        return maxL / diag;
+    float aspect_ratio()const {
+        return minL / maxL;
     }
 
     bool contains(const POS& pos) const {
@@ -1848,15 +1893,15 @@ public:
             solution.size()>0?float(containers[0].plan_id+1) / float(solution.size()):0,
             maybe_rect_top.has_value() ? float(maybe_rect_top.value().area()) / material.area() : 0.0f,
             maybe_rect_right.has_value() ? float(maybe_rect_right.value().area() / material.area()) : 0.0f,
-            maybe_rect_top.has_value() ? maybe_rect_top.value().maxlen_div_diag() : 0.0f,
-            maybe_rect_right.has_value() ? maybe_rect_right.value().maxlen_div_diag() : 0.0f,
+            maybe_rect_top.has_value() ? maybe_rect_top.value().aspect_ratio() : 0.0f,
+            maybe_rect_right.has_value() ? maybe_rect_right.value().aspect_ratio() : 0.0f,
             item_rect.start.x / material.end.x,
             item_rect.start.y / material.end.y,
             item_rect.area() / accumulate(containers.begin(),containers.end(),0,[](float current_sum,Container b) {
                     return current_sum + b.rect.area();
                 }),
             waste_area / ideal_waste_rect.area(),
-            ideal_waste_rect.maxlen_div_diag(),
+            ideal_waste_rect.aspect_ratio(),
             containers.size() > 1 and max_gap > 0 ? (max_gap - min_gap) / max_gap : 0.0f,
             item_rect.width() / container_total_len,
             item_rect.height() / containers[begin_idx].rect.height(),
@@ -2795,12 +2840,22 @@ int get_algo_parameters_length(string algo_type) {
 
 int main() {
     //test_rect();
-    for (auto i = 0; i < 100; i++) {
-        auto d = Dist3(test_item_data, test_material, "", false);
+
+    for (auto j = 0; j < 400; j++) {
+        vector<float>input_data;
+        for (auto i = 0; i < 100; i++) {
+            for (auto e : test_item_data) {
+                input_data.push_back(e);
+            }
+        }
+        cout << input_data.size() << endl;
+        auto d = Dist3(input_data, test_material, "", false);
         d.scoring_sys.parameters = vector<float>(Dist3::ScoringSys::ParameterCount::total, 1.5);
         d.run();
-        cout << d.get_avg_util_rate()<<endl;
+        cout << d.get_avg_util_rate() << endl;
     }
+    
+    
     
     return 0;
 }

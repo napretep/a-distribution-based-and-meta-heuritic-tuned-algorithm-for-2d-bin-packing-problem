@@ -92,7 +92,7 @@ class DE:
         """
         self.total_param_num = BinPacking2DAlgo.get_algo_parameters_length(algo_name)
         self.input_data = None
-        self.bounds = [[-2, 2]] * self.total_param_num
+        self.bounds = [[-self.total_param_num, self.total_param_num]] * self.total_param_num
         self.mutation = 0.4
         self.crossover = 0.9
         self.p = Pool()
@@ -133,9 +133,9 @@ class DE:
                         np.array(self.training_log))
             if self.current_gen + 1 == self.max_iter:
                 np.save(os.path.join(SYNC_PATH,
-                                     f"param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"))
+                                     f"param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), best_x)
                 np.save(os.path.join(SYNC_PATH,
-                                     f"traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"))
+                                     f"traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), np.array(self.training_log))
 
         pass
 
@@ -149,7 +149,20 @@ class DE:
         best_idx = np.argmin(fitness)
         best = pop_denorm[best_idx]
         # 整体平均和历史最高
+        history_mean_fitness = []
+        history_best_fitness = []
         for i in range(self.max_iter):
+            if (i + 1) % 20 == 0:
+                if np.var(history_best_fitness[-20:])<1e-5:
+                    print("\nrestart")
+                    best_avg_fitness = np.min(history_mean_fitness[-20:])
+                    for k in range(self.pop_size):
+                        if fitness[k]>best_avg_fitness:
+                            pop[k]=np.random.rand(1,dimensions)
+                            idvl_denorm=min_b+pop[k]*diff
+                            fitness[k]=self.mutli_process_single_eval(idvl_denorm)
+
+
             self.current_gen = i
             current_generation_fitness = []
             selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7, 1)),
@@ -163,10 +176,9 @@ class DE:
                 cross_points = np.random.rand(dimensions) < self.crossover
                 if not np.any(cross_points):
                     cross_points[np.random.randint(0, dimensions)] = True
+
                 trial = np.where(cross_points, mutant, pop[j])
                 trial_denorm = min_b + trial * diff
-                trial_denorm = np.where(trial_denorm < min_b, min_b, trial_denorm)
-                trial_denorm = np.where(trial_denorm > max_b, max_b, trial_denorm)
                 f = self.mutli_process_single_eval(trial_denorm)
                 current_generation_fitness.append(f)
                 if f < fitness[j]:
@@ -175,8 +187,10 @@ class DE:
                     if f < fitness[best_idx]:
                         best_idx = j
                         best = trial_denorm
+            history_mean_fitness.append(np.mean(current_generation_fitness))
+            history_best_fitness.append(fitness[best_idx])
 
-            yield best, fitness[best_idx], np.mean(current_generation_fitness)
+            yield best, fitness[best_idx], history_mean_fitness[-1]
 
     def get_sampled_items(self) -> np.ndarray:
 
