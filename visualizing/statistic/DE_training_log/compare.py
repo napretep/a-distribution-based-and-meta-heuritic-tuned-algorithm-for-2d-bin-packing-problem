@@ -28,6 +28,13 @@ def run():
             axs[idx].legend()  # 在每个子图上添加图例
         plt.savefig(f'training of {data_type}')
         plt.show()
+
+def run_test():
+    training_data = np.load(r"D:\代码运行数据\traininglog_standard_production_data1_1000_gen500.npy")
+    plt.plot(training_data[:,0])
+    plt.plot(training_data[:,1])
+    plt.show()
+
 if __name__ == "__main__":
-    run()
+    run_test()
     pass

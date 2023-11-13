@@ -171,12 +171,11 @@ class DE:
                 idxs = [idx for idx in range(self.pop_size) if idx != j]
                 a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
                 mutant = a + np.random.uniform(self.mutation, 1) * (b - c)
-                mutant = np.where(mutant < min_b, min_b, mutant)
-                mutant = np.where(mutant > max_b, max_b, mutant)
+                mutant = np.where(mutant < 0, 0, mutant)
+                mutant = np.where(mutant > 1, 1, mutant)
                 cross_points = np.random.rand(dimensions) < self.crossover
                 if not np.any(cross_points):
                     cross_points[np.random.randint(0, dimensions)] = True
-
                 trial = np.where(cross_points, mutant, pop[j])
                 trial_denorm = min_b + trial * diff
                 f = self.mutli_process_single_eval(trial_denorm)
