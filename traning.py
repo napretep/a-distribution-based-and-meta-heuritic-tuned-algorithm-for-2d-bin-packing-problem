@@ -127,15 +127,15 @@ class DE:
             self.training_log.append([1 / best_fitness, 1 / avg_fitness])
             if (self.current_gen + 1) % 100 == 0:
                 np.save(
-                    os.path.join(SYNC_PATH, f"param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}_atgen{self.current_gen + 1}"),
+                    os.path.join(SYNC_PATH, f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}_atgen{self.current_gen + 1}"),
                     best_x)
-                np.save(os.path.join(SYNC_PATH, f"traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}_atgen{self.current_gen + 1}"),
+                np.save(os.path.join(SYNC_PATH, f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}_atgen{self.current_gen + 1}"),
                         np.array(self.training_log))
             if self.current_gen + 1 == self.max_iter:
                 np.save(os.path.join(SYNC_PATH,
-                                     f"param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), best_x)
+                                     f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), best_x)
                 np.save(os.path.join(SYNC_PATH,
-                                     f"traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), np.array(self.training_log))
+                                     f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), np.array(self.training_log))
 
         pass
 
