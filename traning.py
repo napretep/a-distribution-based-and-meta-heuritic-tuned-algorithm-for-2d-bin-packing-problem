@@ -123,7 +123,7 @@ class DE:
             if best_score is None:
                 best_score = np.array([])
             print(
-                f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1] - self.time_recorder[-2], 2)}s,avg_score={round(1 / avg_fitness * 100, 3)}%,hist_best_score={round(1 / best_fitness * 100, 3)}%,x={best_x}")
+                f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1] - self.time_recorder[-2], 2)}s,avg_score={round(1 / avg_fitness * 100, 3)}%,hist_best_score={round(1 / best_fitness * 100, 3)}%,x={list(best_x)}")
             self.training_log.append([1 / best_fitness, 1 / avg_fitness])
             if (self.current_gen + 1) % 100 == 0:
                 np.save(

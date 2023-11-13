@@ -12,7 +12,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from constant import *
 from scipy.stats import gaussian_kde
-from sklearn.neighbors import KernelDensity
 import numpy as np
 import matplotlib.pyplot as plt
 

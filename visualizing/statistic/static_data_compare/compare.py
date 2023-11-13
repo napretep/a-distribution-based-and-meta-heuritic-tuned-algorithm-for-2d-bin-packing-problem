@@ -45,7 +45,6 @@ class JOB:
             for data_set in self.data_sets:
                 for algo_type in self.algo_types:
                     for scale in self.scales:
-
                         for prefix in self.algo_prefix:
                             for data_type in self.data_type:
                                 timestart = time()
