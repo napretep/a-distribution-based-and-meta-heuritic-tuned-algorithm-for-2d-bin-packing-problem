@@ -175,7 +175,7 @@ class DE:
         history_best_fitness = []
         print("\niter start")
         for i in range(self.max_iter):
-            if len(history_best_fitness)>20 and np.var(history_best_fitness[-20:])<1e-5:
+            if len(history_best_fitness)>20 and np.var(history_best_fitness[-20:])<1e-7:
                     print("\nrestart")
                     best_avg_fitness = np.min(history_mean_fitness[-20:])
                     for k in range(self.pop_size):
@@ -213,11 +213,11 @@ class DE:
 
                 input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
                 results = self.p.map(self.multi_process_multi_eval, input_env)
-                for trial_f,trial_denorm, idvl_idx in results:
+                for trial_f,trial_denorm,trial, idvl_idx in results:
                     current_generation_fitness.append(trial_f)
                     if trial_f < fitness[idvl_idx]:
                         fitness[idvl_idx] = trial_f
-                        pop[idvl_idx] = trial_denorm
+                        pop[idvl_idx] = trial
                         if trial_f < fitness[best_idx]:
                             best_idx = idvl_idx
                             best = trial_denorm
@@ -249,6 +249,7 @@ class DE:
 
     @staticmethod
     def multi_process_multi_eval(arg:DE_MultiArgs):
+        # print(arg)
         idxs = [idx for idx in range(arg.pop_size) if idx != arg.idvl_idx]
         a, b, c = arg.pop[np.random.choice(idxs, 3, replace=False)]
         mutant = a + np.random.uniform(arg.mutation, 1) * (b - c)
@@ -259,12 +260,14 @@ class DE:
             cross_points[np.random.randint(0, arg.dimensions)] = True
         trial = np.where(cross_points, mutant, arg.pop[arg.idvl_idx])
         trial_denorm = arg.min_b + trial * arg.diff
-        trial_denorm = np.clip(trial_denorm, arg.min_b,arg.max_b)
+        trial_denorm = np.where(trial_denorm < arg.min_b, arg.min_b, trial_denorm)
+        trial_denorm = np.where(mutant > arg.max_b, arg.max_b, trial_denorm)
+        # print(a, b, c)
         input_data = [ kde_sample(arg.data_set,arg.data_sample_scale) if arg.random_ratio is None else random_mix(kde_sample(arg.data_set,arg.data_sample_scale)[:,1:],arg.random_ratio)
                        for k in range(arg.eval_run_count)]
         results = BinPacking2DAlgo.multi_run(input_data,MATERIAL_SIZE,parameter_input_array=trial_denorm,algo_type=arg.algo_name,run_count=arg.eval_run_count)
         fitness = np.mean(1/np.array(results))
-        return fitness,trial_denorm,arg.idvl_idx
+        return fitness,trial_denorm,trial,arg.idvl_idx
 
         pass
 
