@@ -48,7 +48,7 @@ vector<float> multi_run(
     return results;
 }
 
-
+//get_algo_parameters_length
 PYBIND11_MODULE(BinPacking2DAlgo, m) {
     py::class_<Algo>(m, "Algo")
         .def("get_avg_util_rate", &Algo::get_avg_util_rate)
@@ -70,6 +70,10 @@ PYBIND11_MODULE(BinPacking2DAlgo, m) {
             py::arg("algo_type")="Dist", 
             py::arg("run_count")=27,
             py::arg("need_report")=false,
+            "algo_type=Dist,MaxRect,Skyline,Dist_MaxRect,Dist_Skyline. Dist and Dist2 need learn parameters to performance well"
+    );
+    m.def("get_algo_parameters_length",&get_algo_parameters_length,
+            py::arg("algo_type"),
             "algo_type=Dist,MaxRect,Skyline,Dist_MaxRect,Dist_Skyline. Dist and Dist2 need learn parameters to performance well"
     );
 

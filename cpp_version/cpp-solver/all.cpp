@@ -423,7 +423,11 @@ public:
     bool contains(const Container& other) const {
         return this->rect.contains(other.rect);
     }
-
+    string to_string()const {
+        std::stringstream ss;
+        ss << rect.to_string() << ",plan_id=" << plan_id;
+        return ss.str();
+    }
 };
 
 
@@ -987,6 +991,7 @@ public:
         struct ParameterCount {
             static constexpr auto pos_scoring = 18;
             static constexpr auto sort_scoring = 6;
+            static constexpr auto total = pos_scoring + sort_scoring;
         };
         vector<float> get_item_sorting_parameters()const {
             vector<float> p(this->parameters.begin(), this->parameters.begin() + ParameterCount::sort_scoring);
@@ -1442,11 +1447,19 @@ public:
         }
 
         solution.clear();// avoid some strange things;
-        for (auto i = 0; i < items.size(); i++) { // load item one by one
-            auto new_item = items[i];
-            if (this->is_debug) { cout << "solution size=" << solution.size() << endl; }
+        for (auto item_idx = 0; item_idx < items.size(); item_idx++) { // load item one by one
+            auto new_item = items.at(item_idx);
+            if (this->is_debug) { cout << "run count="<< item_idx << ",solution size=" << solution.size() << endl; }
+            
             vector<Dist3::Score> scores; // init a score list;
             for (auto& plan : solution) {
+                if (is_debug) {
+                    //stringstream ss;
+                    cout << "when loop begin, the wastemap in current plan_id=" << plan.ID << ",wastemap.size="<<plan.WasteMap.size() << endl;
+                    for (auto waste_map : plan.WasteMap) {
+                        cout << waste_map.to_string() << endl;
+                    }
+                }
                 for (auto i = 0; i < plan.WasteMap.size(); i++) {
                     Rect waste_rect = plan.WasteMap.at(i).rect;
                     if (waste_rect.contains(new_item.size + waste_rect.start)) {
@@ -1547,6 +1560,15 @@ public:
 
                 auto new_rect = best_score.item.get_rect(); // get item actual place position
                 if (best_score.type == ContainerType::WasteMap) {
+                    if (is_debug) {
+                        //stringstream ss;
+                        cout << "WasteMap appending procedure:" << endl;
+                        cout << "before add wastemap current plan_id=" << plan.ID << ",wastemap=" << endl;
+                        for (auto waste_map : plan.WasteMap) {
+                            cout << waste_map.to_string() << endl;
+                        }
+                    }
+
                     auto& container = plan.WasteMap.at(best_score.container_range.first);
                     // generate the best split plan
                     pair<Container, Container> split_1 = {
@@ -1637,15 +1659,41 @@ public:
                         }
                     }
                     if (maybe_newC_right.has_value()) {
+                        if (is_debug) {
+                            //stringstream ss;
+                            cout << "add maybe_newC_right =" << maybe_newC_right.value().to_string() << endl;
+                            
+                        }
+                        maybe_newC_right.value().plan_id = plan.ID;
                         plan.WasteMap.push_back(maybe_newC_right.value());
                     }
                     if (maybe_newC_top.has_value()) {
+                        if (is_debug) {
+                            //stringstream ss;
+                            cout << "add maybe_newC_top =" << maybe_newC_top.value().to_string() << endl;
+
+                        }
+                        maybe_newC_top.value().plan_id = plan.ID;
                         plan.WasteMap.push_back(maybe_newC_top.value());
                     }
                     erase(plan.WasteMap, container);
-
+                    if (is_debug) {
+                        //stringstream ss;
+                        cout << "after add wastemap current plan_id=" << plan.ID << ",wastemap=" << endl;
+                        for (auto waste_map : plan.WasteMap) {
+                            cout << waste_map.to_string() << endl;
+                        }
+                    }
                 }
                 else {
+                    if (is_debug) {
+                        //stringstream ss;
+                        cout << "skyline appending procedure:" << endl;
+                        cout << "before add wastemap current plan_id=" << plan.ID << ",wastemap=" << endl;
+                        for (auto waste_map : plan.WasteMap) {
+                            cout << waste_map.to_string() << endl;
+                        }
+                    }
                     auto removed_container_start = plan.SkylineContainers.begin() + best_score.container_range.first;
                     auto removed_container_end = plan.SkylineContainers.begin() + best_score.container_range.second;
                     vector<Container> removed_containers(removed_container_start, removed_container_end);
@@ -1655,7 +1703,7 @@ public:
                     optional<Container> maybe_container_top = nullopt;
                     maybe_container_top = Container(Rect(new_rect.topLeft(), POS(new_rect.topRight().x, this->material.height())), plan.ID);
                     if (new_rect.bottomRight().x != last_c.rect.end.x) {
-                        maybe_container_right = Container(Rect(POS(new_rect.bottomRight().x, last_c.rect.start.y), POS(last_c.rect.end.x, this->material.height())));
+                        maybe_container_right = Container(Rect(POS(new_rect.bottomRight().x, last_c.rect.start.y), POS(last_c.rect.end.x, this->material.height())),plan.ID);
                     }
                     else {
                         if (maybe_container_right.has_value()) {
@@ -1720,7 +1768,19 @@ public:
                         }
                     }
                     for (auto& waste_c : waste_rect_to_append) {
+                        waste_c.plan_id = plan.ID;
                         plan.WasteMap.push_back(waste_c);
+                        if (is_debug) {
+                            cout << "new wastemap appended:" << waste_c.to_string() << endl;
+                        }
+                        
+                    }
+                    if (is_debug) {
+                        //stringstream ss;
+                        cout << "after add wastemap current plan_id=" << plan.ID << ",wastemap=" << endl;
+                        for (auto waste_map : plan.WasteMap) {
+                            cout << waste_map.to_string() << endl;
+                        }
                     }
                 }
                 sort(plan.SkylineContainers.begin(), plan.SkylineContainers.end(), [](Container c1, Container c2) {
@@ -1731,7 +1791,7 @@ public:
                     return c1.rect.start.x < c2.rect.start.x;
                     }
                 );
-
+                
                 auto new_plan = plan;
                 this->packinglog.at(best_score.plan_id).push_back(new_plan.toVector());
             }
@@ -1744,7 +1804,7 @@ public:
         }
         float control_term = 1.0f;
         auto item_rect = item.get_rect();
-        auto last_c = containers[end_idx];
+        auto last_c = containers.at(end_idx);
         optional<Rect> maybe_rect_right = nullopt;
         optional<Rect> maybe_rect_top = nullopt;
         maybe_rect_top = Rect(item_rect.topLeft(), POS(item_rect.topRight().x, this->material.height()));
@@ -1841,9 +1901,16 @@ public:
         item_area/ all_waste_map_area
         control_term
         */
+        if (is_debug) {
+            cout << "run fun calc_wastemap_score, args = item:" << item.get_rect().to_string() << ", container:" << container.to_string() << endl;
+            if (container.plan_id < 0) {
+                throw runtime_error("container.plan_id < 0");
+            }
+        }
+        
         auto control_term = 1.0f;
         auto item_rect = item.get_rect();
-        auto wastemap_containers = solution[container.plan_id].WasteMap;
+        auto wastemap_containers = solution.at(container.plan_id).WasteMap;
         auto all_waste_area = accumulate(wastemap_containers.begin(), wastemap_containers.end(), 0, [](float total_area , Container b) {
                 return total_area+b.rect.area();
             });
@@ -2467,7 +2534,7 @@ public:
                     optional<Container> maybe_container_top = nullopt;
                     maybe_container_top = Container(Rect(new_rect.topLeft(), POS(new_rect.topRight().x, this->material.height())), plan.ID);
                     if (new_rect.bottomRight().x != last_c.rect.end.x) {
-                        maybe_container_right = Container(Rect(POS(new_rect.bottomRight().x, last_c.rect.start.y), POS(last_c.rect.end.x, this->material.height())));
+                        maybe_container_right = Container(Rect(POS(new_rect.bottomRight().x, last_c.rect.start.y), POS(last_c.rect.end.x, this->material.height())),plan.ID);
                     }
                     else {
                         if (maybe_container_right.has_value()) {
@@ -2644,18 +2711,21 @@ struct AlgoName {
     static constexpr const char* Dist = "Dist";
     static constexpr const char* Dist_MaxRect = "Dist_MaxRect";
     static constexpr const char* Dist_Skyline = "Dist_Skyline";
+    static constexpr const char* Dist_Shelf = "Dist_Shelf";
     static constexpr const char* MaxRect = "MaxRect";
     static constexpr const char* Skyline = "Skyline";
 };
 
 
 std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>material, std::optional<vector<float>> parameter_input_array = std::nullopt, string algo_type = AlgoName::Dist, bool is_debug = false) {
-
-    /*if (algo_type == Dist) {
+    if (is_debug) {
+        cout << "items size = " << items.size()<<" , algo_name="<<algo_type << endl;
+    }
+    if (algo_type ==  AlgoName::Dist) {
         if (parameter_input_array.has_value()) {
             vector<float> parameter_items = parameter_input_array.value();
             auto d = std::make_unique<Dist>(items, material);
-            d->scoring_sys->parameters = parameter_items;
+            d->scoring_sys.parameters = parameter_items;
             d->run();
             return d;
         }
@@ -2665,8 +2735,7 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
             return d;
         }
     }
-    else*/ 
-    if (algo_type == AlgoName::MaxRect) {
+    else if (algo_type == AlgoName::MaxRect) {
         auto d = std::make_unique<MaxRect>(items, material);
         d->run();
         return d;
@@ -2707,13 +2776,31 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
     throw runtime_error("Algorithm not found for given algo_type.");
 }
 
-
+int get_algo_parameters_length(string algo_type) {
+    if (algo_type == AlgoName::Dist) {
+        return Dist::ScoringSys::total_param_count;
+    }
+        
+    else if (algo_type == AlgoName::Dist_MaxRect) {
+        return Dist2::ScoringSys::ParameterCount::total;
+    }
+    else if (algo_type == AlgoName::Dist_Skyline) {
+        return Dist3::ScoringSys::ParameterCount::total;
+    }
+    else {
+        
+        throw runtime_error("can find algo");
+    }
+}
 
 int main() {
     //test_rect();
-    auto d = Dist(test_item_data,test_material,"",false);
-    d.scoring_sys.parameters=vector<float>(Dist3::ScoringSys::ParameterCount::total,1.5);
-    d.run();
-    cout << d.get_avg_util_rate();
+    for (auto i = 0; i < 100; i++) {
+        auto d = Dist3(test_item_data, test_material, "", false);
+        d.scoring_sys.parameters = vector<float>(Dist3::ScoringSys::ParameterCount::total, 1.5);
+        d.run();
+        cout << d.get_avg_util_rate()<<endl;
+    }
+    
     return 0;
 }
