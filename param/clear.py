@@ -65,6 +65,15 @@ def change_name3():
             print(new_filename)
             os.rename(os.path.join(current_path, filename), os.path.join(current_path, new_filename))
 
+def change_name4():
+    current_path = os.getcwd()
+
+    for filename in os.listdir(current_path):
+        if filename.endswith('.npy'):
+            new_filename = "Dist_MaxRect_"+filename
+            print(new_filename)
+            os.rename(os.path.join(current_path, filename), os.path.join(current_path, new_filename))
+
 if __name__ == "__main__":
-    change_name2()
+    change_name4()
     pass

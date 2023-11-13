@@ -30,9 +30,13 @@ def run():
         plt.show()
 
 def run_test():
-    training_data = np.load(r"D:\代码运行数据\traininglog_standard_production_data1_1000_gen500.npy")
-    plt.plot(training_data[:,0])
+    training_data = np.load(r"D:\代码运行数据\traning_log__randomGen_data_Dist_Skyline_1000.npy_atgen100.npy")
+    data2 = np.load("traininglog_standard_production_data1_sample1000_gen500.npy")
+    plt.plot(training_data[:,0],label="new")
     plt.plot(training_data[:,1])
+    # plt.plot(data2[:, 0],label="old")
+    # plt.plot(data2[:, 1])
+    plt.legend()
     plt.show()
 
 if __name__ == "__main__":

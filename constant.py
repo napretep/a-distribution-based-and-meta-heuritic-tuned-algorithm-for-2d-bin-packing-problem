@@ -683,10 +683,7 @@ class EVAL:
 
 params = {}
 
-for data_type in [STANDARD, NOISED]:
-    params[data_type] = {}
-    for data_set_name in [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]:
-        params[data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"param_{data_type}_{data_set_name}_sample1000_gen500.npy"))
+
 
 # params = {
 #        STANDARD: {
@@ -738,6 +735,8 @@ data_sets = {
         RANDOMGEN_DATA  : 随机_data,
 }
 
+
+
 class AlgoName:
     Dist_Skyline = "Dist_Skyline"
     Dist_MaxRect = "Dist_MaxRect"
@@ -745,9 +744,14 @@ class AlgoName:
     Skyline = "Skyline"
     MaxRect = "MaxRect"
 
-algo_types = ["Skyline", "Dist2", "MaxRect"]
+algo_types = [AlgoName.Skyline, AlgoName.MaxRect, AlgoName.Dist_Skyline, AlgoName.Dist_MaxRect, AlgoName.Dist_Shelf]
 data_types = [NOISED, STANDARD]
 
+
+for data_type in [STANDARD, NOISED]:
+    params[data_type] = {}
+    for data_set_name in [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]:
+        params[data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"param_{data_type}_{data_set_name}_sample1000_gen500.npy"))
 
 if __name__ == "__main__":
     test_rect()

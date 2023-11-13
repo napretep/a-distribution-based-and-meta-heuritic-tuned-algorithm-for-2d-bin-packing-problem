@@ -81,13 +81,13 @@ if __name__ == "__main__":
     job = JOB(
             data_sets={
                     PRODUCTION_DATA1: 华为杯_data,
-                    PRODUCTION_DATA2: 外包_data,
-                    RANDOMGEN_DATA  : 随机_data,
+                    # PRODUCTION_DATA2: 外包_data,
+                    # RANDOMGEN_DATA  : 随机_data,
             },
-            algo_types=["Dist2"],
+            algo_types=[AlgoName.Dist_MaxRect],
             param_source=params,
-            data_type=[STANDARD,NOISED],
-            algo_prefix=[STANDARD,NOISED],
+            data_type=[STANDARD],
+            algo_prefix=[STANDARD],
             scales=(100,1000,3000,5000)
     )
     job.DO()
