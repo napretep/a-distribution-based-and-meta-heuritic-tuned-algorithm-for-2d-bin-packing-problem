@@ -2849,6 +2849,11 @@ int get_algo_parameters_length(string algo_type) {
 }
 
 int main() {
+
+    vector<float> p = {
+-28.87387150923436, -28.618529007833864, 26.980629974625657, -20.242333126873046, -17.267807422076203, -1.5575831483146878, 11.563719590419268, 19.65316489192614, 27.48682202245689, -23.152815136458504, 7.0367714165386275, -31.0, -6.375059883757615, 20.186779203860247, -14.635306910358253, -1.882856296641858, -21.562415817508672, -0.03759380610212659, 28.698550292677588, 13.58471139424043, 9.301246765693946, -31.0, -18.587302872532703, -0.7723136578646965, 24.411996550705233, -9.603301322576229, 14.775923677247341, -24.081146356445526, 31.0, 1.872020721505102, -8.947888456894628
+    };
+
     //test_rect();
     std::default_random_engine generator;
     for (auto x = 0; x < 500; x++) {
@@ -2867,11 +2872,11 @@ int main() {
                     input_data.push_back(e + random_number);
                 }
             }
-            cout << input_data.size() << endl;
+            cout << input_data.size()<<", ";
             auto d = Dist3(input_data, test_material, "", false);
-            d.scoring_sys.parameters = vector<float>(Dist3::ScoringSys::ParameterCount::total, 1.5);
+            d.scoring_sys.parameters = p;
             d.run();
-            cout << d.get_avg_util_rate() << endl;
+            cout << d.get_avg_util_rate() << ", ";
         }
 
 
