@@ -10,51 +10,51 @@
 #include <algorithm>
 #include <cmath>
 #include <math.h>
-#include <Eigen/Dense>
+//#include <Eigen/Dense>
 #include <stdexcept>
 using namespace std;
 
 
-Eigen::MatrixXf sigmoid(const Eigen::MatrixXf& z) {
-    return z.unaryExpr([](float elem) { return 1.0f / (1.0f + std::exp(-elem)); });
-}
-// 计算MLP前向传播
-Eigen::MatrixXf forwardPropagation(const std::vector<int>& net_arch, const std::vector<float>& weights) {
-    std::size_t currentWeightIndex = 0;
-    Eigen::MatrixXf output;
-
-    // 检查架构与权重数量是否匹配
-    std::size_t totalWeightsNeeded = 0;
-    for (std::size_t i = 1; i < net_arch.size(); ++i) {
-        totalWeightsNeeded += (net_arch[i - 1] + 1) * net_arch[i]; // +1 for bias
-    }
-    if (weights.size() != totalWeightsNeeded) {
-        throw std::invalid_argument("Mismatch between architecture and number of weights");
-    }
-
-    // 遍历每一层
-    for (std::size_t i = 1; i < net_arch.size(); ++i) {
-        int inputSize = net_arch[i - 1];
-        int outputSize = net_arch[i];
-
-        // 提取当前层的权重和偏置
-        Eigen::MatrixXf layerWeights = Eigen::Map<const Eigen::MatrixXf>(weights.data() + currentWeightIndex, inputSize, outputSize);
-        currentWeightIndex += inputSize * outputSize;
-
-        Eigen::VectorXf layerBias = Eigen::Map<const Eigen::VectorXf>(weights.data() + currentWeightIndex, outputSize);
-        currentWeightIndex += outputSize;
-
-        // 计算当前层的输出
-        if (i == 1) {
-            output = layerWeights; // 第一层的输入是权重本身
-        }
-        else {
-            output = sigmoid((output * layerWeights).rowwise() + layerBias.transpose()); // 后续层的输入是前一层的输出
-        }
-    }
-
-    return output;
-}
+//Eigen::MatrixXf sigmoid(const Eigen::MatrixXf& z) {
+//    return z.unaryExpr([](float elem) { return 1.0f / (1.0f + std::exp(-elem)); });
+//}
+//// 计算MLP前向传播
+//Eigen::MatrixXf forwardPropagation(const std::vector<int>& net_arch, const std::vector<float>& weights) {
+//    std::size_t currentWeightIndex = 0;
+//    Eigen::MatrixXf output;
+//
+//    // 检查架构与权重数量是否匹配
+//    std::size_t totalWeightsNeeded = 0;
+//    for (std::size_t i = 1; i < net_arch.size(); ++i) {
+//        totalWeightsNeeded += (net_arch[i - 1] + 1) * net_arch[i]; // +1 for bias
+//    }
+//    if (weights.size() != totalWeightsNeeded) {
+//        throw std::invalid_argument("Mismatch between architecture and number of weights");
+//    }
+//
+//    // 遍历每一层
+//    for (std::size_t i = 1; i < net_arch.size(); ++i) {
+//        int inputSize = net_arch[i - 1];
+//        int outputSize = net_arch[i];
+//
+//        // 提取当前层的权重和偏置
+//        Eigen::MatrixXf layerWeights = Eigen::Map<const Eigen::MatrixXf>(weights.data() + currentWeightIndex, inputSize, outputSize);
+//        currentWeightIndex += inputSize * outputSize;
+//
+//        Eigen::VectorXf layerBias = Eigen::Map<const Eigen::VectorXf>(weights.data() + currentWeightIndex, outputSize);
+//        currentWeightIndex += outputSize;
+//
+//        // 计算当前层的输出
+//        if (i == 1) {
+//            output = layerWeights; // 第一层的输入是权重本身
+//        }
+//        else {
+//            output = sigmoid((output * layerWeights).rowwise() + layerBias.transpose()); // 后续层的输入是前一层的输出
+//        }
+//    }
+//
+//    return output;
+//}
 
 std::string gen_uuid(std::size_t length = 8) {
     const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -886,9 +886,12 @@ public:
                             new_plan.remain_containers.push_back(new_top_corner.value());
                         }
                         this->solution.push_back(new_plan);
-                        PlanPackingLog plan_packing_log;
-                        plan_packing_log.push_back(new_plan.toVector());
-                        this->packinglog.push_back(plan_packing_log);
+                        if (is_debug) {
+                            PlanPackingLog plan_packing_log;
+                            plan_packing_log.push_back(new_plan.toVector());
+                            this->packinglog.push_back(plan_packing_log);
+                        }
+                        
                     }
                     else {
                         auto& plan = this->solution[best_score.plan_id];
@@ -916,9 +919,11 @@ public:
                         }
 
 
-
-                        auto plancopy = plan;
-                        this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector());
+                        if (is_debug) {
+                            auto plancopy = plan;
+                            this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector());
+                        }
+                        
                     }
         }
 
@@ -1594,10 +1599,12 @@ public:
                 }
                 plan.item_sequence.push_back(best_score.item);
                 solution.push_back(plan);
-
-                PlanPackingLog plan_packing_log;
-                plan_packing_log.push_back(plan.toVector());
-                this->packinglog.push_back(plan_packing_log);
+                if (is_debug) {
+                    PlanPackingLog plan_packing_log;
+                    plan_packing_log.push_back(plan.toVector());
+                    this->packinglog.push_back(plan_packing_log);
+                }
+                
             }
             else {
                 auto& plan = solution.at(best_score.plan_id);// load plan
@@ -1836,9 +1843,11 @@ public:
                     return c1.rect.start.x < c2.rect.start.x;
                     }
                 );
+                if (is_debug) {
+                    auto new_plan = plan;
+                    this->packinglog.at(best_score.plan_id).push_back(new_plan.toVector());
+                }
                 
-                auto new_plan = plan;
-                this->packinglog.at(best_score.plan_id).push_back(new_plan.toVector());
             }
         }
     }
@@ -2843,12 +2852,14 @@ int main() {
 
     for (auto j = 0; j < 1; j++) {
         vector<float>input_data;
-        for (auto i = 0; i < 100; i++) {
+        for (auto i = 0; i < 50; i++) {
             for (auto e : test_item_data) {
                 input_data.push_back(e);
             }
         }
         cout << input_data.size() << endl;
+        
+        
         auto d = Dist3(input_data, test_material, "", false);
         d.scoring_sys.parameters = vector<float>(Dist3::ScoringSys::ParameterCount::total, 1.5);
         d.run();
