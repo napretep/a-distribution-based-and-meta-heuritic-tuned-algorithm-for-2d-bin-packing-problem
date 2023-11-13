@@ -8,23 +8,29 @@ __time__ = '2023/11/10 4:25'
 """
 
 from constant import *
+
+import  matplotlib.cm as  cm
 from scipy.stats import linregress
+
+cmap = cm.get_cmap('Dark2')
 
 scales = [100,300,500,1000,3000,5000]
 
-algo_types = ["Skyline","MaxRect",f"{STANDARD}Dist2",f"{NOISED}Dist2"]
+algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_MaxRect}",AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"]
 # 定义不同算法类型和比例尺度的颜色和形状
 color_map = {f'{STANDARD}Dist2': 'b', f'{NOISED}Dist2': 'g', 'MaxRect': 'r', 'Skyline': 'c'}
-shape_map = {100: 'o', 300: 's', 500: '^', 1000: 'D', 3000: 'x', 5000: '+'}
+
+colors = cmap(range(len(algo_names)))
+# shape_map = {100: 'o', 300: 's', 500: '^', 1000: 'D', 3000: 'x', 5000: '+'}
 
 
 # determ param dist algo on random ratio dataset
-def run_compare_algo(algo_end=4):
-    algo_names = algo_types[:algo_end]
+def run_compare_algo(algo_end=6):
+    selected_algo_names = algo_names[:algo_end]
     results = []
     for data_set in data_sets:
 
-        for algo in algo_names:
+        for algo in selected_algo_names:
             for scale in scales:
                 result_data = np.load(f"./{NOISED}_{data_set}_{algo}_{scale}_.npy")
                 print(result_data.shape) # (30,36)
@@ -44,7 +50,9 @@ def run_compare_algo(algo_end=4):
 
     for idx, data_set in enumerate(data_sets):
         ax = axs[idx] if len(data_sets) > 1 else axs
-        for algo in algo_names:
+        for algo_id in range(len(selected_algo_names)):
+            algo = selected_algo_names[algo_id]
+
             df_filtered = df[
                 (df['data_set'] == data_set) &
                 (df['algo_name'] == algo)
@@ -53,14 +61,14 @@ def run_compare_algo(algo_end=4):
 
             # 绘制数据点
             ax.plot(df_grouped['noise_ratio(%)'], df_grouped['result'],
-                    color=color_map[algo],
+                    color=colors[algo_id],
                     label=f"{algo}")
 
             # 计算并绘制回归直线
             coeffs = np.polyfit(df_grouped['noise_ratio(%)'], df_grouped['result'], 1)
             poly = np.poly1d(coeffs)
             ax.plot(df_grouped['noise_ratio(%)'], poly(df_grouped['noise_ratio(%)']),
-                    color=color_map[algo], linestyle='dashed')
+                    color=colors[algo_id], linestyle='dashed')
 
         ax.set_title(f"different algorithms on {data_set}")
         ax.set_xlabel("Noise Ratio (%)")
@@ -73,6 +81,6 @@ def run_compare_algo(algo_end=4):
 
 
 if __name__ == "__main__":
-    run_compare_algo(3)
-    run_compare_algo(4)
+    # run_compare_algo(3)
+    run_compare_algo(6)
     pass

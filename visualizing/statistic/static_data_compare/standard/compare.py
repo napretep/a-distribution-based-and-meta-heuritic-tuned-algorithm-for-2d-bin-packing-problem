@@ -11,8 +11,8 @@ import seaborn as sns
 import  matplotlib.pyplot as plt
 import pandas as pd
 from constant import *
-def run_data(end_pos=4):
-    algo_type = [ "MaxRect","Skyline", f"{STANDARD}Dist2",f"{NOISED}Dist2"][:end_pos]
+def run_data(end_pos=6):
+    algo_type = [ AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_MaxRect}",AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"][:end_pos]
 
     data_sets = [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]
     scales = [100, 300, 500, 1000, 3000, 5000]
@@ -41,11 +41,11 @@ def run_data(end_pos=4):
         axs[idx].set_title(f"Boxplot for {data} with noisedParam_Dist")
 
     plt.tight_layout()  # 自动调整子图参数，使得子图之间的间距适中
-    plt.savefig(f"./pic/{end_pos} algos compare on all data")
+    plt.savefig(f"./pic/{end_pos} algos compare on all data_{time()}.png")
     plt.show()
 
 
 if __name__ == "__main__":
-    run_data(4)
-    run_data(3)
+    # run_data(4)
+    run_data(6)
     pass

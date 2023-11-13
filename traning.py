@@ -61,6 +61,10 @@ from multiprocessing import Pool
 
 """
 
+class EvalSelect:
+    Multi="Multi"
+    Single="Single"
+
 
 @dataclasses.dataclass
 class AlgoArgs:
@@ -68,6 +72,23 @@ class AlgoArgs:
     params: np.ndarray
     algo_name: str
 
+@dataclasses.dataclass
+class DE_MultiArgs:
+    data_set:np.ndarray
+    idvl_idx:int
+    pop:np.ndarray
+    pop_size:int
+    mutation:float
+    crossover:float
+    dimensions:int
+    diff:np.ndarray
+    min_b:np.ndarray
+    max_b:np.ndarray
+    random_ratio:tuple|None
+    data_sample_scale:int
+    eval_run_count:int
+    algo_name:str
+    pop_fitness:np.ndarray
 
 def packing_log_vector_to_obj(packinglog: "List[List[List[List[float]]]]"):
     solution = []
@@ -76,7 +97,7 @@ def packing_log_vector_to_obj(packinglog: "List[List[List[List[float]]]]"):
 
 
 class DE:
-    def __init__(self, data_set, data_set_name, eval_selector="multi", pop_size=20, eval_run_count=40,
+    def __init__(self, data_set, data_set_name, eval_selector=EvalSelect.Single, pop_size=20, eval_run_count=40,
                  data_sample_scale=1000, random_ratio=None, algo_name=AlgoName.Dist_MaxRect, max_iter=500,
 
                  ):
@@ -140,6 +161,7 @@ class DE:
         pass
 
     def optimizing(self):
+        print("optimizer init")
         dimensions = self.total_param_num
         pop = np.random.rand(self.pop_size, dimensions)
         min_b, max_b = np.asarray(self.bounds).T
@@ -151,6 +173,7 @@ class DE:
         # 整体平均和历史最高
         history_mean_fitness = []
         history_best_fitness = []
+        print("\niter start")
         for i in range(self.max_iter):
             if (i + 1) % 20 == 0:
                 if np.var(history_best_fitness[-20:])<1e-5:
@@ -161,35 +184,89 @@ class DE:
                             pop[k]=np.random.rand(1,dimensions)
                             idvl_denorm=min_b+pop[k]*diff
                             fitness[k]=self.mutli_process_single_eval(idvl_denorm)
-
-
             self.current_gen = i
             current_generation_fitness = []
             selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7, 1)),
                                                 replace=False)
-            for j in selected_indices:
-                idxs = [idx for idx in range(self.pop_size) if idx != j]
-                a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
-                mutant = a + np.random.uniform(self.mutation, 1) * (b - c)
-                mutant = np.where(mutant < 0, 0, mutant)
-                mutant = np.where(mutant > 1, 1, mutant)
-                cross_points = np.random.rand(dimensions) < self.crossover
-                if not np.any(cross_points):
-                    cross_points[np.random.randint(0, dimensions)] = True
-                trial = np.where(cross_points, mutant, pop[j])
-                trial_denorm = min_b + trial * diff
-                f = self.mutli_process_single_eval(trial_denorm)
-                current_generation_fitness.append(f)
-                if f < fitness[j]:
-                    fitness[j] = f
-                    pop[j] = trial
-                    if f < fitness[best_idx]:
-                        best_idx = j
-                        best = trial_denorm
-            history_mean_fitness.append(np.mean(current_generation_fitness))
-            history_best_fitness.append(fitness[best_idx])
+            if self.eval_selector == "single":
 
+                for j in selected_indices:
+                    idxs = [idx for idx in range(self.pop_size) if idx != j]
+                    a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
+                    mutant = a + np.random.uniform(self.mutation, 1) * (b - c)
+                    mutant = np.where(mutant < 0, 0, mutant)
+                    mutant = np.where(mutant > 1, 1, mutant)
+                    cross_points = np.random.rand(dimensions) < self.crossover
+                    if not np.any(cross_points):
+                        cross_points[np.random.randint(0, dimensions)] = True
+                    trial = np.where(cross_points, mutant, pop[j])
+                    trial_denorm = min_b + trial * diff
+                    f = self.mutli_process_single_eval(trial_denorm)
+
+                    if f < fitness[j]:
+                        fitness[j] = f
+                        pop[j] = trial
+                        if f < fitness[best_idx]:
+                            best_idx = j
+                            best = trial_denorm
+
+            else:# multi indvl run mode
+
+                input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
+                results = self.p.map(self.multi_process_multi_eval, input_env)
+                for trial_f,trial_denorm, idvl_idx in results:
+                    if trial_f < fitness[idvl_idx]:
+                        fitness[idvl_idx] = trial_f
+                        pop[idvl_idx] = trial_denorm
+                        if trial_f < fitness[best_idx]:
+                            best_idx = idvl_idx
+                            best = trial_denorm
+            history_mean_fitness.append(np.mean(fitness))
+            history_best_fitness.append(fitness[best_idx])
             yield best, fitness[best_idx], history_mean_fitness[-1]
+
+    def get_DE_multiArgs(self,idx,pop,min_b,max_b,diff,fitness):
+        args = DE_MultiArgs(
+                data_set=self.data_set,
+                idvl_idx=idx,
+                mutation=self.mutation,
+                crossover=self.crossover,
+                pop_size=self.pop_size,
+                pop=pop,
+                min_b=min_b,
+                max_b = max_b,
+                diff=diff,
+                dimensions=self.total_param_num,
+                data_sample_scale =self.data_sample_scale,
+                random_ratio =self.random_ratio,
+                eval_run_count=self.eval_run_count,
+                algo_name=self.algo_name,
+                pop_fitness=fitness,
+        )
+        return args
+
+
+
+    @staticmethod
+    def multi_process_multi_eval(arg:DE_MultiArgs):
+        idxs = [idx for idx in range(arg.pop_size) if idx != arg.idvl_idx]
+        a, b, c = arg.pop[np.random.choice(idxs, 3, replace=False)]
+        mutant = a + np.random.uniform(arg.mutation, 1) * (b - c)
+        mutant = np.where(mutant < 0, 0, mutant)
+        mutant = np.where(mutant > 1, 1, mutant)
+        cross_points = np.random.rand(arg.dimensions) < arg.crossover
+        if not np.any(cross_points):
+            cross_points[np.random.randint(0, arg.dimensions)] = True
+        trial = np.where(cross_points, mutant, arg.pop[arg.idvl_idx])
+        trial_denorm = arg.min_b + trial * arg.diff
+        trial_denorm = np.clip(trial_denorm, arg.min_b,arg.max_b)
+        input_data = [ kde_sample(arg.data_set,arg.data_sample_scale) if arg.random_ratio is None else random_mix(kde_sample(arg.data_set,arg.data_sample_scale)[:,1:],arg.random_ratio)
+                       for k in range(arg.eval_run_count)]
+        results = BinPacking2DAlgo.multi_run(input_data,MATERIAL_SIZE,parameter_input_array=trial_denorm,algo_type=arg.algo_name,run_count=arg.eval_run_count)
+        fitness = np.mean(1/np.array(results))
+        return fitness,trial_denorm,arg.idvl_idx
+
+        pass
 
     def get_sampled_items(self) -> np.ndarray:
 
@@ -212,6 +289,7 @@ class DE:
         return result
 
     def mutli_process_single_eval(self, param: np.ndarray):
+        """ 这个代码用于专门执行单一的评估操作 用map来并行single_eval"""
         start = time()
 
         datas = [AlgoArgs(self.get_sampled_items(), param, self.algo_name) for i in range(self.eval_run_count)]
@@ -238,6 +316,8 @@ class DE:
         end = time()
         # print(f"{round(end-start,2)}s,{round(value*100,2)}%",end=", ")
         return value
+
+
 
     # @staticmethod
     # def single_eval_wrapper(algo_name):
@@ -299,7 +379,9 @@ class Training:
                 for training_type in self.training_types:
                     start_time2 = time()
                     print(training_type, name, algo_name, "start")
-                    d = DE(data, name, random_ratio=(0, 0.3) if training_type == NOISED else None, algo_name=algo_name)
+                    d = DE(data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
+                           eval_selector=EvalSelect.Multi,
+                           algo_name=algo_name)
                     # x, fun, log = d.run()
                     d.run_v2()
                     # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
