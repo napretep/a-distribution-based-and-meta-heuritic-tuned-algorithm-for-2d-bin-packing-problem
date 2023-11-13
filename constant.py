@@ -523,6 +523,10 @@ def random_choice(data, count=5000, true_random=True):
 
 
 def random_mix(data: "np.ndarray", random_ratio):
+    """
+    data:shape=(n,2)
+    random_ratio : (0,0.3)
+    """
     random_item_scale = int(np.random.uniform(*random_ratio) * data.shape[0])
     determ_data_idx = np.random.choice(data.shape[0], size=data.shape[0] - random_item_scale, replace=False)
     determ_data = data[determ_data_idx]

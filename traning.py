@@ -157,7 +157,9 @@ class DE:
             for j in selected_indices:
                 idxs = [idx for idx in range(self.pop_size) if idx != j]
                 a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
-                mutant = np.clip(a + np.random.uniform(self.mutation, 1) * (b - c), min_b, max_b)
+                mutant = a + np.random.uniform(self.mutation, 1) * (b - c)
+                mutant = np.where(mutant < min_b, min_b, mutant)
+                mutant = np.where(mutant > max_b, max_b, mutant)
                 cross_points = np.random.rand(dimensions) < self.crossover
                 if not np.any(cross_points):
                     cross_points[np.random.randint(0, dimensions)] = True
