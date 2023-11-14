@@ -18,8 +18,7 @@ import BinPacking2DAlgo
 from multiprocessing import Pool
 #from memory_profiler import profile
 from pympler import asizeof as variable_len
-from scipy.optimize import differential_evolution
-import gc
+import gc,sys
 """
 确定性
 全部训练完成时间(秒): 57250.41469120979 500次
@@ -98,6 +97,15 @@ def packing_log_vector_to_obj(packinglog: "List[List[List[List[float]]]]"):
     for i in range(len(packinglog)):
         plan_log = packinglog[i]
 
+def show_memory():
+    print("*" * 60)
+    objects_list = []
+    for obj in gc.get_objects():
+        size = sys.getsizeof(obj)
+        objects_list.append((obj, size))
+    print("object_list len: ", len(objects_list))
+    for obj, size in sorted(objects_list, key=lambda x: x[1], reverse=True)[:10]:
+        print(f"OBJ: {id(obj)}, TYPE: {type(obj)} SIZE: {size/1024/1024:.2f}MB {str(obj)[:100]}")
 
 class DE_EVAL_for_run_v1:
     def __init__(self,data_set,data_sample_scale,random_ratio,algo_name,eval_run_count):
@@ -155,27 +163,27 @@ class DE:
         self.log_save_name = f"traning_log_{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
         self.param_save_name = lambda \
             fun: f"{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_param_{self.algo_name}_{self.data_sample_scale}_{round(fun, 2)}.npy"
-    def run_v1(self):
-        start_time = time()
-        self.time_recorder = [start_time]
-        self.traning_log = []
-
-        de = DE_EVAL_for_run_v1(self.data_set,self.data_sample_scale,self.random_ratio,self.algo_name,self.eval_run_count)
-
-        result = differential_evolution(de.eval, self.bounds, workers=-1, atol=0.0001, strategy="randtobest1exp", popsize=20, callback=self.callback, maxiter=500)
-        end_time = time()
-        print(end_time - start_time)
-        to_save = [end_time, result.x, result.fun]
-        print(to_save)
-        np.save(f"{data_set_name}_traning_log__{round(end_time)}.npy", np.array(self.traning_log))
-        np.save(os.path.join(SYNC_PATH,
-                             f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
-                result.x)
-        np.save(os.path.join(SYNC_PATH,
-                             f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
-                np.array(self.training_log))
-
-        return result.x, result.fun, self.traning_log
+    # def run_v1(self):
+    #     start_time = time()
+    #     self.time_recorder = [start_time]
+    #     self.traning_log = []
+    #
+    #     de = DE_EVAL_for_run_v1(self.data_set,self.data_sample_scale,self.random_ratio,self.algo_name,self.eval_run_count)
+    #
+    #     result = differential_evolution(de.eval, self.bounds, workers=-1, atol=0.0001, strategy="randtobest1exp", popsize=20, callback=self.callback, maxiter=500)
+    #     end_time = time()
+    #     print(end_time - start_time)
+    #     to_save = [end_time, result.x, result.fun]
+    #     print(to_save)
+    #     np.save(f"{data_set_name}_traning_log__{round(end_time)}.npy", np.array(self.traning_log))
+    #     np.save(os.path.join(SYNC_PATH,
+    #                          f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
+    #             result.x)
+    #     np.save(os.path.join(SYNC_PATH,
+    #                          f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
+    #             np.array(self.training_log))
+    #
+    #     return result.x, result.fun, self.traning_log
     def run_v2(self):
         self.time_recorder.append(time())
         # current_best = None
@@ -199,6 +207,7 @@ class DE:
                                      f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), best_x)
                 np.save(os.path.join(SYNC_PATH,
                                      f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), np.array(self.training_log))
+            show_memory()
 
         pass
 
@@ -427,7 +436,7 @@ class Training:
                     d = DE(data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
                            eval_selector=EvalSelect.Multi,
                            algo_name=algo_name)
-                    x, fun, log =d.run_v1()
+                    d.run_v2()
 
                     # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
                     # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
