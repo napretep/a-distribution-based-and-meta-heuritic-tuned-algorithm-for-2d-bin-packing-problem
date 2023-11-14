@@ -6,17 +6,12 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/19 8:31'
 """
-from time import time
 
-import numpy as np
-
-from algorithm import Skyline, Distribution, MaxRect
-from algorithm.distribution_based import ScoringSys
 from constant import *
 from visualizing.draw_plan import standard_draw_plan
 import BinPacking2DAlgo
 import multiprocessing
-import gc,sys
+import gc
 
 class EvalSelect:
     Multi="Multi"
@@ -64,26 +59,6 @@ def get_stack_vars()->"list[dict]":
     for frame_info in inspect.stack():
         stack.append(frame_info.frame.f_locals)
     return stack
-def show_memory():
-    local_variable_li: list[dict] = get_stack_vars()
-    print("*" * 60)
-    objects_list = []
-
-    def cmp(a,b):
-        if a[0]==b[0]:
-            return b[3]-a[3]
-        else:
-            return a[0]-a[0]
-
-    for i in range(len(local_variable_li)):
-        local_variable = local_variable_li[i]
-        for name,obj in local_variable.items():
-            size = sys.getsizeof(obj)
-            objects_list.append((i,name, obj, size))
-
-    print("object_list len: ", len(objects_list))
-    for frame,name,obj, size in sorted(objects_list, key=functools.cmp_to_key(cmp))[:10]:
-        print(f"""FRAMEat:{frame} NAME:{name} ID:{id(obj)}, TYPE: {type(obj)} {f'ELEMENT_COUNT:{len(obj)}' if type(obj)==list or type(obj)==dict else ''}  objSIZE: {size/1024/1024:.2f}MB {str(obj)[:100]}""")
 
 
 
@@ -133,7 +108,6 @@ class DE:
         """
         :param data_set:
         :param data_set_name:
-        :param total_param_num:
         :param eval_run_count:
         :param data_sample_scale:
         :param random_ratio:  (0,0.3)
@@ -206,7 +180,6 @@ class DE:
                                      f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), best_x)
                 np.save(os.path.join(SYNC_PATH,
                                      f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), np.array(self.training_log))
-            show_memory()
 
         pass
 
@@ -217,7 +190,7 @@ class DE:
         min_b, max_b = np.asarray(self.bounds).T
         diff = np.fabs(min_b - max_b)
         pop_denorm = min_b + pop * diff
-        fitness = np.asarray([self.mutli_process_single_eval(ind) for ind in pop_denorm])
+        fitness = np.asarray([self.idvl_eval(ind) for ind in pop_denorm])
         best_idx = np.argmin(fitness)
         best = pop_denorm[best_idx]
         # 整体平均和历史最高
@@ -227,8 +200,6 @@ class DE:
         for i in range(self.max_iter):
 
             if len(history_best_fitness)>20 and np.var(history_best_fitness[-20:])<1e-7:
-
-
                 print("\nrestart")
                 best_avg_fitness = np.min(history_mean_fitness[-20:])
                 for k in range(self.pop_size):
@@ -268,7 +239,6 @@ class DE:
                             best = trial_denorm
 
             else:# multi indvl run mode
-
                 input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
                 results = self.p.map(sub_process_pop_eval, input_env)
                 for trial_f,trial_denorm,trial, idvl_idx in results:
@@ -306,29 +276,7 @@ class DE:
 
 
 
-    @staticmethod
-    def multi_process_multi_eval(arg:DE_MultiArgs):
-        # print(arg)
-        idxs = [idx for idx in range(arg.pop_size) if idx != arg.idvl_idx]
-        a, b, c = arg.pop[np.random.choice(idxs, 3, replace=False)]
-        mutant = a + np.random.uniform(arg.mutation, 1) * (b - c)
-        mutant = np.where(mutant < 0, 0, mutant)
-        mutant = np.where(mutant > 1, 1, mutant)
-        cross_points = np.random.rand(arg.dimensions) < arg.crossover
-        if not np.any(cross_points):
-            cross_points[np.random.randint(0, arg.dimensions)] = True
-        trial = np.where(cross_points, mutant, arg.pop[arg.idvl_idx])
-        trial_denorm = arg.min_b + trial * arg.diff
-        trial_denorm = np.where(trial_denorm < arg.min_b, arg.min_b, trial_denorm)
-        trial_denorm = np.where(mutant > arg.max_b, arg.max_b, trial_denorm)
-        # print(a, b, c)
-        input_data = [ kde_sample(arg.data_set,arg.data_sample_scale) if arg.random_ratio is None else random_mix(kde_sample(arg.data_set,arg.data_sample_scale)[:,1:],arg.random_ratio)
-                       for k in range(arg.eval_run_count)]
-        results = BinPacking2DAlgo.multi_run(input_data,MATERIAL_SIZE,parameter_input_array=trial_denorm,algo_type=arg.algo_name,run_count=arg.eval_run_count)
-        fitness = np.mean(1/np.array(results))
-        return fitness,trial_denorm,trial,arg.idvl_idx
 
-        pass
 
     def get_sampled_items(self) -> np.ndarray:
 
@@ -350,25 +298,6 @@ class DE:
         result = np.column_stack((range(self.data_sample_scale), result))
         return result
 
-    def mutli_process_single_eval(self, param: np.ndarray):
-        """ 这个代码用于专门执行单一的评估操作 用map来并行single_eval"""
-        start = time()
-
-        datas = [AlgoArgs(self.get_sampled_items(), param, self.algo_name) for i in range(self.eval_run_count)]
-        result = self.p.map(self.single_eval, datas)
-        result = np.array(result)
-        # print(result)
-        mean = np.mean(result)
-        # std = np.std(result)
-        # cutoff = std * 3
-        # lower, upper = mean - cutoff, mean + cutoff
-        # result = result[(result > lower) & (result < upper)]
-        # mean = np.mean(result)
-        end = time()
-        print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
-        gc.collect()
-        # show_memory()
-        return 1 / mean
     def idvl_eval(self, weights: np.ndarray):
         """ 这个代码用于专门执行单一的评估操作 用map来并行single_eval"""
         start = time()
@@ -393,30 +322,6 @@ class DE:
         gc.collect()
         # show_memory()
         return 1 / mean
-
-
-
-
-    def run_v1_eval(self,idvl_param):
-        input_data = [self.get_sampled_items()
-                      for k in range(self.eval_run_count)]
-        results = BinPacking2DAlgo.multi_run(input_data, MATERIAL_SIZE, parameter_input_array=idvl_param,
-                                             algo_type=self.algo_name, run_count=self.eval_run_count)
-        results = np.array(results)
-        return np.mean(1/results)
-
-    def callback(self, xk, convergence):
-        self.time_recorder.append(time())
-        eval_value = self.run_v1_eval(xk)
-        self.training_log.append([len(self.time_recorder), 1 / eval_value])
-        self.current_gen += 1
-        # if self.current_gen % 50 == 0:
-        #     np.save(f"at_gen_{self.current_gen}_" + self.log_save_name, np.array(self.training_log))
-        #     np.save(f"at_gen_{self.current_gen}_" + self.param_save_name(eval_value), xk)
-        print(
-            f'\ncurrent_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1 / eval_value} , Convergence: {convergence}\n')
-
-        self.training_log.append([len(self.time_recorder), 1 / eval_value])
 
 
 def solution_draw(solution: BinPacking2DAlgo.Algo, text=""):
