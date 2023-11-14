@@ -254,10 +254,6 @@ class DE:
         )
         return args
 
-
-
-
-
     def get_sampled_items(self) -> np.ndarray:
 
         if self.random_ratio is not None:
@@ -331,17 +327,17 @@ class Training:
 
     def run(self):
         start_time = time()
-
-        result = []
-        for data, name in self.data_sets:
-            for algo_name in self.algo_names:
-                for training_type in self.training_types:
-                    start_time2 = time()
-                    print(training_type, name, algo_name, "start")
-                    d = DE(data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
-                           eval_selector=EvalSelect.Multi,
-                           algo_name=algo_name)
-                    d.run_v2()
+        with multiprocessing.Pool() as p:
+            result = []
+            for data, name in self.data_sets:
+                for algo_name in self.algo_names:
+                    for training_type in self.training_types:
+                        start_time2 = time()
+                        print(training_type, name, algo_name, "start")
+                        d = DE(p,data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
+                               eval_selector=EvalSelect.Multi,
+                               algo_name=algo_name)
+                        d.run_v2()
 
                     # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
                     # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
