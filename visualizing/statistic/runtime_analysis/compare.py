@@ -6,6 +6,8 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/11/10 1:31'
 """
+import os
+
 from constant import *
 import numpy as np
 import BinPacking2DAlgo
@@ -60,7 +62,7 @@ data_sets = {
 }
 data_types = [STANDARD, NOISED]
 scales = [100,300,500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]
-algo_types = ["Skyline","Dist2"]#,"MaxRect"]
+algo_types = [AlgoName.Dist_Skyline]#,"MaxRect"]
 run_count = 24
 def run_experiment():
     with Pool() as p:
@@ -72,7 +74,7 @@ def run_experiment():
                     input_data = [kde_sample(data_sets[data_set], scale) for _ in range(run_count)]
                     results = p.map(eval_fun.run_time_cost, input_data)
                     path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
-                    np.save(path, np.array(results))
+                    np.save(os.path.join(SYNC_PATH,path), np.array(results))
                     print("\n", time() - start,"\n",path)
 
 

@@ -14,7 +14,7 @@ from constant import *
 
 
 def run():
-    for algo_name,gencount in [(AlgoName.Dist_Skyline,100),(AlgoName.Dist_MaxRect,500)]:
+    for algo_name,gencount in [(AlgoName.Dist_Skyline,500),(AlgoName.Dist_MaxRect,500)]:
         for data_mode in [STANDARD, NOISED]:
             fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))  # 创建一个1行3列的子图
             for idx, data_name in enumerate([PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]):

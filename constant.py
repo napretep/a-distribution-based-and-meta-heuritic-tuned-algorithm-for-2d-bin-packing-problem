@@ -750,7 +750,7 @@ class AlgoName:
 algo_types = [AlgoName.Skyline, AlgoName.MaxRect, AlgoName.Dist_Skyline, AlgoName.Dist_MaxRect, AlgoName.Dist_Shelf]
 data_types = [NOISED, STANDARD]
 
-for algo_name,gencount in [(AlgoName.Dist_MaxRect,500),(AlgoName.Dist_Skyline,100)]:
+for algo_name,gencount in [(AlgoName.Dist_MaxRect,500),(AlgoName.Dist_Skyline,500)]:
     params[algo_name] = {}
     for data_type in [STANDARD, NOISED]:
         params[algo_name][data_type] = {}
