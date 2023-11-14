@@ -19,12 +19,12 @@ using namespace std;
 //Eigen::MatrixXf sigmoid(const Eigen::MatrixXf& z) {
 //    return z.unaryExpr([](float elem) { return 1.0f / (1.0f + std::exp(-elem)); });
 //}
-//// ¼ÆËãMLPÇ°Ïò´«²¥
+//// ï¿½ï¿½ï¿½ï¿½MLPÇ°ï¿½ò´«²ï¿½
 //Eigen::MatrixXf forwardPropagation(const std::vector<int>& net_arch, const std::vector<float>& weights) {
 //    std::size_t currentWeightIndex = 0;
 //    Eigen::MatrixXf output;
 //
-//    // ¼ì²é¼Ü¹¹ÓëÈ¨ÖØÊýÁ¿ÊÇ·ñÆ¥Åä
+//    // ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Æ¥ï¿½ï¿½
 //    std::size_t totalWeightsNeeded = 0;
 //    for (std::size_t i = 1; i < net_arch.size(); ++i) {
 //        totalWeightsNeeded += (net_arch[i - 1] + 1) * net_arch[i]; // +1 for bias
@@ -33,24 +33,24 @@ using namespace std;
 //        throw std::invalid_argument("Mismatch between architecture and number of weights");
 //    }
 //
-//    // ±éÀúÃ¿Ò»²ã
+//    // ï¿½ï¿½ï¿½ï¿½Ã¿Ò»ï¿½ï¿½
 //    for (std::size_t i = 1; i < net_arch.size(); ++i) {
 //        int inputSize = net_arch[i - 1];
 //        int outputSize = net_arch[i];
 //
-//        // ÌáÈ¡µ±Ç°²ãµÄÈ¨ÖØºÍÆ«ÖÃ
+//        // ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½È¨ï¿½Øºï¿½Æ«ï¿½ï¿½
 //        Eigen::MatrixXf layerWeights = Eigen::Map<const Eigen::MatrixXf>(weights.data() + currentWeightIndex, inputSize, outputSize);
 //        currentWeightIndex += inputSize * outputSize;
 //
 //        Eigen::VectorXf layerBias = Eigen::Map<const Eigen::VectorXf>(weights.data() + currentWeightIndex, outputSize);
 //        currentWeightIndex += outputSize;
 //
-//        // ¼ÆËãµ±Ç°²ãµÄÊä³ö
+//        // ï¿½ï¿½ï¿½ãµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //        if (i == 1) {
-//            output = layerWeights; // µÚÒ»²ãµÄÊäÈëÊÇÈ¨ÖØ±¾Éí
+//            output = layerWeights; // ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½Ø±ï¿½ï¿½ï¿½
 //        }
 //        else {
-//            output = sigmoid((output * layerWeights).rowwise() + layerBias.transpose()); // ºóÐø²ãµÄÊäÈëÊÇÇ°Ò»²ãµÄÊä³ö
+//            output = sigmoid((output * layerWeights).rowwise() + layerBias.transpose()); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //        }
 //    }
 //
@@ -2860,7 +2860,7 @@ int main() {
 
     //test_rect();
     std::default_random_engine generator;
-    for (auto x = 0; x < 500; x++) {
+    for (auto x = 0; x < 50; x++) {
         cout << "iter=" << x << endl;
         for (auto j = 0; j < 40; j++) {
             vector<float>input_data;

@@ -16,7 +16,10 @@ from constant import *
 from visualizing.draw_plan import standard_draw_plan
 import BinPacking2DAlgo
 from multiprocessing import Pool
-
+#from memory_profiler import profile
+from pympler import asizeof as variable_len
+from scipy.optimize import differential_evolution
+import gc
 """
 确定性
 全部训练完成时间(秒): 57250.41469120979 500次
@@ -96,10 +99,29 @@ def packing_log_vector_to_obj(packinglog: "List[List[List[List[float]]]]"):
         plan_log = packinglog[i]
 
 
+class DE_EVAL_for_run_v1:
+    def __init__(self,data_set,data_sample_scale,random_ratio,algo_name,eval_run_count):
+        self.data_set=data_set
+        self.data_sample_scale = data_sample_scale
+        self.random_ratio = random_ratio
+        self.algo_name = algo_name
+        self.eval_run_count = eval_run_count
+
+
+    def gen_data(self):
+        input_data =[ kde_sample(self.data_set,self.data_sample_scale) if self.random_ratio is None else random_mix(kde_sample(self.data_set,self.data_sample_scale)[:,1:],self.random_ratio)
+                       for k in range(self.eval_run_count)]
+        return input_data
+    def eval(self,idvl_param):
+        results = BinPacking2DAlgo.multi_run(self.gen_data(), MATERIAL_SIZE, parameter_input_array=idvl_param,
+                                             algo_type=self.algo_name, run_count=self.eval_run_count)
+        results = np.array(results)
+        return np.mean(1 / results)
+
+
 class DE:
     def __init__(self, data_set, data_set_name, eval_selector=EvalSelect.Single, pop_size=20, eval_run_count=40,
                  data_sample_scale=1000, random_ratio=None, algo_name=AlgoName.Dist_MaxRect, max_iter=500,
-
                  ):
         """
         :param data_set:
@@ -133,7 +155,27 @@ class DE:
         self.log_save_name = f"traning_log_{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
         self.param_save_name = lambda \
             fun: f"{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_param_{self.algo_name}_{self.data_sample_scale}_{round(fun, 2)}.npy"
+    def run_v1(self):
+        start_time = time()
+        self.time_recorder = [start_time]
+        self.traning_log = []
 
+        de = DE_EVAL_for_run_v1(self.data_set,self.data_sample_scale,self.random_ratio,self.algo_name,self.eval_run_count)
+
+        result = differential_evolution(de.eval, self.bounds, workers=-1, atol=0.0001, strategy="randtobest1exp", popsize=20, callback=self.callback, maxiter=500)
+        end_time = time()
+        print(end_time - start_time)
+        to_save = [end_time, result.x, result.fun]
+        print(to_save)
+        np.save(f"{data_set_name}_traning_log__{round(end_time)}.npy", np.array(self.traning_log))
+        np.save(os.path.join(SYNC_PATH,
+                             f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
+                result.x)
+        np.save(os.path.join(SYNC_PATH,
+                             f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
+                np.array(self.training_log))
+
+        return result.x, result.fun, self.traning_log
     def run_v2(self):
         self.time_recorder.append(time())
         # current_best = None
@@ -325,27 +367,23 @@ class DE:
 
 
 
-    # @staticmethod
-    # def single_eval_wrapper(algo_name):
-    #     def single_eval(param):
-    #         start = time()
-    #         result: "BinPacking2DAlgo.Algo" = BinPacking2DAlgo.single_run(param[0], MATERIAL_SIZE,
-    #                                                                       parameter_input_array=param[1],
-    #                                                                       algo_type=algo_name)
-    #         value = result.get_avg_util_rate()
-    #         end = time()
-    #         # print(f"{round(end-start,2)}s,{round(value*100,2)}%",end=", ")
-    #         return value
-    #     return single_eval
+
+    def run_v1_eval(self,idvl_param):
+        input_data = [self.get_sampled_items()
+                      for k in range(self.eval_run_count)]
+        results = BinPacking2DAlgo.multi_run(input_data, MATERIAL_SIZE, parameter_input_array=idvl_param,
+                                             algo_type=self.algo_name, run_count=self.eval_run_count)
+        results = np.array(results)
+        return np.mean(1/results)
 
     def callback(self, xk, convergence):
         self.time_recorder.append(time())
-        eval_value = self.mutli_process_single_eval(xk)
+        eval_value = self.run_v1_eval(xk)
         self.training_log.append([len(self.time_recorder), 1 / eval_value])
         self.current_gen += 1
-        if self.current_gen % 50 == 0:
-            np.save(f"at_gen_{self.current_gen}_" + self.log_save_name, np.array(self.training_log))
-            np.save(f"at_gen_{self.current_gen}_" + self.param_save_name(eval_value), xk)
+        # if self.current_gen % 50 == 0:
+        #     np.save(f"at_gen_{self.current_gen}_" + self.log_save_name, np.array(self.training_log))
+        #     np.save(f"at_gen_{self.current_gen}_" + self.param_save_name(eval_value), xk)
         print(
             f'\ncurrent_gen={self.current_gen}, time cost {self.time_recorder[-1] - self.time_recorder[-2]} Current solution: {list(xk)}, ratio={1 / eval_value} , Convergence: {convergence}\n')
 
@@ -376,6 +414,7 @@ class Training:
         self.data_sets = data_set
         self.algo_names = algo_name
 
+
     def run(self):
         start_time = time()
 
@@ -388,8 +427,8 @@ class Training:
                     d = DE(data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
                            eval_selector=EvalSelect.Multi,
                            algo_name=algo_name)
-                    # x, fun, log = d.run()
-                    d.run_v2()
+                    x, fun, log =d.run_v1()
+
                     # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
                     # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
         end_time = time()
@@ -398,8 +437,8 @@ class Training:
 
 if __name__ == "__main__":
     t = Training([
-        [华为杯_data, PRODUCTION_DATA1],
-        [外包_data, PRODUCTION_DATA2],
+        # [华为杯_data, PRODUCTION_DATA1],
+        # [外包_data, PRODUCTION_DATA2],
         [随机_data, RANDOMGEN_DATA]
     ],
         training_type=[STANDARD],
