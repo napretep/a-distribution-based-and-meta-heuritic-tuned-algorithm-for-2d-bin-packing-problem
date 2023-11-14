@@ -163,27 +163,7 @@ class DE:
         self.log_save_name = f"traning_log_{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
         self.param_save_name = lambda \
             fun: f"{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_param_{self.algo_name}_{self.data_sample_scale}_{round(fun, 2)}.npy"
-    # def run_v1(self):
-    #     start_time = time()
-    #     self.time_recorder = [start_time]
-    #     self.traning_log = []
-    #
-    #     de = DE_EVAL_for_run_v1(self.data_set,self.data_sample_scale,self.random_ratio,self.algo_name,self.eval_run_count)
-    #
-    #     result = differential_evolution(de.eval, self.bounds, workers=-1, atol=0.0001, strategy="randtobest1exp", popsize=20, callback=self.callback, maxiter=500)
-    #     end_time = time()
-    #     print(end_time - start_time)
-    #     to_save = [end_time, result.x, result.fun]
-    #     print(to_save)
-    #     np.save(f"{data_set_name}_traning_log__{round(end_time)}.npy", np.array(self.traning_log))
-    #     np.save(os.path.join(SYNC_PATH,
-    #                          f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
-    #             result.x)
-    #     np.save(os.path.join(SYNC_PATH,
-    #                          f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
-    #             np.array(self.training_log))
-    #
-    #     return result.x, result.fun, self.traning_log
+
     def run_v2(self):
         self.time_recorder.append(time())
         # current_best = None
@@ -227,19 +207,21 @@ class DE:
         print("\niter start")
         for i in range(self.max_iter):
             if len(history_best_fitness)>20 and np.var(history_best_fitness[-20:])<1e-7:
-                    print("\nrestart")
-                    best_avg_fitness = np.min(history_mean_fitness[-20:])
-                    for k in range(self.pop_size):
-                        if fitness[k]>best_avg_fitness:
-                            pop[k]=np.random.rand(1,dimensions)
-                            idvl_denorm=min_b+pop[k]*diff
-                            fitness[k]=self.mutli_process_single_eval(idvl_denorm)
+                print("\nrestart")
+                best_avg_fitness = np.min(history_mean_fitness[-20:])
+                for k in range(self.pop_size):
+                    if fitness[k]>best_avg_fitness:
+                        pop[k]=np.random.rand(1,dimensions)
+                        idvl_denorm=min_b+pop[k]*diff
+                        fitness[k]=self.mutli_process_single_eval(idvl_denorm)
+                history_best_fitness = []
+                history_mean_fitness = []
+
+
             self.current_gen = i
             current_generation_fitness = []
             selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7, 1)),
                                                 replace=False)
-            history_best_fitness = []
-            history_mean_fitness = []
 
             if self.eval_selector == "single":
 
@@ -262,7 +244,6 @@ class DE:
                         if f < fitness[best_idx]:
                             best_idx = j
                             best = trial_denorm
-
             else:# multi indvl run mode
 
                 input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
