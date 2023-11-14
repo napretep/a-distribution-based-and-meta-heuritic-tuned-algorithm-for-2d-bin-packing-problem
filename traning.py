@@ -285,6 +285,108 @@ class DE:
 
             yield best, fitness[best_idx], history_mean_fitness[-1]
 
+    def run_v3(self):
+        print("optimizer init")
+
+
+        with multiprocessing.Pool() as p :
+            self.time_recorder.append(time())
+
+            best_score: "np.ndarray|None" = None
+
+            dimensions = self.total_param_num
+            pop = np.random.rand(self.pop_size, dimensions)
+            min_b, max_b = np.asarray(self.bounds).T
+            diff = np.fabs(min_b - max_b)
+            pop_denorm = min_b + pop * diff
+            fitness = np.asarray([self.idvl_eval(ind) for ind in pop_denorm])
+            best_idx = np.argmin(fitness)
+            best = pop_denorm[best_idx]
+            # 整体平均和历史最高
+            history_mean_fitness = []
+            history_best_fitness = []
+            print("\niter start")
+            for i in range(self.max_iter):
+
+                if len(history_best_fitness) > 20 and np.var(history_best_fitness[-20:]) < 1e-7:
+                    print("\nrestart")
+                    best_avg_fitness = np.min(history_mean_fitness[-20:])
+                    for k in range(self.pop_size):
+                        if fitness[k] > best_avg_fitness:
+                            pop[k] = np.random.rand(1, dimensions)
+                            idvl_denorm = min_b + pop[k] * diff
+                            fitness[k] = self.idvl_eval2(p,idvl_denorm)
+                self.current_gen = i
+                current_generation_fitness = []
+                selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7, 1)),
+                                                    replace=False)
+                history_best_fitness = []
+                history_mean_fitness = []
+
+                if self.eval_selector == EvalSelect.Single:
+
+                    for j in selected_indices:
+                        idxs = [idx for idx in range(self.pop_size) if idx != j]
+                        a, b, c = pop[np.random.choice(idxs, 3, replace=False)]
+                        mutant = a + np.random.uniform(self.mutation, 1) * (b - c)
+                        mutant = np.where(mutant < 0, 0, mutant)
+                        mutant = np.where(mutant > 1, 1, mutant)
+                        cross_points = np.random.rand(dimensions) < self.crossover
+                        if not np.any(cross_points):
+                            cross_points[np.random.randint(0, dimensions)] = True
+                        trial = np.where(cross_points, mutant, pop[j])
+                        trial_denorm = min_b + trial * diff
+                        f = self.idvl_eval(trial_denorm)
+                        current_generation_fitness.append(f)
+                        if f < fitness[j]:
+                            fitness[j] = f
+                            pop[j] = trial
+                            if f < fitness[best_idx]:
+                                best_idx = j
+                                best = trial_denorm
+
+                else:  # multi indvl run mode
+
+                    input_env = [self.get_DE_multiArgs(j, pop, min_b, max_b, diff, fitness) for j in selected_indices]
+                    results = p.map(sub_process_pop_eval, input_env)
+                    for trial_f, trial_denorm, trial, idvl_idx in results:
+                        current_generation_fitness.append(trial_f)
+                        if trial_f < fitness[idvl_idx]:
+                            fitness[idvl_idx] = trial_f
+                            pop[idvl_idx] = trial
+                            if trial_f < fitness[best_idx]:
+                                best_idx = idvl_idx
+                                best = trial_denorm
+                history_mean_fitness.append(np.mean(current_generation_fitness))
+                history_best_fitness.append(fitness[best_idx])
+                best_x, best_fitness, avg_fitness = best, fitness[best_idx], history_mean_fitness[-1]
+
+                # for best_x, best_fitness, avg_fitness in self.optimizing():
+                self.time_recorder.append((time()))
+                if best_score is None:
+                    best_score = np.array([])
+                print(
+                    f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1] - self.time_recorder[-2], 2)}s,avg_score={round(1 / avg_fitness * 100, 3)}%,hist_best_score={round(1 / best_fitness * 100, 3)}%,x={list(best_x)}")
+                self.training_log.append([1 / best_fitness, 1 / avg_fitness])
+                if (self.current_gen + 1) % 100 == 0:
+                    np.save(
+                        os.path.join(SYNC_PATH,
+                                     f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}_atgen{self.current_gen + 1}"),
+                        best_x)
+                    np.save(os.path.join(SYNC_PATH,
+                                         f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}_atgen{self.current_gen + 1}"),
+                            np.array(self.training_log))
+                if self.current_gen + 1 == self.max_iter:
+                    np.save(os.path.join(SYNC_PATH,
+                                         f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
+                            best_x)
+                    np.save(os.path.join(SYNC_PATH,
+                                         f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"),
+                            np.array(self.training_log))
+                gc.collect()
+
+            # yield best, fitness[best_idx], history_mean_fitness[-1]
+
     def get_DE_multiArgs(self,idx,pop,min_b,max_b,diff,fitness):
         args = DE_MultiArgs(
                 data_set_name=self.data_set_name,
@@ -329,7 +431,30 @@ class DE:
         result = np.row_stack((determ_data, random_data))
         result = np.column_stack((range(self.data_sample_scale), result))
         return result
+    def idvl_eval2(self,p:multiprocessing.Pool, weights: np.ndarray):
+        """ 这个代码用于专门执行单一的评估操作 用map来并行single_eval"""
+        start = time()
 
+        datas = [SingleAlgoArgs(weights=weights,
+                                algo_name=self.algo_name,
+                                data_sample_scale=self.data_sample_scale,
+                                data_set_name = self.data_set_name,
+                                random_ratio=self.random_ratio)
+                 for i in range(self.eval_run_count)]
+        result = p.map(sub_process_idvl_eval, datas)
+        result = np.array(result)
+        # print(result)
+        mean = np.mean(result)
+        # std = np.std(result)
+        # cutoff = std * 3
+        # lower, upper = mean - cutoff, mean + cutoff
+        # result = result[(result > lower) & (result < upper)]
+        # mean = np.mean(result)
+        end = time()
+        print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
+        gc.collect()
+        # show_memory()
+        return 1 / mean
     def idvl_eval(self, weights: np.ndarray):
         """ 这个代码用于专门执行单一的评估操作 用map来并行single_eval"""
         start = time()
@@ -408,19 +533,20 @@ class Training:
 
 
     def run(self):
-        with multiprocessing.Pool() as p:
-            start_time = time()
+        p=None
+        # with multiprocessing.Pool() as p:
+        start_time = time()
 
-            result = []
-            for data, name in self.data_sets:
-                for algo_name in self.algo_names:
-                    for training_type in self.training_types:
-                        start_time2 = time()
-                        print(training_type, name, algo_name, "start")
-                        d = DE(p,data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
-                               eval_selector=EvalSelect.Multi,max_iter=500,
-                               algo_name=algo_name)
-                        d.run_v2()
+        result = []
+        for data, name in self.data_sets:
+            for algo_name in self.algo_names:
+                for training_type in self.training_types:
+                    start_time2 = time()
+                    print(training_type, name, algo_name, "start")
+                    d = DE(p,data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
+                           eval_selector=EvalSelect.Multi,max_iter=500,
+                           algo_name=algo_name)
+                    d.run_v2()
 
                         # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
                         # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
