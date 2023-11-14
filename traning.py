@@ -6,6 +6,7 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/10/19 8:31'
 """
+import functools
 from time import time
 
 import numpy as np
@@ -17,7 +18,7 @@ from visualizing.draw_plan import standard_draw_plan
 import BinPacking2DAlgo
 from multiprocessing import Pool
 #from memory_profiler import profile
-from pympler import asizeof as variable_len
+# from pympler import asizeof as variable_len
 import gc,sys
 """
 确定性
@@ -96,16 +97,31 @@ def packing_log_vector_to_obj(packinglog: "List[List[List[List[float]]]]"):
     solution = []
     for i in range(len(packinglog)):
         plan_log = packinglog[i]
-
+def get_stack_vars()->"list[dict]":
+    stack=[]
+    for frame_info in inspect.stack():
+        stack.append(frame_info.frame.f_locals)
+    return stack
 def show_memory():
+    local_variable_li: list[dict] = get_stack_vars()
     print("*" * 60)
     objects_list = []
-    for obj in gc.get_objects():
-        size = sys.getsizeof(obj)
-        objects_list.append((obj, size))
+
+    def cmp(a,b):
+        if a[0]==b[0]:
+            return b[3]-a[3]
+        else:
+            return a[0]-a[0]
+
+    for i in range(len(local_variable_li)):
+        local_variable = local_variable_li[i]
+        for name,obj in local_variable.items():
+            size = sys.getsizeof(obj)
+            objects_list.append((i,name, obj, size))
+
     print("object_list len: ", len(objects_list))
-    for obj, size in sorted(objects_list, key=lambda x: x[1], reverse=True)[:10]:
-        print(f"OBJ: {id(obj)}, TYPE: {type(obj)} SIZE: {size/1024/1024:.2f}MB {str(obj)[:100]}")
+    for frame,name,obj, size in sorted(objects_list, key=functools.cmp_to_key(cmp))[:10]:
+        print(f"""FRAMEat:{frame} NAME:{name} ID:{id(obj)}, TYPE: {type(obj)} {f'ELEMENT_COUNT:{len(obj)}' if type(obj)==list or type(obj)==dict else ''}  objSIZE: {size/1024/1024:.2f}MB {str(obj)[:100]}""")
 
 class DE_EVAL_for_run_v1:
     def __init__(self,data_set,data_sample_scale,random_ratio,algo_name,eval_run_count):
@@ -128,7 +144,7 @@ class DE_EVAL_for_run_v1:
 
 
 class DE:
-    def __init__(self, data_set, data_set_name, eval_selector=EvalSelect.Single, pop_size=20, eval_run_count=40,
+    def __init__(self,p:Pool, data_set, data_set_name, eval_selector=EvalSelect.Single, pop_size=20, eval_run_count=40,
                  data_sample_scale=1000, random_ratio=None, algo_name=AlgoName.Dist_MaxRect, max_iter=500,
                  ):
         """
@@ -146,7 +162,7 @@ class DE:
         self.bounds = [[-self.total_param_num, self.total_param_num]] * self.total_param_num
         self.mutation = 0.4
         self.crossover = 0.9
-        self.p = Pool()
+        self.p = p
         self.eval_selector = eval_selector  # "multi" "single"
         self.data_set = data_set
         self.data_set_name = data_set_name
@@ -207,7 +223,7 @@ class DE:
                                      f"{self.algo_name}_param_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), best_x)
                 np.save(os.path.join(SYNC_PATH,
                                      f"{self.algo_name}_traininglog_{NOISED if self.random_ratio is not None else STANDARD}_{self.data_set_name}_{self.data_sample_scale}_gen{self.max_iter}"), np.array(self.training_log))
-            show_memory()
+            gc.collect()
 
         pass
 
@@ -226,6 +242,7 @@ class DE:
         history_best_fitness = []
         print("\niter start")
         for i in range(self.max_iter):
+
             if len(history_best_fitness)>20 and np.var(history_best_fitness[-20:])<1e-7:
                     print("\nrestart")
                     best_avg_fitness = np.min(history_mean_fitness[-20:])
@@ -241,7 +258,7 @@ class DE:
             history_best_fitness = []
             history_mean_fitness = []
 
-            if self.eval_selector == "single":
+            if self.eval_selector == EvalSelect.Single:
 
                 for j in selected_indices:
                     idxs = [idx for idx in range(self.pop_size) if idx != j]
@@ -277,6 +294,7 @@ class DE:
                             best = trial_denorm
             history_mean_fitness.append(np.mean(current_generation_fitness))
             history_best_fitness.append(fitness[best_idx])
+
             yield best, fitness[best_idx], history_mean_fitness[-1]
 
     def get_DE_multiArgs(self,idx,pop,min_b,max_b,diff,fitness):
@@ -321,6 +339,8 @@ class DE:
                        for k in range(arg.eval_run_count)]
         results = BinPacking2DAlgo.multi_run(input_data,MATERIAL_SIZE,parameter_input_array=trial_denorm,algo_type=arg.algo_name,run_count=arg.eval_run_count)
         fitness = np.mean(1/np.array(results))
+        gc.collect()
+        show_memory()
         return fitness,trial_denorm,trial,arg.idvl_idx
 
         pass
@@ -361,6 +381,8 @@ class DE:
         # mean = np.mean(result)
         end = time()
         print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
+        gc.collect()
+        show_memory()
         return 1 / mean
 
     @staticmethod
@@ -368,7 +390,7 @@ class DE:
         start = time()
         result: "BinPacking2DAlgo.Algo" = BinPacking2DAlgo.single_run(arg.data, MATERIAL_SIZE,
                                                                       parameter_input_array=arg.params,
-                                                                      algo_type=arg.algo_name)
+                                                                      algo_type=arg.algo_name,)
         value = result.get_avg_util_rate()
         end = time()
         # print(f"{round(end-start,2)}s,{round(value*100,2)}%",end=", ")
@@ -425,23 +447,24 @@ class Training:
 
 
     def run(self):
-        start_time = time()
+        with Pool() as p:
+            start_time = time()
 
-        result = []
-        for data, name in self.data_sets:
-            for algo_name in self.algo_names:
-                for training_type in self.training_types:
-                    start_time2 = time()
-                    print(training_type, name, algo_name, "start")
-                    d = DE(data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
-                           eval_selector=EvalSelect.Multi,
-                           algo_name=algo_name)
-                    d.run_v2()
+            result = []
+            for data, name in self.data_sets:
+                for algo_name in self.algo_names:
+                    for training_type in self.training_types:
+                        start_time2 = time()
+                        print(training_type, name, algo_name, "start")
+                        d = DE(p,data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
+                               eval_selector=EvalSelect.Single,max_iter=100,
+                               algo_name=algo_name)
+                        d.run_v2()
 
-                    # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
-                    # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
-        end_time = time()
-        print("全部训练完成时间(秒):", end_time - start_time)
+                        # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
+                        # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
+            end_time = time()
+            print("全部训练完成时间(秒):", end_time - start_time)
 
 
 if __name__ == "__main__":
@@ -454,4 +477,12 @@ if __name__ == "__main__":
         algo_name=[AlgoName.Dist_Skyline]
     )
     t.run()
+    # d=DE(华为杯_data, PRODUCTION_DATA1)
+    # result = []
+    # for i in range(500):
+    #     for j in range(20):
+    #         r  = d.mutli_process_single_eval(params[AlgoName.Dist_Skyline][STANDARD][PRODUCTION_DATA1])
+    #         print(i,j,1/r,end=", ")
+    #         result.append((i,j,1/r))
+    #     print()
     # print(params[STANDARD][PRODUCTION_DATA2])
