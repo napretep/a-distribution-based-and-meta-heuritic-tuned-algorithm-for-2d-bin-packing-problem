@@ -187,6 +187,9 @@ class DE:
             current_generation_fitness = []
             selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7, 1)),
                                                 replace=False)
+            history_best_fitness = []
+            history_mean_fitness = []
+
             if self.eval_selector == "single":
 
                 for j in selected_indices:

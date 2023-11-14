@@ -15,7 +15,7 @@
 #include <stdexcept>
 using namespace std;
 
-
+//
 //Eigen::MatrixXf sigmoid(const Eigen::MatrixXf& z) {
 //    return z.unaryExpr([](float elem) { return 1.0f / (1.0f + std::exp(-elem)); });
 //}
@@ -56,6 +56,10 @@ using namespace std;
 //
 //    return output;
 //}
+//
+//
+//
+
 
 std::string gen_uuid(std::size_t length = 8) {
     const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
