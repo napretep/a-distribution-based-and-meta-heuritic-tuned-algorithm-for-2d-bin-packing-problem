@@ -299,7 +299,7 @@ class DE:
             min_b, max_b = np.asarray(self.bounds).T
             diff = np.fabs(min_b - max_b)
             pop_denorm = min_b + pop * diff
-            fitness = np.asarray([self.idvl_eval(ind) for ind in pop_denorm])
+            fitness = np.asarray([self.idvl_eval2(p,ind) for ind in pop_denorm])
             best_idx = np.argmin(fitness)
             best = pop_denorm[best_idx]
             # 整体平均和历史最高
@@ -546,7 +546,7 @@ class Training:
                     d = DE(p,data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
                            eval_selector=EvalSelect.Multi,max_iter=500,
                            algo_name=algo_name)
-                    d.run_v2()
+                    d.run_v3()
 
                         # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
                         # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
