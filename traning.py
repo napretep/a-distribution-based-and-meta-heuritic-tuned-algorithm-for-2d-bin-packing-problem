@@ -340,7 +340,7 @@ class DE:
         results = BinPacking2DAlgo.multi_run(input_data,MATERIAL_SIZE,parameter_input_array=trial_denorm,algo_type=arg.algo_name,run_count=arg.eval_run_count)
         fitness = np.mean(1/np.array(results))
         gc.collect()
-        show_memory()
+        # show_memory()
         return fitness,trial_denorm,trial,arg.idvl_idx
 
         pass
@@ -382,7 +382,7 @@ class DE:
         end = time()
         print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
         gc.collect()
-        show_memory()
+        # show_memory()
         return 1 / mean
 
     @staticmethod
@@ -457,7 +457,7 @@ class Training:
                         start_time2 = time()
                         print(training_type, name, algo_name, "start")
                         d = DE(p,data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
-                               eval_selector=EvalSelect.Single,max_iter=100,
+                               eval_selector=EvalSelect.Single,max_iter=500,
                                algo_name=algo_name)
                         d.run_v2()
 
