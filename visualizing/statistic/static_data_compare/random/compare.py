@@ -16,7 +16,7 @@ cmap = cm.get_cmap('Dark2')
 
 scales = [100,300,500,1000,3000,5000]
 
-algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_MaxRect}",AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"]
+algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_Skyline}"]
 # 定义不同算法类型和比例尺度的颜色和形状
 color_map = {f'{STANDARD}Dist2': 'b', f'{NOISED}Dist2': 'g', 'MaxRect': 'r', 'Skyline': 'c'}
 
@@ -76,11 +76,11 @@ def run_compare_algo(algo_end=6):
         ax.legend()
 
     plt.tight_layout()
-    plt.savefig(f"./pic/{algo_end}algo compare on noised data.png")
+    plt.savefig(f"./pic/{algo_end}algo compare on noised data{int(time())}.png")
     plt.show()
 
 
 if __name__ == "__main__":
     # run_compare_algo(3)
-    run_compare_algo(6)
+    run_compare_algo(4)
     pass

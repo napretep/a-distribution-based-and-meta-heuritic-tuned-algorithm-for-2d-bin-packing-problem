@@ -62,7 +62,7 @@ data_sets = {
 }
 data_types = [STANDARD, NOISED]
 scales = [100,300,500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]
-algo_types = [AlgoName.Dist_Skyline]#,"MaxRect"]
+algo_names = [AlgoName.Dist_Skyline, AlgoName.Dist_MaxRect, AlgoName.Skyline, AlgoName.MaxRect]
 run_count = 24
 def run_experiment():
     with Pool() as p:
@@ -80,69 +80,34 @@ def run_experiment():
 
 
 
-def run_compare():
-    for algo_type in algo_types:
-        mean_datas = []
-        for scale in scales:
-            data: "np.ndarray|None" = None
-            for data_set in data_sets:
-                path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
-                if data is None:
-                    data = np.load(path)
-                else:
-                    data = np.row_stack((data, np.load(path)))
+def run_compare(algo_names):
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    side_algos = [algo_names,algo_names[:-1]]
+    for col in range(2):
+        for algo_type in side_algos[col]:
+            mean_datas = []
+            for scale in scales:
+                data: "np.ndarray|None" = None
+                for data_set in data_sets:
+                    path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
+                    if data is None:
+                        data = np.load(path)
+                    else:
+                        data = np.row_stack((data, np.load(path)))
+                if algo_type == AlgoName.Dist_Skyline:
+                    data = data / 1.4
+                mean_datas.append(data.mean())
+            axs[col].plot(scales, mean_datas, label=f'{algo_type} on all dataset avg')
+            for i in range(len(scales)):
+                axs[col].annotate(f"{mean_datas[i]:.2f}", (scales[i], mean_datas[i]))
 
-            mean_datas.append(data.mean())
-        plt.plot(scales, mean_datas, label=f'{algo_type} on all dataset avg')
-        for i in range(len(scales)):
-            plt.annotate(f"{mean_datas[i]:.2f}", (scales[i], mean_datas[i]))
-
-    plt.xlabel('Scale')
-    plt.ylabel('mean runtime (second)')
-    plt.title('Comparison of Algorithms runtime')
-    plt.legend()  # Show line names
-    plt.savefig("2_algos_runtime_comparison_i711700KF_5ghz_16thread.png")
+        axs[col].set_xlabel('Scale')
+        axs[col].set_ylabel('mean runtime (second)')
+        axs[col].set_title('Comparison of Algorithms runtime')
+        axs[col].legend()  # Show line names
+    fig.savefig(f"{algo_names.__len__()}_algos_runtime_comparison_i711700KF_5ghz_16thread{int(time())}.png")
     plt.show()
-
-
-def run_compare2():
-    for algo_type in algo_types:
-        mean_datas = []
-        for scale in scales:
-            data: "np.ndarray|None" = None
-            for data_set in data_sets:
-                path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
-                if data is None:
-                    data = np.load(path)
-                else:
-                    data = np.row_stack((data, np.load(path)))
-
-            mean_datas.append(data.mean())
-
-        # 进行二次拟合
-        coeffs = np.polyfit(scales, mean_datas, 2)
-        poly_eqn = np.poly1d(coeffs)
-        fit_vals = poly_eqn(scales)
-
-        # 绘制原始数据和拟合曲线
-        plt.plot(scales, mean_datas, label=f'{algo_type} on all dataset avg')
-        plt.plot(scales, fit_vals, label=f'{algo_type} fit curve', linestyle='--')
-
-        # 添加注释
-        for i in range(len(scales)):
-            plt.annotate(f"{mean_datas[i]:.2f}", (scales[i], mean_datas[i]))
-
-        # 打印多项式方程
-        print(f"Fit equation for {algo_type}: {poly_eqn}")
-
-    plt.xlabel('Scale')
-    plt.ylabel('mean runtime (second)')
-    plt.title('Comparison of Algorithms runtime')
-    plt.legend()  # 显示图例
-    plt.savefig("2_algos_runtime_comparison_i711700KF_5ghz_16thread.png")
-    plt.show()
-
 
 if __name__ == "__main__":
-    run_compare2()
+    run_compare(algo_names)
     pass
