@@ -63,17 +63,17 @@ data_sets = {
 data_types = [STANDARD, NOISED]
 scales = [100,300,500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]
 algo_names = [AlgoName.Dist_Skyline, AlgoName.Dist_MaxRect, AlgoName.Skyline, AlgoName.MaxRect]
-run_count = 24
+run_count = 40
 def run_experiment():
     with Pool() as p:
-        for algo_type in algo_types:
+        for algo_name in algo_names:
             for data_set in data_sets:
                 for scale in scales:
                     start = time()
-                    eval_fun = EVAL(algo_type, run_count, params["random"][data_set])
+                    eval_fun = EVAL(algo_name, run_count, params[algo_name][STANDARD][data_set])
                     input_data = [kde_sample(data_sets[data_set], scale) for _ in range(run_count)]
                     results = p.map(eval_fun.run_time_cost, input_data)
-                    path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
+                    path = f"standard_runtime_analysis_{algo_name}_{data_set}_{scale}.npy"
                     np.save(os.path.join(SYNC_PATH,path), np.array(results))
                     print("\n", time() - start,"\n",path)
 
