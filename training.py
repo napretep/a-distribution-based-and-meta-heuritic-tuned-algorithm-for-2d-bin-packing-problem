@@ -116,7 +116,7 @@ class DE:
         """
         self.total_param_num = BinPacking2DAlgo.get_algo_parameters_length(algo_name)
         self.input_data = None
-        self.bounds = [[-self.total_param_num, self.total_param_num]] * self.total_param_num
+        self.bounds = [[0, self.total_param_num]] * self.total_param_num
         self.mutation = 0.4
         self.crossover = 0.9
         self.p = p
@@ -180,7 +180,7 @@ class DE:
         print("\niter start")
         for i in range(self.max_iter):
 
-            if len(history_best_fitness)>10 and np.var(history_best_fitness[-10:])<1e-7:
+            if len(history_best_fitness)>10 and np.var(history_best_fitness[-10:])<1e-9:
                 print("\nrestart")
                 best_avg_fitness = np.min(history_mean_fitness[-10:])
                 for k in range(self.pop_size):
@@ -354,7 +354,7 @@ if __name__ == "__main__":
         # [随机_data, RANDOMGEN_DATA]
     ],
         training_type=[STANDARD],
-        algo_name=[AlgoName.Dist_Skyline]
+        algo_name=[AlgoName.Dist_MaxRect]
     )
     t.run()
     # print(params[STANDARD][PRODUCTION_DATA2])

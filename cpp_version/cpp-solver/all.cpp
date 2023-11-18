@@ -1118,132 +1118,130 @@ public:
         for (auto i = 0; i < sorted_items.size(); i++) {
 
             this->current_item_idx = i;
-            auto current_minL = (*std::min_element(sorted_items.begin() + i, sorted_items.end(), [](const Item& a, const Item& b) {
-                return a.size.height() < b.size.height();
-                })).size.height();
-                auto current_maxL = (*std::max_element(sorted_items.begin() + i, sorted_items.end(), [](const Item& a, const Item& b) {
-                    return a.size.width() < b.size.width();
-                    })).size.width();
+            //auto current_minL = (*std::min_element(sorted_items.begin() + i, sorted_items.end(), [](const Item& a, const Item& b) {
+            //    return a.size.height() < b.size.height();
+            //    })).size.height();
+            //auto current_maxL = (*std::max_element(sorted_items.begin() + i, sorted_items.end(), [](const Item& a, const Item& b) {
+            //    return a.size.width() < b.size.width();
+            //    })).size.width();
                     Item new_item = sorted_items[i];
 
-                    vector<ItemScore> score_candidates = this->find_possible_item_candidates(new_item);
-                    if (score_candidates.size() == 0) {
+                    vector<ItemScore> scores_li = this->find_possible_item_candidates(new_item);
+                    if (scores_li.size() == 0) {
                         throw std::runtime_error("score_candidates.size() == 0");
                     }
 
-                    ItemScore best_score = *std::max_element(score_candidates.begin(), score_candidates.end(), [](const ItemScore& p1, const ItemScore& p2) {
+                    auto best_score = *std::min_element(scores_li.begin(), scores_li.end(), [](const ItemScore& p1, const ItemScore& p2) {
                         return p1.getScore() < p2.getScore();
                         });
-                    auto best_item = best_score.item;
-                    auto new_rect = best_item.get_rect();
-                    auto remove_rect = best_score.container.rect;
+                    
 
                     if (best_score.plan_id == -1) {
-                        auto new_plan = ProtoPlan(this->solution.size(), this->material.copy());
-                        new_plan.item_sequence.push_back(best_item);
-                        auto remainingRectAfterSubtraction = this->material / new_rect;
-                        for (auto rect : remainingRectAfterSubtraction) {
-                            if (rect.has_value() and rect.value() == TYPE::RECT) {
-                                new_plan.remain_containers.push_back(Container(rect.value(), new_plan.ID));
-                            }
-                        }
-                        this->solution.push_back(new_plan);
+                        auto plan = ProtoPlan(solution.size(), material);
+                        plan.item_sequence.push_back(best_score.item);
+                        auto item_rect = best_score.item.get_rect();
+                        auto container_top = Container(Rect(item_rect.topLeft(), material.topRight()), plan.ID);
+                        auto container_btm = Container(Rect(item_rect.bottomRight(), material.topRight()), plan.ID);
+                        plan.remain_containers.push_back(container_top);
+                        plan.remain_containers.push_back(container_btm);
+                        solution.push_back(plan);
+
                         if (is_debug) {
-                            PlanPackingLog plan_packing_log;
-                            plan_packing_log.push_back(new_plan.toVector(false));
-                            this->packinglog.push_back(plan_packing_log);
+                            PlanPackingLog planlog;
+                            planlog.push_back(plan.toVector());
+                            this->packinglog.push_back(planlog);
                         }
                     }
                     else {
-                        auto& plan = this->solution[best_score.plan_id];
+                        auto& plan = solution.at(best_score.plan_id);
                         plan.item_sequence.push_back(best_score.item);
-
-                        vector<Container> container_to_remove;
-                        vector<optional<Container>> container_to_append;
-                        vector<Container> container_to_append_checked;
-                        auto item_rect = best_item.get_rect();
-                        // split 
-                        for (auto& container : plan.remain_containers) {
-                            /*if ((container.rect & item_rect) != TYPE::RECT) {
-                                continue;
-                            }*/
-                            RectDivided result_rects = container.rect / item_rect;
-                            bool remove = false;
-                            for (auto& r : result_rects) {
-                                if (r.has_value() and r.value() == TYPE::RECT) {
-                                    remove = true;
-                                    container_to_append.push_back(Container(r.value(), plan.ID));
-                                }
-                            }
-                            if (remove) {
-                                container_to_remove.push_back(container);
-                            }
-
-                        }
-                        // remove contained rect from new splited rect
-                        for (auto& containerA : container_to_append) {
-                            if (!containerA.has_value()) {
-                                continue;
-                            }
-                            for (auto& containerB : container_to_append) {
-                                if (!containerB.has_value()) {
-                                    continue;
-                                }
-                                if (containerA.value() == containerB.value()) {
-                                    continue;
-                                }
-                                if (containerA.value().contains(containerB.value())) {
-                                    containerB.reset();
-                                }
-                                if (containerB.has_value() and containerB.value().contains(containerA.value())) {
-                                    containerA.reset();
-                                    break;
-                                }
-                            }
-                        }
-                        // remove splited rect from old container
-                        for (auto& container : container_to_remove) {
-                            std::erase(plan.remain_containers, container);
-                            if (is_debug) {
-                                auto plancopy = plan;
-                                this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector(false));
-                            }
-                        }
-
-                        // check if new rect is contained
-                        for (auto& new_container : container_to_append) {
-                            if (!new_container.has_value()) {
-                                continue;
-                            }
-                            for (auto& old_container : plan.remain_containers) {
-                                if (old_container.rect.contains(new_container.value().rect)) {
-                                    new_container.reset();
-                                    break;
-                                }
-                            }
-                            if (new_container.has_value()) {
-                                plan.remain_containers.push_back(new_container.value());
-                                if (is_debug) {
-                                    auto plancopy = plan;
-                                    this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector(false));
-                                }
-                            }
-                        }
-
-                        // sort rect
-                        sort(plan.remain_containers.begin(), plan.remain_containers.end(), [](Container c1, Container c2) {
-                            return c1.rect.area() > c2.rect.area();
-                            }
-                        );
+                        auto new_item = best_score.item;
+                        auto container = best_score.container;
+                        auto new_rect = new_item.get_rect();
+                        update_remain_containers(new_item, plan);
                         if (is_debug) {
-                            auto plancopy = plan;
-                            this->packinglog.at(best_score.plan_id).push_back(plancopy.toVector(false));
+                            this->packinglog.at(best_score.plan_id).push_back(plan.toVector());
                         }
                     }
+
         }
 
     }
+    void update_remain_containers(Item& item, ProtoPlan& plan) {
+        vector<Container>container_to_remove;
+        vector<optional<Container>>container_to_append;
 
+        auto item_rect = item.get_rect();
+        // split 
+        for (auto& container : plan.remain_containers) {
+            /*if ((container.rect & item_rect) != TYPE::RECT) {
+                continue;
+            }*/
+            RectDivided result_rects = container.rect / item_rect;
+            bool remove = false;
+            for (auto& r : result_rects) {
+                if (r.has_value()) {
+                    remove = true;
+                    container_to_append.push_back(Container(r.value(), plan.ID));
+                }
+            }
+            if (remove) {
+                container_to_remove.push_back(container);
+            }
+
+        }
+        // remove contained rect from new splited rect
+        for (auto& containerA : container_to_append) {
+            if (!containerA.has_value()) {
+                continue;
+            }
+            for (auto& containerB : container_to_append) {
+                if (!containerB.has_value()) {
+                    continue;
+                }
+                if (containerA.value() == containerB.value()) {
+                    continue;
+                }
+                if (containerA.value().contains(containerB.value())) {
+                    containerB.reset();
+                }
+                if (containerB.has_value() and containerB.value().contains(containerA.value())) {
+                    containerA.reset();
+                    break;
+                }
+            }
+        }
+        // remove splited rect from old container
+        for (auto& container : container_to_remove) {
+            std::erase(plan.remain_containers, container);
+            if (is_debug) {
+                auto plancopy = plan;
+                this->packinglog.at(plan.ID).push_back(plancopy.toVector(false));
+            }
+        }
+
+        // check if new rect is contained
+        for (auto& new_container : container_to_append) {
+            if (!new_container.has_value()) {
+                continue;
+            }
+            for (auto& old_container : plan.remain_containers) {
+                if (old_container.rect.contains(new_container.value().rect)) {
+                    new_container.reset();
+                    break;
+                }
+            }
+            if (new_container.has_value()) {
+                plan.remain_containers.push_back(new_container.value());
+                if (is_debug) {
+                    auto plancopy = plan;
+                    this->packinglog.at(plan.ID).push_back(plancopy.toVector(false));
+                }
+            }
+        }
+
+
+    }
 };
 
 
@@ -2960,7 +2958,7 @@ int main() {
                 }
             }
             cout << input_data.size()<<", ";
-            auto d = Dist3(input_data, test_material, "", false);
+            auto d = Dist2(input_data, test_material, "", false);
             //d.scoring_sys.parameters = p;
             d.run();
             cout << d.get_avg_util_rate() << ", ";
