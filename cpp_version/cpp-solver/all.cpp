@@ -15,52 +15,6 @@
 #include <stdexcept>
 using namespace std;
 
-//
-//Eigen::MatrixXf sigmoid(const Eigen::MatrixXf& z) {
-//    return z.unaryExpr([](float elem) { return 1.0f / (1.0f + std::exp(-elem)); });
-//}
-//// ����MLPǰ�򴫲�
-//Eigen::MatrixXf forwardPropagation(const std::vector<int>& net_arch, const std::vector<float>& weights) {
-//    std::size_t currentWeightIndex = 0;
-//    Eigen::MatrixXf output;
-//
-//    // ���ܹ���Ȩ�������Ƿ�ƥ��
-//    std::size_t totalWeightsNeeded = 0;
-//    for (std::size_t i = 1; i < net_arch.size(); ++i) {
-//        totalWeightsNeeded += (net_arch[i - 1] + 1) * net_arch[i]; // +1 for bias
-//    }
-//    if (weights.size() != totalWeightsNeeded) {
-//        throw std::invalid_argument("Mismatch between architecture and number of weights");
-//    }
-//
-//    // ����ÿһ��
-//    for (std::size_t i = 1; i < net_arch.size(); ++i) {
-//        int inputSize = net_arch[i - 1];
-//        int outputSize = net_arch[i];
-//
-//        // ��ȡ��ǰ���Ȩ�غ�ƫ��
-//        Eigen::MatrixXf layerWeights = Eigen::Map<const Eigen::MatrixXf>(weights.data() + currentWeightIndex, inputSize, outputSize);
-//        currentWeightIndex += inputSize * outputSize;
-//
-//        Eigen::VectorXf layerBias = Eigen::Map<const Eigen::VectorXf>(weights.data() + currentWeightIndex, outputSize);
-//        currentWeightIndex += outputSize;
-//
-//        // ���㵱ǰ������
-//        if (i == 1) {
-//            output = layerWeights; // ��һ���������Ȩ�ر���
-//        }
-//        else {
-//            output = sigmoid((output * layerWeights).rowwise() + layerBias.transpose()); // �������������ǰһ������
-//        }
-//    }
-//
-//    return output;
-//}
-//
-//
-//
-
-
 std::string gen_uuid(std::size_t length = 8) {
     const std::string CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -553,11 +507,11 @@ public:
         this->remain_containers = remain_containers;
     }
     float get_util_rate()const {
-        double total_area = 0.0;
+        float total_area = 0.0;
         for (const auto& item : item_sequence) {
             total_area += item.size.area();
         }
-        double ratio = total_area / material.area();
+        float ratio = total_area / material.area();
         return ratio;
     }
 
@@ -743,7 +697,7 @@ void test_algo() {
 
 
 
-class Dist :public Algo {
+class Dist :public Algo { // Dist_Shelf
 
 public:
     class ScoringSys {
@@ -1036,7 +990,7 @@ public:
 
 
 
-class Dist2 :public Algo {
+class Dist2 :public Algo { //Dist_MaxRect
 
 public:
     class ScoringSys {
@@ -1044,8 +998,8 @@ public:
         Dist2* parent;
         vector<float>parameters;
         struct ParameterCount {
-            static constexpr auto pos_scoring = 18;
-            static constexpr auto sort_scoring = 6;
+            static constexpr auto pos_scoring = 16;
+            static constexpr auto sort_scoring = 12;
             static constexpr auto total = pos_scoring + sort_scoring;
         };
         vector<float> get_item_sorting_parameters()const {
@@ -1065,6 +1019,12 @@ public:
                     abs(item_width - item_height) / (parent->maxL - parent->minL),
                     item_height / parent->maxL,
                     item_width / parent->minL,
+                    1-(item_width * item_height) / (parent->minL * parent->maxL),
+                    1-item_height / item_width,
+                    1-static_cast<float>((item_width * item_height) / parent->material.area()),
+                    1-abs(item_width - item_height) / (parent->maxL - parent->minL),
+                    1-item_height / parent->maxL,
+                    1-item_width / parent->minL,
             };
             auto p = get_item_sorting_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1072,32 +1032,23 @@ public:
         float pos_scoring(Item item, Container container, int plan_id)const {
             auto item_rect = item.get_rect();
             auto container_rect = container.rect;
-            auto remain_rect = container_rect / item_rect;
-            optional<Rect> top_rect, left_rect, bottom_rect, right_rect;
-            top_rect = remain_rect[0];
-            bottom_rect = remain_rect[1];
-            left_rect = remain_rect[2];
-            right_rect = remain_rect[3];
-
             vector<float> X = {
-                    item_rect.area() / container_rect.area(),
-                    top_rect.has_value() and top_rect.value() == TYPE::RECT ? top_rect.value().height_div_width() : 0,
-                    bottom_rect.has_value() and bottom_rect.value() == TYPE::RECT ? bottom_rect.value().height_div_width() : 0,
-                    left_rect.has_value() and left_rect.value() == TYPE::RECT ? left_rect.value().height_div_width() : 0,
-                    right_rect.has_value() and right_rect.value() == TYPE::RECT ? right_rect.value().height_div_width() : 0,
-                    top_rect.has_value() and top_rect.value() == TYPE::RECT ? top_rect.value().area() / container_rect.area() : 0,
-                    bottom_rect.has_value() and bottom_rect.value() == TYPE::RECT ? bottom_rect.value().area() / container_rect.area() : 0,
-                    left_rect.has_value() and left_rect.value() == TYPE::RECT ? left_rect.value().area() / container_rect.area() : 0,
-                    right_rect.has_value() and right_rect.value() == TYPE::RECT ? right_rect.value().area() / container_rect.area() : 0,
-                    this->parent->current_maxL / container_rect.width(),
-                    this->parent->current_minL / container_rect.height(),
-                    item_rect.width() / container_rect.width(),
-                    item_rect.height() / container_rect.height(),
-                    static_cast<float>(container_rect.area() / parent->material.area()),
-                    static_cast<float>(container_rect.start.x / parent->material.width()),
-                    static_cast<float>(container_rect.start.y / parent->material.height()),
-                    static_cast<float>(parent->material.height() / parent->material.width()),
-                    parent->solution.size() > 0 and plan_id >= 0 ? parent->solution[static_cast<int>(plan_id)].get_util_rate() : 0
+                    1-item_rect.area() / container_rect.area(),
+                    1-this->parent->current_maxL / container_rect.width(),
+                    1-this->parent->current_minL / container_rect.height(),
+                    1-item_rect.width() / container_rect.width(),
+                    1-item_rect.height() / container_rect.height(),
+                    1-container_rect.area() / parent->material.area(),
+                    1-container_rect.start.x / parent->material.width(),
+                    1-container_rect.start.y / parent->material.height(),
+                   item_rect.area() / container_rect.area(),
+                   this->parent->current_maxL / container_rect.width(),
+                   this->parent->current_minL / container_rect.height(),
+                   item_rect.width() / container_rect.width(),
+                   item_rect.height() / container_rect.height(),
+                   container_rect.area() / parent->material.area(),
+                   container_rect.start.x / parent->material.width(),
+                   container_rect.start.y / parent->material.height(),
             };
             auto p = get_container_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1151,29 +1102,8 @@ public:
         }
         return score_list;
     }
-    void checkAndScoreItem(Item item, Container& container, std::vector<ItemScore>& score_list) {
-        auto topright_pos = container.rect.end - item.size.end;
-        auto btmright_pos = container.rect.bottomRight() + POS(-item.size.width(), 0);
-        auto topleft_pos = container.rect.topLeft() + POS(0, -item.size.height());
+    void checkAndScoreItem(Item item, Container& container, std::vector<ItemScore>& score_list) {        
         auto btmleft_pos = container.rect.start;
-        if (container.contains(item.size + topright_pos)) {
-            auto item_to_append = item.copy();
-            item_to_append.pos = topright_pos.copy();
-            float score = scoring_sys.pos_scoring(item_to_append, container, container.plan_id);
-            score_list.push_back(ItemScore(item_to_append, container, score));
-        }
-        if (container.contains(item.size + btmright_pos)) {
-            auto item_to_append = item.copy();
-            item_to_append.pos = btmright_pos.copy();
-            float score = scoring_sys.pos_scoring(item_to_append, container, container.plan_id);
-            score_list.push_back(ItemScore(item_to_append, container, score));
-        }
-        if (container.contains(item.size + topleft_pos)) {
-            auto item_to_append = item.copy();
-            item_to_append.pos = topleft_pos.copy();
-            float score = scoring_sys.pos_scoring(item_to_append, container, container.plan_id);
-            score_list.push_back(ItemScore(item_to_append, container, score));
-        }
         if (container.contains(item.size + btmleft_pos)) {
             auto item_to_append = item.copy();
             item_to_append.pos = container.rect.start.copy();
@@ -1320,15 +1250,15 @@ public:
 
 
 
-class Dist3 :public Algo {
+class Dist3 :public Algo { // Dist_Skyline
 public:
     class ScoringSys {
     public:
         Dist3* parent;
         vector<float>parameters;
         struct ParameterCount {
-            static constexpr auto skyline_pos_scoring = 15;
-            static constexpr auto wastemap_pos_scoring = 10;
+            static constexpr auto skyline_pos_scoring = 16;
+            static constexpr auto wastemap_pos_scoring = 16;
             static constexpr auto sort_scoring = 6;
             static constexpr auto total = sort_scoring + wastemap_pos_scoring + skyline_pos_scoring;
         };
@@ -1353,6 +1283,12 @@ public:
                     abs(item_width - item_height) / (parent->maxL - parent->minL),
                     item_height / parent->maxL,
                     item_width / parent->minL,
+                    1 - (item_width * item_height) / (parent->minL * parent->maxL),
+                    1 - item_height / item_width,
+                    1 - static_cast<float>((item_width * item_height) / parent->material.area()),
+                    1 - abs(item_width - item_height) / (parent->maxL - parent->minL),
+                    1 - item_height / parent->maxL,
+                    1 - item_width / parent->minL,
             };
             auto p = get_item_sorting_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1361,32 +1297,25 @@ public:
             // when meet this situation , we need to consider the skyline container ,and the wastemap container both
             auto item_rect = item.get_rect();
             auto container_rect = container.rect;
-            auto remain_rect = container_rect / item_rect;
-            optional<Rect> top_rect, left_rect, bottom_rect, right_rect;
-            top_rect = remain_rect.at(0);
-            bottom_rect = remain_rect.at(1);
-            left_rect = remain_rect.at(2);
-            right_rect = remain_rect.at(3);
+            
 
             vector<float> X = {
-                    item_rect.area() / container_rect.area(),
-                    top_rect.has_value() and top_rect.value() == TYPE::RECT ? top_rect.value().height_div_width() : 0,
-                    bottom_rect.has_value() and bottom_rect.value() == TYPE::RECT ? bottom_rect.value().height_div_width() : 0,
-                    left_rect.has_value() and left_rect.value() == TYPE::RECT ? left_rect.value().height_div_width() : 0,
-                    right_rect.has_value() and right_rect.value() == TYPE::RECT ? right_rect.value().height_div_width() : 0,
-                    top_rect.has_value() and top_rect.value() == TYPE::RECT ? top_rect.value().area() / container_rect.area() : 0,
-                    bottom_rect.has_value() and bottom_rect.value() == TYPE::RECT ? bottom_rect.value().area() / container_rect.area() : 0,
-                    left_rect.has_value() and left_rect.value() == TYPE::RECT ? left_rect.value().area() / container_rect.area() : 0,
-                    right_rect.has_value() and right_rect.value() == TYPE::RECT ? right_rect.value().area() / container_rect.area() : 0,
-                    this->parent->current_maxL / container_rect.width(),
-                    this->parent->current_minL / container_rect.height(),
-                    item_rect.width() / container_rect.width(),
-                    item_rect.height() / container_rect.height(),
-                    static_cast<float>(container_rect.area() / parent->material.area()),
-                    static_cast<float>(container_rect.start.x / parent->material.width()),
-                    static_cast<float>(container_rect.start.y / parent->material.height()),
-                    static_cast<float>(parent->material.height() / parent->material.width()),
-                    parent->solution.size() > 0 and plan_id >= 0 and plan_id<parent->solution.size() ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
+                    1 - item_rect.area() / container_rect.area(),
+                    1 - this->parent->current_maxL / container_rect.width(),
+                    1 - this->parent->current_minL / container_rect.height(),
+                    1 - item_rect.width() / container_rect.width(),
+                    1 - item_rect.height() / container_rect.height(),
+                    1 - container_rect.area() / parent->material.area(),
+                    1 - container_rect.start.x / parent->material.width(),
+                    1 - container_rect.start.y / parent->material.height(),
+                   item_rect.area() / container_rect.area(),
+                   this->parent->current_maxL / container_rect.width(),
+                   this->parent->current_minL / container_rect.height(),
+                   item_rect.width() / container_rect.width(),
+                   item_rect.height() / container_rect.height(),
+                   container_rect.area() / parent->material.area(),
+                   container_rect.start.x / parent->material.width(),
+                   container_rect.start.y / parent->material.height(),
             };
             auto p = get_skyline_pos_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1395,32 +1324,24 @@ public:
         float wastemap_container_pos_scoring(Item item, Container container, int plan_id)const {
             auto item_rect = item.get_rect();
             auto container_rect = container.rect;
-            auto remain_rect = container_rect / item_rect;
-            optional<Rect> top_rect, left_rect, bottom_rect, right_rect;
-            top_rect = remain_rect.at(0);
-            bottom_rect = remain_rect.at(1);
-            left_rect = remain_rect.at(2);
-            right_rect = remain_rect.at(3);
 
             vector<float> X = {
-                    item_rect.area() / container_rect.area(),
-                    top_rect.has_value() and top_rect.value() == TYPE::RECT ? top_rect.value().height_div_width() : 0,
-                    bottom_rect.has_value() and bottom_rect.value() == TYPE::RECT ? bottom_rect.value().height_div_width() : 0,
-                    left_rect.has_value() and left_rect.value() == TYPE::RECT ? left_rect.value().height_div_width() : 0,
-                    right_rect.has_value() and right_rect.value() == TYPE::RECT ? right_rect.value().height_div_width() : 0,
-                    top_rect.has_value() and top_rect.value() == TYPE::RECT ? top_rect.value().area() / container_rect.area() : 0,
-                    bottom_rect.has_value() and bottom_rect.value() == TYPE::RECT ? bottom_rect.value().area() / container_rect.area() : 0,
-                    left_rect.has_value() and left_rect.value() == TYPE::RECT ? left_rect.value().area() / container_rect.area() : 0,
-                    right_rect.has_value() and right_rect.value() == TYPE::RECT ? right_rect.value().area() / container_rect.area() : 0,
-                    this->parent->current_maxL / container_rect.width(),
-                    this->parent->current_minL / container_rect.height(),
-                    item_rect.width() / container_rect.width(),
-                    item_rect.height() / container_rect.height(),
-                    static_cast<float>(container_rect.area() / parent->material.area()),
-                    static_cast<float>(container_rect.start.x / parent->material.width()),
-                    static_cast<float>(container_rect.start.y / parent->material.height()),
-                    static_cast<float>(parent->material.height() / parent->material.width()),
-                    parent->solution.size() > 0 and plan_id >= 0 and plan_id < parent->solution.size() ? parent->solution.at(static_cast<int>(plan_id)).get_util_rate() : 0
+                    1 - item_rect.area() / container_rect.area(),
+                    1 - this->parent->current_maxL / container_rect.width(),
+                    1 - this->parent->current_minL / container_rect.height(),
+                    1 - item_rect.width() / container_rect.width(),
+                    1 - item_rect.height() / container_rect.height(),
+                    1 - container_rect.area() / parent->material.area(),
+                    1 - container_rect.start.x / parent->material.width(),
+                    1 - container_rect.start.y / parent->material.height(),
+                   item_rect.area() / container_rect.area(),
+                   this->parent->current_maxL / container_rect.width(),
+                   this->parent->current_minL / container_rect.height(),
+                   item_rect.width() / container_rect.width(),
+                   item_rect.height() / container_rect.height(),
+                   container_rect.area() / parent->material.area(),
+                   container_rect.start.x / parent->material.width(),
+                   container_rect.start.y / parent->material.height(),
             };
             auto p = get_wastemap_pos_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
@@ -1476,7 +1397,7 @@ public:
             })).size.height();
         current_maxL = maxL;
         current_minL = minL;
-        scoring_sys.parameters = vector<float>(ScoringSys::ParameterCount::skyline_pos_scoring+ ScoringSys::ParameterCount::sort_scoring+ScoringSys::ParameterCount::wastemap_pos_scoring, 1);
+        scoring_sys.parameters = vector<float>(ScoringSys::ParameterCount::total, 1);
         scoring_sys.parent = this;
     }
     Dist3(vector<float> items, pair<float, float> material = test_material, bool is_debug = false) :Dist3(items, material, "", is_debug) {};
@@ -2317,6 +2238,168 @@ public:
 };
 
 
+class MAXRECTS_BSSF_BBF_DESCSS :public Algo {
+public:
+    MAXRECTS_BSSF_BBF_DESCSS(vector<float> flat_items, pair<float, float> material = { 2440,1220 }, string task_id = "", bool is_debug = false) :Algo(flat_items, material, task_id, is_debug) {
+
+    }
+    void run() {
+        solution.clear();
+        sort(this->items.begin(), this->items.end(), [this](Item a, Item b) {
+                return a.size.width() > b.size.width();
+            });
+
+        for (auto i = 0; i < items.size(); i++) {
+            auto new_item = items.at(i);
+            auto scores_li = find_possible_item_candidates(new_item);
+            auto best_score = *std::min_element(scores_li.begin(), scores_li.end(), [](const ItemScore& p1, const ItemScore& p2) {
+                return p1.getScore() < p2.getScore();
+                });
+            if (best_score.plan_id == -1) {
+                auto plan = ProtoPlan(solution.size(), material);
+                plan.item_sequence.push_back(best_score.item);
+                auto item_rect = best_score.item.get_rect();
+                auto container_top = Container(Rect(item_rect.topLeft(), material.topRight()), plan.ID);
+                auto container_btm = Container(Rect(item_rect.bottomRight(), material.topRight()), plan.ID);
+                plan.remain_containers.push_back(container_top);
+                plan.remain_containers.push_back(container_btm);
+                solution.push_back(plan);
+
+                if (is_debug) {
+                    PlanPackingLog planlog;
+                    planlog.push_back(plan.toVector());
+                    this->packinglog.push_back(planlog);
+                }
+            }
+            else {
+                auto& plan = solution.at(best_score.plan_id);
+                plan.item_sequence.push_back(best_score.item);
+                auto new_item = best_score.item;
+                auto container = best_score.container;
+                auto new_rect = new_item.get_rect();
+                update_remain_containers(new_item, plan);
+                if (is_debug) {
+                    this->packinglog.at(best_score.plan_id).push_back(plan.toVector());
+                }
+            }
+
+        }
+
+    }
+    vector<ItemScore> find_possible_item_candidates(Item item) {
+        vector<ItemScore> scores_li;
+
+       
+        // from existing containers
+        for (ProtoPlan& plan : solution)
+        {
+
+            for (auto& container : plan.remain_containers)
+            {
+                Item item_prepare = item.copy();
+                checkAndScoreItem(item_prepare, container, scores_li);
+                Item item_prepareT = item.copy().transpose();
+                checkAndScoreItem(item_prepareT, container, scores_li);
+            }
+        }
+        Container fake_container = Container(material.copy());
+        Item item_prepare = item.copy();
+        checkAndScoreItem(item_prepare, fake_container, scores_li);
+        Item item_prepareT = item.transpose();
+        checkAndScoreItem(item_prepareT, fake_container, scores_li);
+
+        if (scores_li.size() == 0) {
+            throw runtime_error("no possible item candidates");
+        }
+        return scores_li;
+    }
+    void checkAndScoreItem(Item item, Container& container, std::vector<ItemScore>& score_list) {
+        auto corner_start = container.rect.start;
+        if (container.contains(item.size + corner_start)) {
+            auto item_to_append = item.copy();
+            item_to_append.pos = corner_start.copy();
+            float score = min(container.rect.width() - item.size.width(), container.rect.height() - item.size.height()); //BSSF
+            score_list.push_back(ItemScore(item_to_append, container, score));
+        }
+    }
+    void update_remain_containers(Item& item, ProtoPlan& plan) {
+        vector<Container>container_to_remove;
+        vector<optional<Container>>container_to_append;
+        
+        auto item_rect = item.get_rect();
+        // split 
+        for (auto& container : plan.remain_containers) {
+            /*if ((container.rect & item_rect) != TYPE::RECT) {
+                continue;
+            }*/
+            RectDivided result_rects = container.rect / item_rect;
+            bool remove = false;
+            for (auto& r : result_rects) {
+                if (r.has_value()) {
+                    remove = true;
+                    container_to_append.push_back(Container(r.value(), plan.ID));
+                }
+            }
+            if (remove) {
+                container_to_remove.push_back(container);
+            }
+
+        }
+        // remove contained rect from new splited rect
+        for (auto& containerA : container_to_append) {
+            if (!containerA.has_value()) {
+                continue;
+            }
+            for (auto& containerB : container_to_append) {
+                if (!containerB.has_value()) {
+                    continue;
+                }
+                if (containerA.value() == containerB.value()) {
+                    continue;
+                }
+                if (containerA.value().contains(containerB.value())) {
+                    containerB.reset();
+                }
+                if (containerB.has_value() and containerB.value().contains(containerA.value())) {
+                    containerA.reset();
+                    break;
+                }
+            }
+        }
+        // remove splited rect from old container
+        for (auto& container : container_to_remove) {
+            std::erase(plan.remain_containers, container);
+            if (is_debug) {
+                auto plancopy = plan;
+                this->packinglog.at(plan.ID).push_back(plancopy.toVector(false));
+            }
+        }
+
+        // check if new rect is contained
+        for (auto& new_container : container_to_append) {
+            if (!new_container.has_value()) {
+                continue;
+            }
+            for (auto& old_container : plan.remain_containers) {
+                if (old_container.rect.contains(new_container.value().rect)) {
+                    new_container.reset();
+                    break;
+                }
+            }
+            if (new_container.has_value()) {
+                plan.remain_containers.push_back(new_container.value());
+                if (is_debug) {
+                    auto plancopy = plan;
+                    this->packinglog.at(plan.ID).push_back(plancopy.toVector(false));
+                }
+            }
+        }
+
+
+    }
+};
+
+
 
 class Skyline :public Algo {
 
@@ -2795,7 +2878,7 @@ std::unique_ptr<Algo> inner_single_run(vector<float> items, pair<float, float>ma
         }
     }
     else if (algo_type == AlgoName::MaxRect) {
-        auto d = std::make_unique<MaxRect>(items, material);
+        auto d = std::make_unique<MAXRECTS_BSSF_BBF_DESCSS>(items, material);
         d->run();
         return d;
     }
@@ -2877,8 +2960,8 @@ int main() {
                 }
             }
             cout << input_data.size()<<", ";
-            auto d = Dist3(input_data, test_material, "", false);
-            d.scoring_sys.parameters = p;
+            auto d = MAXRECTS_BSSF_BBF_DESCSS(input_data, test_material, "", false);
+            //d.scoring_sys.parameters = p;
             d.run();
             cout << d.get_avg_util_rate() << ", ";
         }

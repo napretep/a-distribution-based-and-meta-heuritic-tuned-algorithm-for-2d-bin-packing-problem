@@ -133,7 +133,7 @@ class DE:
         self.current_gen = 0
         self.pop_size = pop_size
         self.task_id = "task_" + str(uuid.uuid4())[:8]
-        self.log_save_name = f"traning_log_{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
+        self.log_save_name = f"training_log_{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_{self.algo_name}_{self.data_sample_scale}.npy"
         self.param_save_name = lambda \
             fun: f"{(NOISED + '_') if self.random_ratio is not None else ''}_{self.data_set_name}_param_{self.algo_name}_{self.data_sample_scale}_{round(fun, 2)}.npy"
 
