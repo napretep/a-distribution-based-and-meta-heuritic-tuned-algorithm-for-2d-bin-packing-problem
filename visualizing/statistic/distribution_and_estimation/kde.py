@@ -38,7 +38,12 @@ def plot_kde_sampled_data_dist():
                 titles=[f"kde sampled {RANDOMGEN_DATA}", f"kde sampled {PRODUCTION_DATA1}",f"kde sampled {PRODUCTION_DATA2}",])
     plt.show()
 
+def plot_kde_noised_sample_data_dist():
+    plot_hist2d(random_mix(kde_sample(随机_data, 5000)[:,1:],(0,0.1)),random_mix(kde_sample(华为杯_data, 5000)[:,1:],(0,0.2)),random_mix(kde_sample(外包_data, 5000)[:,1:],(0,0.3)),
+                titles=[f"noised sampled {RANDOMGEN_DATA}", f"noised sampled {PRODUCTION_DATA1}",f"noised sampled {PRODUCTION_DATA2}",])
+    plt.show()
+
 if __name__ == "__main__":
-    plot_kde_sampled_data_dist()
+    plot_kde_noised_sample_data_dist()
     pass
 

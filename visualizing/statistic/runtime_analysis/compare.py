@@ -8,6 +8,8 @@ __time__ = '2023/11/10 1:31'
 """
 import os
 
+import matplotlib.pyplot as plt
+
 from constant import *
 import numpy as np
 import BinPacking2DAlgo
@@ -81,7 +83,7 @@ def run_experiment():
 
 
 def run_compare(algo_names):
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+    fig, axs = plt.subplots(1, 2, figsize=(20, 4))
     side_algos = [algo_names,algo_names[:-1]]
     for col in range(2):
         for algo_type in side_algos[col]:
@@ -90,12 +92,17 @@ def run_compare(algo_names):
                 data: "np.ndarray|None" = None
                 for data_set in data_sets:
                     path = f"standard_runtime_analysis_{algo_type}_{data_set}_{scale}.npy"
+                    print(path)
+                    temp_data = np.load(path)
+                    print("load data ", temp_data.shape)
                     if data is None:
-                        data = np.load(path)
+                        data = temp_data
+
                     else:
-                        data = np.row_stack((data, np.load(path)))
-                if algo_type == AlgoName.Dist_Skyline:
-                    data = data / 1.4
+                        data = np.row_stack((data, temp_data))
+
+                    print("then ",data.shape)
+                print("finally,",data.shape)
                 mean_datas.append(data.mean())
             axs[col].plot(scales, mean_datas, label=f'{algo_type} on all dataset avg')
             for i in range(len(scales)):
@@ -105,7 +112,8 @@ def run_compare(algo_names):
         axs[col].set_ylabel('mean runtime (second)')
         axs[col].set_title('Comparison of Algorithms runtime')
         axs[col].legend()  # Show line names
-    fig.savefig(f"{algo_names.__len__()}_algos_runtime_comparison_i711700KF_5ghz_16thread{int(time())}.png")
+    plt.tight_layout()
+    fig.savefig(f"./pic/{algo_names.__len__()}_algos_runtime_comparison_Intel_E52696v4_2.8ghz_22c44t_48g{int(time())}.png")
     plt.show()
 
 if __name__ == "__main__":

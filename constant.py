@@ -534,7 +534,8 @@ def random_mix(data: "np.ndarray", random_ratio):
     random_y = (np.random.uniform(0.1, 1, random_item_scale) * MATERIAL_SIZE[1]).astype(int)
     random_data = np.column_stack((random_x, random_y))
     result = np.row_stack((determ_data, random_data))
-    result = np.column_stack((range(data.shape[0]), result))
+    result = np.column_stack((range(data.shape[0]), np.maximum(result[:, 0], result[:, 1]), np.minimum(result[:, 0], result[:, 1])))
+
     return result
 
 
