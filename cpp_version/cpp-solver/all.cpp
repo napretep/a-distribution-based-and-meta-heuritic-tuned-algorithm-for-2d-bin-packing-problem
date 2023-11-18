@@ -1259,7 +1259,7 @@ public:
         struct ParameterCount {
             static constexpr auto skyline_pos_scoring = 16;
             static constexpr auto wastemap_pos_scoring = 16;
-            static constexpr auto sort_scoring = 6;
+            static constexpr auto sort_scoring = 12;
             static constexpr auto total = sort_scoring + wastemap_pos_scoring + skyline_pos_scoring;
         };
         vector<float> get_item_sorting_parameters()const {
@@ -2960,7 +2960,7 @@ int main() {
                 }
             }
             cout << input_data.size()<<", ";
-            auto d = MAXRECTS_BSSF_BBF_DESCSS(input_data, test_material, "", false);
+            auto d = Dist3(input_data, test_material, "", false);
             //d.scoring_sys.parameters = p;
             d.run();
             cout << d.get_avg_util_rate() << ", ";
