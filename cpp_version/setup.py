@@ -16,8 +16,9 @@ ROOT_PATH = os.path.split(os.path.abspath(__file__))[0]
 
 
 def get_module_name():
-    all_cpp_path = "./cpp-solver/all.cpp"
-    export_path = "./export.cpp"
+    all_cpp_path = os.path.join(ROOT_PATH,"cpp-solver","all.cpp")
+    export_path =  os.path.join(ROOT_PATH,"export.cpp")
+
     all_cpp_code = open(all_cpp_path, "r").read()
     export_code = open(export_path, "r").read()
     compile_code = all_cpp_code + "\n" + export_code
