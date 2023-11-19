@@ -196,7 +196,7 @@ class Optimizer:
         best_score: "np.ndarray|None" = None
         final_best_x: "np.ndarray|None" = None
         for best_x, best_fitness, pop, fitness in optimizer():
-            std_value = np.std(np.std(pop, axis=0))
+            std_value = np.std(pop, axis=0)
             avg_fitness = np.mean(fitness)
             self.time_recorder.append((time()))
             if best_score is None:
@@ -228,7 +228,7 @@ class Optimizer:
         pop_denorm = min_b + pop * diff
         fitness = np.asarray([se.run_idvl(ind) for ind in pop_denorm])
         best_idx = np.argmin(fitness)
-        best_x = pop_denorm[best_idx]
+        best_X = pop_denorm[best_idx]
         best_f = fitness[best_idx]
         # 整体平均和历史最高
         history_mean_fitness = []
@@ -236,13 +236,14 @@ class Optimizer:
         print("\niter start")
         for i in range(self.max_iter):
 
-            if len(history_best_fitness)>20 and np.var(history_best_fitness[-20:])<1e-9:
+            if len(history_best_fitness)>50 and np.var(history_best_fitness[-50:])<1e-9:
                 print("\nrestart")
-                best_avg_fitness = np.min(history_mean_fitness[-20:])
+                best_avg_fitness = np.min(history_mean_fitness[-50:])
                 for k in range(self.pop_size):
-                    pop[k]=np.round(np.random.rand(1,dimensions),4)
-                    idvl_denorm=min_b+pop[k]*diff
-                    fitness[k]=se.run_idvl(idvl_denorm)
+                    if best_avg_fitness<fitness[k]:
+                        pop[k]=np.round(np.random.rand(1,dimensions),4)
+                        idvl_denorm=min_b+pop[k]*diff
+                        fitness[k]=se.run_idvl(idvl_denorm)
 
 
                 history_best_fitness = []
@@ -265,34 +266,34 @@ class Optimizer:
                     cross_points = np.random.rand(dimensions) < self.crossover
                     if not np.any(cross_points):
                         cross_points[np.random.randint(0, dimensions)] = True
-                    trial = np.where(cross_points, mutant, pop[j])
-                    trial = np.round(trial, 4)
-                    trial_X = min_b + trial * diff
+                    trial_x = np.where(cross_points, mutant, pop[j])
+                    trial_x = np.round(trial_x, 4)
+                    trial_X = min_b + trial_x * diff
 
                     trial_f = se.run_idvl(trial_X)
                     current_generation_fitness.append(trial_f)
                     if trial_f < fitness[j]:
                         fitness[j] = trial_f
-                        pop[j] = trial
+                        pop[j] = trial_x
                         if trial_f < best_f:
-                            best_x = trial_X
+                            best_X = trial_X
                             best_f=trial_f
 
             else:# multi indvl run mode
                 input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
                 results = self.p.map(sub_process_DE_pop_eval, input_env)
-                for trial_f,trial_X,trial, idvl_idx in results:
+                for trial_f,trial_X,trial_x, idvl_idx in results:
                     current_generation_fitness.append(trial_f)
                     if trial_f < fitness[idvl_idx]:
                         fitness[idvl_idx] = trial_f
-                        pop[idvl_idx] = trial
+                        pop[idvl_idx] = trial_x
                         if trial_f < best_f:
                             best_f = trial_f
-                            best_x = trial_X
+                            best_X = trial_X
 
             history_mean_fitness.append(np.mean(current_generation_fitness))
             history_best_fitness.append(best_f)
-            yield best_x, best_f, pop, fitness
+            yield best_X, best_f, pop, fitness
 
     def GA(self):
         def selection(population, scores, k=5):
