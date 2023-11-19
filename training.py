@@ -228,7 +228,8 @@ class Optimizer:
         pop_denorm = min_b + pop * diff
         fitness = np.asarray([se.run_idvl(ind) for ind in pop_denorm])
         best_idx = np.argmin(fitness)
-        best = pop_denorm[best_idx]
+        best_x = pop_denorm[best_idx]
+        best_f = fitness[best_idx]
         # 整体平均和历史最高
         history_mean_fitness = []
         history_best_fitness = []
@@ -269,14 +270,15 @@ class Optimizer:
                     trial = np.round(trial, 4)
                     trial_denorm = min_b + trial * diff
 
-                    f = self.idvl_eval(trial_denorm)
-                    current_generation_fitness.append(f)
-                    if f < fitness[j]:
-                        fitness[j] = f
+                    trial_f = self.idvl_eval(trial_denorm)
+                    current_generation_fitness.append(trial_f)
+                    if trial_f < fitness[j]:
+                        fitness[j] = trial_f
                         pop[j] = trial
-                        if f < fitness[best_idx]:
+                        if trial_f < best_f:
                             best_idx = j
-                            best = trial_denorm
+                            best_x = trial_denorm
+                            best_f=trial_f
 
             else:# multi indvl run mode
                 input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
@@ -287,12 +289,12 @@ class Optimizer:
                         fitness[idvl_idx] = trial_f
                         pop[idvl_idx] = trial
                         if trial_f < fitness[best_idx]:
-                            best_idx = idvl_idx
-                            best = trial_denorm
+                            best_f = trial_f
+                            best_x = trial_denorm
 
             history_mean_fitness.append(np.mean(current_generation_fitness))
-            history_best_fitness.append(fitness[best_idx])
-            yield best, fitness[best_idx], pop, fitness
+            history_best_fitness.append(best_f)
+            yield best_x, best_f, pop, fitness
 
     def GA(self):
         def selection(population, scores, k=5):
