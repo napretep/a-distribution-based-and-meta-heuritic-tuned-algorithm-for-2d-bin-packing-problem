@@ -288,7 +288,7 @@ class Optimizer:
                     if trial_f < fitness[idvl_idx]:
                         fitness[idvl_idx] = trial_f
                         pop[idvl_idx] = trial
-                        if trial_f < fitness[best_idx]:
+                        if trial_f < best_f:
                             best_f = trial_f
                             best_x = trial_denorm
 
