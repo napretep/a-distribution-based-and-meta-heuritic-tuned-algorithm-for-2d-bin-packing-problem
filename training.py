@@ -176,12 +176,14 @@ class Optimizer:
 
         best_score: "np.ndarray|None" = None
         final_best_x: "np.ndarray|None" = None
-        for best_x, best_fitness, avg_fitness in optimizer():
+        for best_x, best_fitness, pop, fitness in optimizer():
+            std_value = np.std(np.std(pop, axis=0))
+            avg_fitness = np.mean(fitness)
             self.time_recorder.append((time()))
             if best_score is None:
                 best_score = np.array([])
             print(
-                f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1] - self.time_recorder[-2], 2)}s,avg_score={round(1 / avg_fitness * 100, 3)}%,hist_best_score={round(1 / best_fitness * 100, 3)}%,x={list(best_x)}")
+                f"\ngen={self.current_gen},time_use={round(self.time_recorder[-1] - self.time_recorder[-2], 2)}s,pop_std={std_value},avg_score={round(1 / avg_fitness * 100, 3)}%,hist_best_score={round(1 / best_fitness * 100, 3)}%,x={list(best_x)}")
             self.training_log.append([1 / best_fitness, 1 / avg_fitness])
             if (self.current_gen + 1) % 100 == 0:
                 np.save(
@@ -268,7 +270,7 @@ class Optimizer:
 
             history_mean_fitness.append(np.mean(current_generation_fitness))
             history_best_fitness.append(fitness[best_idx])
-            yield best, fitness[best_idx], history_mean_fitness[-1]
+            yield best, fitness[best_idx], pop, fitness
 
     def GA(self):
         def selection(population, scores, k=5):
@@ -315,26 +317,26 @@ class Optimizer:
             selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7, 1)),
                                                 replace=False)
 
-            new_pop =[]
-            for i in range(int(self.pop_size/2)):
+            new_pop = np.zeros((self.pop_size*2, self.total_param_num))
+            for i in range(int(self.pop_size)):
                 p1 = selection(pop, scores)
                 p2 = selection(pop, scores)
                 offspring = crossover(p1, p2, self.crossover/3)
 
-                new_pop.append(mutation(offspring[0]))
-                new_pop.append(mutation(offspring[1]))
+                new_pop[i]=mutation(offspring[0])
+                new_pop[self.pop_size+i]=mutation(offspring[1])
 
             new_scores = np.array(self.p.map(g.run_pop, new_pop))
-            # new_idx = np.argsort(new_scores)[self.pop_size:]
-            pop = new_pop#[new_idx]
-            scores = new_scores#[new_idx]
+            new_idx = np.argsort(new_scores)[:self.pop_size]
+            pop = new_pop[new_idx]
+            scores = new_scores[new_idx]
             best_ix = np.argmin(scores)
             best = pop[best_ix]
             if scores[best_ix] < history_best_f:
                 history_best_x = best
                 history_best_f = scores[best_ix]
-            print("std=",np.std(np.std(pop,axis=0)))
-            yield history_best_x, history_best_f, np.mean(scores)
+
+            yield history_best_x, history_best_f, pop, scores
 
 
 
