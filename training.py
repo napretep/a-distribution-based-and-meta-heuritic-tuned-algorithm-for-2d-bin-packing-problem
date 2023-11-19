@@ -168,7 +168,7 @@ class Optimizer:
         """
         self.total_param_num = BinPacking2DAlgo.get_algo_parameters_length(algo_name)
         self.input_data = None
-        self.bounds = [[0, 5]] * self.total_param_num
+        self.bounds = [[0, self.total_param_num]] * self.total_param_num
         self.mutation = 0.2
         self.crossover = 0.9
         self.p = p
@@ -240,7 +240,7 @@ class Optimizer:
                 print("\nrestart")
                 best_avg_fitness = np.min(history_mean_fitness[-10:])
                 for k in range(self.pop_size):
-                    if np.random.rand()>=0.5:
+                    if np.random.rand()>=0.2:
                         pop[k]=np.round(np.random.rand(1,dimensions),4)
                         idvl_denorm=min_b+pop[k]*diff
                         fitness[k]=se.run_idvl(idvl_denorm)

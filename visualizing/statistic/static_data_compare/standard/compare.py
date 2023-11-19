@@ -88,8 +88,37 @@ def run_data_4():
     plt.show()
 
 
+
+def load_data_compare_new():
+    algo_type = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}"]
+    data_sets = [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]
+    scales = [1000]
+    results = []
+
+
+
+    for data in data_sets:
+        new_data_path = rf"D:\代码运行数据\Dist_MaxRect_traininglog_standard_{data}_sample1000_gen500.npy"
+        print(new_data_path)
+        print(np.max(np.load(new_data_path)[:,0]))
+        for algo in algo_type:
+
+            for scale in scales:
+                result = np.load(f"./standard_{data}_{algo}_{scale}_.npy")
+
+                print(f"./standard_{data}_{algo}_{scale}_.npy")
+                print(np.mean(result))
+                # for result_i in result:
+                #     results.append({
+                #             "algo_name": algo,
+                #             "data_set" : data,
+                #             "scale"    : scale,
+                #             "result"   : result_i
+                #     })
+        print("")
+
+
 if __name__ == "__main__":
     # run_data(4)
-    run_data_6()
-    run_data_4()
+    load_data_compare_new()
     pass
