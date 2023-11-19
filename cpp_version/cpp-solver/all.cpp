@@ -1013,12 +1013,7 @@ public:
 
         float item_sorting(float item_width, float item_height)const {
             vector<float> X = {
-                    (item_width * item_height) / (parent->minL * parent->maxL),
-                    item_height / item_width,
-                    static_cast<float>((item_width * item_height) / parent->material.area()),
-                    abs(item_width - item_height) / (parent->maxL - parent->minL),
-                    item_height / parent->maxL,
-                    item_width / parent->minL,
+                    
                     1-(item_width * item_height) / (parent->minL * parent->maxL),
                     1-item_height / item_width,
                     1-static_cast<float>((item_width * item_height) / parent->material.area()),
@@ -1026,6 +1021,11 @@ public:
                     1-item_height / parent->maxL,
                     1-item_width / parent->minL,
             };
+            auto X_len = X.size();
+            for (auto i = 0; i < X_len; i++) {
+                X.push_back(1 - X.at(i));
+            }
+
             auto p = get_item_sorting_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
         }
@@ -1033,23 +1033,23 @@ public:
             auto item_rect = item.get_rect();
             auto container_rect = container.rect;
             vector<float> X = {
-                    1-item_rect.area() / container_rect.area(),
-                    1-this->parent->current_maxL / container_rect.width(),
-                    1-this->parent->current_minL / container_rect.height(),
-                    1-item_rect.width() / container_rect.width(),
-                    1-item_rect.height() / container_rect.height(),
-                    1-container_rect.area() / parent->material.area(),
-                    1-container_rect.start.x / parent->material.width(),
-                    1-container_rect.start.y / parent->material.height(),
-                   item_rect.area() / container_rect.area(),
-                   this->parent->current_maxL / container_rect.width(),
-                   this->parent->current_minL / container_rect.height(),
-                   item_rect.width() / container_rect.width(),
-                   item_rect.height() / container_rect.height(),
-                   container_rect.area() / parent->material.area(),
-                   container_rect.start.x / parent->material.width(),
-                   container_rect.start.y / parent->material.height(),
+                   1-item_rect.area() / container_rect.area(),
+                   1 - this->parent->current_maxL / container_rect.width(),
+                   1 - this->parent->current_minL / container_rect.height(),
+                   1 - item_rect.width() / container_rect.width(),
+                   1 - item_rect.height() / container_rect.height(),
+                   1 - container_rect.area() / parent->material.area(),
+                   1 - container_rect.start.x / parent->material.width(),
+                   1 - container_rect.start.y / parent->material.height(),
+                   
             };
+            auto X_len = X.size();
+            for (auto i = 0; i < X_len; i++) {
+                X.push_back(1 - X.at(i));
+            }
+
+
+
             auto p = get_container_scoring_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
         }

@@ -168,8 +168,8 @@ class Optimizer:
         """
         self.total_param_num = BinPacking2DAlgo.get_algo_parameters_length(algo_name)
         self.input_data = None
-        self.bounds = [[-self.total_param_num*self.total_param_num, self.total_param_num*self.total_param_num]] * self.total_param_num
-        self.mutation = 0.4
+        self.bounds = [[0, 5]] * self.total_param_num
+        self.mutation = 0.2
         self.crossover = 0.9
         self.p = p
         self.eval_selector = eval_selector  # "multi" "single"
@@ -240,7 +240,7 @@ class Optimizer:
                 print("\nrestart")
                 best_avg_fitness = np.min(history_mean_fitness[-10:])
                 for k in range(self.pop_size):
-                    if fitness[k]>=best_avg_fitness or np.random.rand()>=0.5:
+                    if np.random.rand()>=0.5:
                         pop[k]=np.round(np.random.rand(1,dimensions),4)
                         idvl_denorm=min_b+pop[k]*diff
                         fitness[k]=se.run_idvl(idvl_denorm)
@@ -268,29 +268,28 @@ class Optimizer:
                         cross_points[np.random.randint(0, dimensions)] = True
                     trial = np.where(cross_points, mutant, pop[j])
                     trial = np.round(trial, 4)
-                    trial_denorm = min_b + trial * diff
+                    trial_X = min_b + trial * diff
 
-                    trial_f = self.idvl_eval(trial_denorm)
+                    trial_f = se.run_idvl(trial_X)
                     current_generation_fitness.append(trial_f)
                     if trial_f < fitness[j]:
                         fitness[j] = trial_f
                         pop[j] = trial
                         if trial_f < best_f:
-                            best_idx = j
-                            best_x = trial_denorm
+                            best_x = trial_X
                             best_f=trial_f
 
             else:# multi indvl run mode
                 input_env = [self.get_DE_multiArgs(j,pop,min_b,max_b,diff,fitness) for j in selected_indices]
                 results = self.p.map(sub_process_DE_pop_eval, input_env)
-                for trial_f,trial_denorm,trial, idvl_idx in results:
+                for trial_f,trial_X,trial, idvl_idx in results:
                     current_generation_fitness.append(trial_f)
                     if trial_f < fitness[idvl_idx]:
                         fitness[idvl_idx] = trial_f
                         pop[idvl_idx] = trial
                         if trial_f < best_f:
                             best_f = trial_f
-                            best_x = trial_denorm
+                            best_x = trial_X
 
             history_mean_fitness.append(np.mean(current_generation_fitness))
             history_best_fitness.append(best_f)
@@ -458,8 +457,8 @@ class Training:
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
     t = Training([
-        # [华为杯_data, PRODUCTION_DATA1],
-        [外包_data, PRODUCTION_DATA2],
+        [华为杯_data, PRODUCTION_DATA1],
+        # [外包_data, PRODUCTION_DATA2],
         # [随机_data, RANDOMGEN_DATA]
     ],
         training_type=[STANDARD],
