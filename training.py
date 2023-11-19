@@ -149,7 +149,7 @@ class Optimizer:
         """
         self.total_param_num = BinPacking2DAlgo.get_algo_parameters_length(algo_name)
         self.input_data = None
-        self.bounds = [[-5, 5]] * self.total_param_num
+        self.bounds = [[-self.total_param_num*self.total_param_num, self.total_param_num*self.total_param_num]] * self.total_param_num
         self.mutation = 0.4
         self.crossover = 0.9
         self.p = p
