@@ -90,7 +90,7 @@ def run_data_4():
 
 
 def load_data_compare_new():
-    algo_type = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}"]
+    algo_type = [AlgoName.Skyline, f"{STANDARD}{AlgoName.Dist_Skyline}"]#[AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}"]
     data_sets = [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]
     scales = [1000]
     results = []

@@ -240,7 +240,7 @@ class Optimizer:
                 print("\nrestart")
                 #best_avg_fitness = np.mean(history_mean_fitness[-50:])
                 for k in range(self.pop_size):
-                    if  np.mean(history_mean_fitness[-50:]) < fitness[k] or np.random.rand()>=0.7:
+                    if   np.random.rand()>=0.5:
                         pop[k]=np.round(np.random.rand(1,dimensions),4)
                         idvl_denorm=min_b+pop[k]*diff
                         fitness[k]=se.run_idvl(idvl_denorm)
