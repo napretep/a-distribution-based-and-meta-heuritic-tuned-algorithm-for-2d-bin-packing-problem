@@ -236,7 +236,7 @@ class Optimizer:
         print("\niter start")
         for i in range(self.max_iter):
 
-            if len(history_best_fitness)>50 and np.var(history_mean_fitness[-50:])<1e-9:
+            if len(history_best_fitness)>50 and np.var(history_best_fitness[-50:])<1e-9:
                 print("\nrestart")
                 #best_avg_fitness = np.mean(history_mean_fitness[-50:])
                 for k in range(self.pop_size):
