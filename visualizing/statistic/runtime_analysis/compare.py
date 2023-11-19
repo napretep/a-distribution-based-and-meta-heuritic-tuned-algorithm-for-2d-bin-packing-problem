@@ -82,9 +82,9 @@ def run_experiment():
 
 
 
-def run_compare(algo_names):
+def run_compare(algo_names1 , algo_names2):
     fig, axs = plt.subplots(1, 2, figsize=(20, 4))
-    side_algos = [algo_names,algo_names[:-1]]
+    side_algos = [algo_names1,algo_names2]
     for col in range(2):
         for algo_type in side_algos[col]:
             mean_datas = []
@@ -117,5 +117,5 @@ def run_compare(algo_names):
     plt.show()
 
 if __name__ == "__main__":
-    run_compare(algo_names)
+    run_compare([AlgoName.Dist_Skyline,AlgoName.Skyline,],[AlgoName.Dist_MaxRect, AlgoName.MaxRect])
     pass

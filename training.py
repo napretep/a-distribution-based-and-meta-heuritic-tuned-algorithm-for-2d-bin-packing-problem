@@ -85,7 +85,7 @@ def sub_process_DE_pop_eval(arg:DE_MultiArgs):
     if not np.any(cross_points):
         cross_points[np.random.randint(0, arg.dimensions)] = True
     trial = np.where(cross_points, mutant, arg.pop[arg.idvl_idx])
-    trial = np.round(trial, 3)
+    trial = np.round(trial, 4)
     trial_denorm = arg.min_b + trial * arg.diff
     trial_denorm = np.where(trial_denorm < arg.min_b, arg.min_b, trial_denorm)
     trial_denorm = np.where(mutant > arg.max_b, arg.max_b, trial_denorm)
@@ -104,13 +104,14 @@ def sub_process_DE_pop_eval(arg:DE_MultiArgs):
 
 
 
-class pop_scores_generator:
-    def __init__(self,data_name,data_sample_scale,random_ratio,eval_run_count,algo_name):
+class scores_evaluator:
+    def __init__(self,p:multiprocessing.Pool,data_name,data_sample_scale,random_ratio,eval_run_count,algo_name):
         self.data_name = data_name
         self.data_sample_scale = data_sample_scale
         self.random_ratio=random_ratio
         self.eval_run_count=eval_run_count
         self.algo_name = algo_name
+        self.p=p
         pass
 
     def run_pop(self, trial_denorm):
@@ -130,9 +131,27 @@ class pop_scores_generator:
 
         return mean
 
+    def run_idvl(self,weights):
+        start = time()
 
-
-
+        datas = [SingleAlgoArgs(weights=weights,
+                                algo_name=self.algo_name,
+                                data_sample_scale=self.data_sample_scale,
+                                data_set_name=self.data_name,
+                                random_ratio=self.random_ratio)
+                 for i in range(self.eval_run_count)]
+        result = self.p.map(sub_process_idvl_eval, datas)
+        result = np.array(result)
+        # print(result)
+        mean = np.mean(result)
+        std = np.std(result)
+        cutoff = std * 3
+        lower, upper = mean - cutoff, mean + cutoff
+        result = result[(result > lower) & (result < upper)]
+        mean = np.mean(result)
+        end = time()
+        print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
+        return 1/mean
 
 class Optimizer:
     def __init__(self,p:multiprocessing.Pool, data_set, data_set_name, eval_selector=EvalSelect.Single, pop_size=20, eval_run_count=40,
@@ -200,13 +219,14 @@ class Optimizer:
         pass
 
     def DE(self):
+        se = scores_evaluator(self.p, self.data_set_name, self.data_sample_scale, self.random_ratio, self.eval_run_count, self.algo_name)
         print("optimizer init")
         dimensions = self.total_param_num
-        pop = np.round(np.random.rand(self.pop_size, dimensions),3)
+        pop = np.round(np.random.rand(self.pop_size, dimensions),4)
         min_b, max_b = np.asarray(self.bounds).T
         diff = np.fabs(min_b - max_b)
         pop_denorm = min_b + pop * diff
-        fitness = np.asarray([self.idvl_eval(ind) for ind in pop_denorm])
+        fitness = np.asarray([se.run_idvl(ind) for ind in pop_denorm])
         best_idx = np.argmin(fitness)
         best = pop_denorm[best_idx]
         # 整体平均和历史最高
@@ -219,10 +239,12 @@ class Optimizer:
                 print("\nrestart")
                 best_avg_fitness = np.min(history_mean_fitness[-10:])
                 for k in range(self.pop_size):
-                    if fitness[k]>best_avg_fitness:
-                        pop[k]=np.round(np.random.rand(1,dimensions),3)
+                    if fitness[k]>=best_avg_fitness or np.random.rand()>=0.5:
+                        pop[k]=np.round(np.random.rand(1,dimensions),4)
                         idvl_denorm=min_b+pop[k]*diff
-                        fitness[k]=self.idvl_eval(idvl_denorm)
+                        fitness[k]=se.run_idvl(idvl_denorm)
+
+
                 history_best_fitness = []
                 history_mean_fitness = []
 
@@ -231,7 +253,7 @@ class Optimizer:
             selected_indices = np.random.choice(range(self.pop_size), int(self.pop_size * np.random.uniform(0.7, 1)),
                                                 replace=False)
 
-            pop = np.round(pop, 3)
+            pop = np.round(pop,4)
             if self.eval_selector == EvalSelect.Single:
 
                 for j in selected_indices:
@@ -244,7 +266,7 @@ class Optimizer:
                     if not np.any(cross_points):
                         cross_points[np.random.randint(0, dimensions)] = True
                     trial = np.where(cross_points, mutant, pop[j])
-                    trial = np.round(trial, 3)
+                    trial = np.round(trial, 4)
                     trial_denorm = min_b + trial * diff
 
                     f = self.idvl_eval(trial_denorm)
@@ -283,7 +305,7 @@ class Optimizer:
                 # 判断是否进行变异
                 if np.random.rand() < self.mutation/3:
                     # 随机选择变异点
-                    new_value = np.round(np.random.uniform(min_b[0], max_b[0], 1),2)[0]
+                    new_value = np.round(np.random.uniform(min_b[0], max_b[0], 1),4)[0]
                     offspring[i]= new_value
             return offspring
         def crossover(p1, p2, r_cross):
@@ -302,9 +324,9 @@ class Optimizer:
 
         min_b, max_b = np.asarray(self.bounds).T
         # 变异操作
-        pop = np.round(np.random.uniform(min_b, max_b, (self.pop_size,self.total_param_num)), 2)
+        pop = np.round(np.random.uniform(min_b, max_b, (self.pop_size,self.total_param_num)), 4)
         scores = np.array([self.idvl_eval(i) for i in pop])
-        g = pop_scores_generator(self.data_set_name,self.data_sample_scale,self.random_ratio,self.eval_run_count,self.algo_name)
+        g = scores_evaluator(self.data_set_name, self.data_sample_scale, self.random_ratio, self.eval_run_count, self.algo_name)
 
         best_idx = np.argmin(scores)
         history_best_x = pop[best_idx]
@@ -359,31 +381,31 @@ class Optimizer:
                 pop_fitness=fitness,
         )
         return args
-
-    def idvl_eval(self, weights: np.ndarray):
-        """ 这个代码用于专门执行单一的评估操作 用map来并行single_eval"""
-        start = time()
-
-        datas = [SingleAlgoArgs(weights=weights,
-                                algo_name=self.algo_name,
-                                data_sample_scale=self.data_sample_scale,
-                                data_set_name = self.data_set_name,
-                                random_ratio=self.random_ratio)
-                 for i in range(self.eval_run_count)]
-        result = self.p.map(sub_process_idvl_eval, datas)
-        result = np.array(result)
-        # print(result)
-        mean = np.mean(result)
-        std = np.std(result)
-        cutoff = std * 3
-        lower, upper = mean - cutoff, mean + cutoff
-        result = result[(result > lower) & (result < upper)]
-        mean = np.mean(result)
-        end = time()
-        print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
-        gc.collect()
-        # show_memory()
-        return 1 / mean
+    #
+    # def idvl_eval(self, weights: np.ndarray):
+    #     """ 这个代码用于专门执行单一的评估操作 用map来并行single_eval"""
+    #     start = time()
+    #
+    #     datas = [SingleAlgoArgs(weights=weights,
+    #                             algo_name=self.algo_name,
+    #                             data_sample_scale=self.data_sample_scale,
+    #                             data_set_name = self.data_set_name,
+    #                             random_ratio=self.random_ratio)
+    #              for i in range(self.eval_run_count)]
+    #     result = self.p.map(sub_process_idvl_eval, datas)
+    #     result = np.array(result)
+    #     # print(result)
+    #     mean = np.mean(result)
+    #     std = np.std(result)
+    #     cutoff = std * 3
+    #     lower, upper = mean - cutoff, mean + cutoff
+    #     result = result[(result > lower) & (result < upper)]
+    #     mean = np.mean(result)
+    #     end = time()
+    #     print(f"{round(end - start, 2)}s,{round(mean * 100, 2)}%", end=", ")
+    #     gc.collect()
+    #     # show_memory()
+    #     return 1 / mean
 
 
 def solution_draw(solution: BinPacking2DAlgo.Algo, text=""):
@@ -423,7 +445,7 @@ class Training:
                         d = Optimizer(p, data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
                                       eval_selector=EvalSelect.Multi,
                                       algo_name=algo_name)
-                        d.run_v2(d.GA)
+                        d.run_v2(d.DE)
 
                     # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
                     # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))

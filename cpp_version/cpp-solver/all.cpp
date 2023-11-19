@@ -1086,22 +1086,31 @@ public:
     }
     int current_item_idx;
     vector<ItemScore> find_possible_item_candidates(Item item) {
-        vector<ItemScore> score_list;
-        for (auto& plan : this->solution) {
-            for (auto& container : plan.remain_containers) {
-                checkAndScoreItem(item, container, score_list);
-                auto itemT = item.transpose();
-                checkAndScoreItem(itemT, container, score_list);
+        vector<ItemScore> scores_li;
+        // from existing containers
+        for (ProtoPlan& plan : solution)
+        {
+
+            for (auto& container : plan.remain_containers)
+            {
+                Item item_prepare = item.copy();
+                checkAndScoreItem(item_prepare, container, scores_li);
+                Item item_prepareT = item.copy().transpose();
+                checkAndScoreItem(item_prepareT, container, scores_li);
             }
         }
-        if (score_list.size() == 0) {
-            auto container = Container(Rect(0, 0, this->material.width(), this->material.height()));
-            checkAndScoreItem(item, container, score_list);
-            auto itemT = item.transpose();
-            checkAndScoreItem(itemT, container, score_list);
+        Container fake_container = Container(material.copy());
+        Item item_prepare = item.copy();
+        checkAndScoreItem(item_prepare, fake_container, scores_li);
+        Item item_prepareT = item.transpose();
+        checkAndScoreItem(item_prepareT, fake_container, scores_li);
+
+        if (scores_li.size() == 0) {
+            throw runtime_error("no possible item candidates");
         }
-        return score_list;
+        return scores_li;
     }
+
     void checkAndScoreItem(Item item, Container& container, std::vector<ItemScore>& score_list) {        
         auto btmleft_pos = container.rect.start;
         if (container.contains(item.size + btmleft_pos)) {

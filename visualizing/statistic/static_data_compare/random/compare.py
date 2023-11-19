@@ -33,7 +33,6 @@ def run_compare_algo(algo_end=6):
         for algo in selected_algo_names:
             for scale in scales:
                 result_data = np.load(f"./{NOISED}_{data_set}_{algo}_{scale}_.npy")
-                print(result_data.shape) # (30,36)
                 for i in range(result_data.shape[0]):
                     for j in range(result_data.shape[1]):
                         results.append({
@@ -82,5 +81,5 @@ def run_compare_algo(algo_end=6):
 
 if __name__ == "__main__":
     # run_compare_algo(3)
-    run_compare_algo(4)
+    run_compare_algo()
     pass
