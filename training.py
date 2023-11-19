@@ -236,11 +236,11 @@ class Optimizer:
         print("\niter start")
         for i in range(self.max_iter):
 
-            if len(history_best_fitness)>50 and np.var(history_best_fitness[-50:])<1e-9:
+            if len(history_best_fitness)>50 and np.var(history_mean_fitness[-50:])<1e-9:
                 print("\nrestart")
-                best_avg_fitness = np.min(history_mean_fitness[-50:])
+                #best_avg_fitness = np.mean(history_mean_fitness[-50:])
                 for k in range(self.pop_size):
-                    if np.random.rand()>=0.4:
+                    if  np.mean(history_mean_fitness[-50:]) < fitness[k] or np.random.rand()>=0.7:
                         pop[k]=np.round(np.random.rand(1,dimensions),4)
                         idvl_denorm=min_b+pop[k]*diff
                         fitness[k]=se.run_idvl(idvl_denorm)
