@@ -120,5 +120,5 @@ def load_data_compare_new():
 
 if __name__ == "__main__":
     # run_data(4)
-    load_data_compare_new()
+    run_data_6()
     pass

@@ -46,6 +46,11 @@ def run_test():
     plt.legend()
     plt.show()
 
+
+def test():
+    data = np.load("Dist_Skyline_traininglog_noised_production_data2_sample1000_gen500.npy")
+    print(np.max(data))
+
 if __name__ == "__main__":
-    run()
+    test()
     pass

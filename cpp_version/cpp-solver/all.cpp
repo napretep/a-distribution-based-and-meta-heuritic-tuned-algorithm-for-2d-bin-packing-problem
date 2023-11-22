@@ -998,8 +998,8 @@ public:
         Dist2* parent;
         vector<float>parameters;
         struct ParameterCount {
-            static constexpr auto pos_scoring = 24;
-            static constexpr auto sort_scoring = 12;
+            static constexpr auto pos_scoring = 28;
+            static constexpr auto sort_scoring = 16;
             static constexpr auto total = pos_scoring + sort_scoring;
         };
         vector<float> get_item_sorting_parameters()const {
@@ -1014,12 +1014,14 @@ public:
         float item_sorting(float item_width, float item_height)const {
             vector<float> X = {
                     
-                    1-(item_width * item_height) / (parent->minL * parent->maxL),
-                    1-item_height / item_width,
-                    1-static_cast<float>((item_width * item_height) / parent->material.area()),
-                    1-abs(item_width - item_height) / (parent->maxL - parent->minL),
-                    1-item_height / parent->maxL,
-                    1-item_width / parent->minL,
+                    1 - (item_width * item_height) / (parent->minL * parent->maxL),
+                    1 - abs(item_width - item_height) / (parent->maxL - parent->minL),
+                    1 - (item_width * item_height) / parent->material.area(),
+                    1 - item_height / item_width,
+                    1 - item_height / parent->maxL,
+                    1 - item_width / parent->minL,
+                    1 - item_width / parent->material.width(),
+                    1 - item_height / parent->material.height(),
             };
             auto X_len = X.size();
             for (auto i = 0; i < X_len; i++) {
@@ -1042,6 +1044,8 @@ public:
                    1 - this->parent->current_minL / container_rect.height(),
                    1 - item_rect.width() / container_rect.width(),
                    1 - item_rect.height() / container_rect.height(),
+                   1 - item_rect.width() / parent->material.width(),
+                   1 - item_rect.height() / parent->material.height(),
                    1 - item_rect.area() / parent->material.area(),
                    1 - container_rect.area() / parent->material.area(),
                    1 - container_rect.start.x / parent->material.width(),
@@ -1271,9 +1275,9 @@ public:
         Dist3* parent;
         vector<float>parameters;
         struct ParameterCount {
-            static constexpr auto skyline_pos_scoring =24;
-            static constexpr auto wastemap_pos_scoring = 24;
-            static constexpr auto sort_scoring = 12;
+            static constexpr auto skyline_pos_scoring =28;
+            static constexpr auto wastemap_pos_scoring = 28;
+            static constexpr auto sort_scoring = 16;
             static constexpr auto total = sort_scoring + wastemap_pos_scoring + skyline_pos_scoring;
         };
         vector<float> get_item_sorting_parameters()const {
@@ -1291,19 +1295,19 @@ public:
 
         float item_sorting(float item_width, float item_height)const {
             vector<float> X = {
-                    (item_width * item_height) / (parent->minL * parent->maxL),
-                    item_height / item_width,
-                    static_cast<float>((item_width * item_height) / parent->material.area()),
-                    abs(item_width - item_height) / (parent->maxL - parent->minL),
-                    item_height / parent->maxL,
-                    item_width / parent->minL,
                     1 - (item_width * item_height) / (parent->minL * parent->maxL),
-                    1 - item_height / item_width,
-                    1 - static_cast<float>((item_width * item_height) / parent->material.area()),
                     1 - abs(item_width - item_height) / (parent->maxL - parent->minL),
+                    1 - (item_width * item_height) / parent->material.area(),
+                    1 - item_height / item_width,
                     1 - item_height / parent->maxL,
                     1 - item_width / parent->minL,
+                    1 - item_width / parent->material.width(),
+                    1 - item_height / parent->material.height(),
             };
+            auto X_len = X.size();
+            for (auto i = 0; i < X_len; i++) {
+                X.push_back(1 - X.at(i));
+            }
             auto p = get_item_sorting_parameters();
             return std::inner_product(X.begin(), X.end(), p.begin(), 0.0);
         }
@@ -1336,6 +1340,8 @@ public:
                    1 - this->parent->current_minL / ideal_skyline_rect.height(),
                    1 - item_rect.width() / ideal_skyline_rect.width(),
                    1 - item_rect.height() / ideal_skyline_rect.height(),
+                   1 - item_rect.width() / parent->material.width(),
+                   1 - item_rect.height() / parent->material.height(),
                    1 - item_rect.area() / parent->material.area(),
                    1 - ideal_skyline_rect.area() / parent->material.area(),
                    1 - begin_container_rect.start.x / parent->material.width(),
@@ -1367,6 +1373,8 @@ public:
                    1 - this->parent->current_minL / container_rect.height(),
                    1 - item_rect.width() / container_rect.width(),
                    1 - item_rect.height() / container_rect.height(),
+                   1 - item_rect.width() / parent->material.width(),
+                   1 - item_rect.height() / parent->material.height(),
                    1 - item_rect.area() / parent->material.area(),
                    1 - container_rect.area() / parent->material.area(),
                    1 - container_rect.start.x / parent->material.width(),
@@ -1452,10 +1460,244 @@ public:
     }
     Dist3(vector<float> items, pair<float, float> material = test_material, bool is_debug = false) :Dist3(items, material, "", is_debug) {};
 
-    //void make_wastemap_scores(vector<Dist3::Score>& scores) {
+    void get_wastemap_scores(Item& new_item, vector<Dist3::Score>& scores) {
+        for (auto& plan : solution) {
 
-    //}
+            for (auto i = 0; i < plan.WasteMap.size(); i++) {
+                Rect waste_rect = plan.WasteMap.at(i).rect;
+                if (waste_rect.contains(new_item.size + waste_rect.start)) {
+                    auto item_to_append = new_item.copy();
+                    item_to_append.pos = waste_rect.start.copy();
+                    auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i), plan.ID));
+                    scores.push_back(score);
+                }
+                auto itemT = new_item.transpose();
+                if (waste_rect.contains(itemT.size + waste_rect.start)) {
+                    auto item_to_append = itemT.copy();
+                    item_to_append.pos = waste_rect.start.copy();
+                    auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i), plan.ID));
+                    scores.push_back(score);
+                }
+            }
 
+        }
+    }
+    void get_skyline_scores(Item& new_item, vector<Dist3::Score>& scores) {
+        for (auto& plan : solution) {
+            for (auto i = 0; i < plan.SkylineContainers.size(); i++) {
+                Rect skyline_rect = plan.SkylineContainers.at(i).rect;
+                int idx = get_placable_area(new_item, i, plan.SkylineContainers);
+                if (idx >= 0) {
+                    auto item_to_append = new_item.copy();
+                    item_to_append.pos = skyline_rect.start.copy();
+                    float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers, plan.ID);
+                    auto score = Score(item_to_append, { i,idx + 1 }, plan.ID, ContainerType::Skyline, score_calc);
+                    scores.push_back(score);
+                }
+                auto itemT = new_item.transpose();
+                idx = get_placable_area(itemT, i, plan.SkylineContainers);
+                if (idx >= 0) {
+                    auto item_to_append = itemT.copy();
+                    item_to_append.pos = skyline_rect.start.copy();
+                    float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers, plan.ID);
+                    auto score = Score(item_to_append, { i,idx + 1 }, plan.ID, ContainerType::Skyline, score_calc);
+                    scores.push_back(score);
+                }
+            }
+        }
+    }
+    void get_newbin_scores(Item& new_item, vector<Dist3::Score>& scores) {
+        vector<Container> fake_container = { Container(Rect(this->material.start, this->material.end)) };
+        int idx = get_placable_area(new_item, 0, fake_container);
+        if (idx >= 0) {
+            auto item_to_append = new_item.copy();
+            auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container, -1));
+            scores.push_back(score);
+        }
+        auto itemT = new_item.transpose();
+        idx = get_placable_area(itemT, 0, fake_container);
+        if (idx >= 0) {
+            auto item_to_append = itemT.copy();
+            auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container, -1));
+            scores.push_back(score);
+        }
+    }
+    void update_skyline_container(Dist3::Plan& plan,Score& best_score, Rect new_rect) {
+        auto removed_container_start = plan.SkylineContainers.begin() + best_score.container_range.first;
+        auto removed_container_end = plan.SkylineContainers.begin() + best_score.container_range.second;
+        vector<Container> removed_containers(removed_container_start, removed_container_end);
+        plan.SkylineContainers.erase(removed_container_start, removed_container_end);
+        auto& last_c = removed_containers.back();
+        optional<Container> maybe_container_right = nullopt;
+        optional<Container> maybe_container_top = nullopt;
+        maybe_container_top = Container(Rect(new_rect.topLeft(), POS(new_rect.topRight().x, this->material.height())), plan.ID);
+        if (new_rect.bottomRight().x != last_c.rect.end.x) {
+            maybe_container_right = Container(Rect(POS(new_rect.bottomRight().x, last_c.rect.start.y), POS(last_c.rect.end.x, this->material.height())), plan.ID);
+        }
+        else {
+            if (maybe_container_right.has_value()) {
+                maybe_container_right.reset();
+            }
+        }
+
+        for (auto& sky_c : plan.SkylineContainers) {
+            if (not maybe_container_right.has_value() and not maybe_container_top.has_value()) {
+                break;
+            }
+            if (maybe_container_right.has_value()) {
+                auto& container_right = maybe_container_right.value();
+                auto result = container_right.rect & sky_c.rect;
+                if (result == TYPE::LINE) {
+                    auto diff = result.end - result.start;
+                    if (diff.x == 0) {
+                        if (sky_c.rect.bottomLeft() == container_right.rect.bottomRight()) {
+                            sky_c.rect.start = container_right.rect.start.copy();
+                            maybe_container_right.reset();
+                        }
+                        else if (sky_c.rect.bottomRight() == container_right.rect.bottomLeft()) {
+                            sky_c.rect.end = container_right.rect.end.copy();
+                            maybe_container_right.reset();
+                        }
+                    }
+                }
+
+            }
+            if (maybe_container_top.has_value()) {
+                auto& container_top = maybe_container_top.value();
+                auto result = container_top.rect & sky_c.rect;
+                if (result == TYPE::LINE) {
+                    auto diff = result.end - result.start;
+                    if (diff.x == 0) {
+                        if (sky_c.rect.bottomLeft() == container_top.rect.bottomRight()) {
+                            sky_c.rect.start = container_top.rect.start.copy();
+                            maybe_container_top.reset();
+                        }
+                        else if (sky_c.rect.bottomRight() == container_top.rect.bottomLeft()) {
+                            sky_c.rect.end = container_top.rect.end.copy();
+                            maybe_container_top.reset();
+                        }
+                    }
+                }
+
+            }
+
+        }
+        if (maybe_container_right.has_value()) {
+            plan.SkylineContainers.push_back(maybe_container_right.value());
+        }
+        if (maybe_container_top.has_value()) {
+            plan.SkylineContainers.push_back(maybe_container_top.value());
+        }
+        vector<Container> waste_rect_to_append;
+        for (auto i = 1; i < removed_containers.size(); i++) {
+            auto& waste_c = removed_containers.at(i);
+            if (new_rect.bottomRight().y > waste_c.rect.bottomRight().y) {
+                auto c = Container(Rect(waste_c.rect.bottomLeft(), POS(min(waste_c.rect.bottomRight().x, new_rect.bottomRight().x), new_rect.bottomRight().y)), plan.ID);
+                waste_rect_to_append.push_back(c);
+            }
+        }
+        for (auto& waste_c : waste_rect_to_append) {
+            plan.WasteMap.push_back(waste_c);
+        }
+    }
+    void update_wastemap_container(Dist3::Plan& plan, Score& best_score, Rect new_rect) {
+        auto& container = plan.WasteMap.at(best_score.container_range.first);
+        // generate the best split plan
+        pair<Container, Container> split_1 = {
+            Container(Rect(new_rect.topLeft(),container.rect.topRight()),best_score.plan_id),
+            Container(Rect(new_rect.bottomRight(),POS(container.rect.bottomRight().x,new_rect.topRight().y),best_score.plan_id))
+        };
+        pair<Container, Container> split_2 = {
+            Container(Rect(new_rect.topLeft(),POS(new_rect.topRight().x,container.rect.topRight().y)),best_score.plan_id),
+            Container(Rect(new_rect.bottomRight(),POS(new_rect.topRight().x,container.rect.topRight().y),best_score.plan_id))
+        };
+        auto split_1_area = max(split_1.first.rect.area(), split_1.second.rect.area());
+        auto split_2_area = max(split_2.first.rect.area(), split_2.second.rect.area());
+
+        optional<Container> maybe_newC_top = nullopt;
+        optional<Container> maybe_newC_right = nullopt;
+        if (split_1_area > split_2_area) {
+            maybe_newC_top = split_1.first;
+            maybe_newC_right = split_1.second;
+        }
+        else {
+            maybe_newC_top = split_2.first;
+            maybe_newC_right = split_2.second;
+        }
+        if (maybe_newC_top.has_value() && (maybe_newC_top.value() == TYPE::LINE or maybe_newC_top.value() == TYPE::POS)) {
+            maybe_newC_top.reset();
+        }
+        if (maybe_newC_right.has_value() && (maybe_newC_right.value() == TYPE::LINE or maybe_newC_right.value() == TYPE::POS)) {
+            maybe_newC_right.reset();
+        }
+        // maintain the old wastemap, if the new could merge to old
+        for (auto& waste_c : plan.WasteMap) {
+            if (!maybe_newC_top.has_value() && !maybe_newC_right.has_value()) {
+                break;
+            }
+            if (maybe_newC_right.has_value()) {
+                auto& newC_right = maybe_newC_right.value();
+                auto result = newC_right.rect & waste_c.rect;
+                if (result == TYPE::LINE) {
+                    auto diff = result.end - result.start;
+                    if (diff.x == 0) {
+                        if (waste_c.rect.bottomRight() == newC_right.rect.bottomLeft() and waste_c.rect.topRight() == newC_right.rect.topLeft()) {
+                            waste_c.rect.end = newC_right.rect.end.copy();
+                            maybe_newC_right.reset();
+                        }
+                        else if (waste_c.rect.bottomLeft() == newC_right.rect.bottomRight() and waste_c.rect.topLeft() == newC_right.rect.topRight()) {
+                            waste_c.rect.start = newC_right.rect.start.copy();
+                            maybe_newC_right.reset();
+                        }
+                    }
+                    else if (diff.y == 0) {
+                        if (waste_c.rect.topRight() == newC_right.rect.bottomRight() and waste_c.rect.topLeft() == newC_right.rect.bottomLeft()) {
+                            waste_c.rect.end = newC_right.rect.end.copy();
+                            maybe_newC_right.reset();
+                        }
+                        else if (waste_c.rect.bottomRight() == newC_right.rect.topRight() and waste_c.rect.bottomLeft() == newC_right.rect.topLeft()) {
+                            waste_c.rect.start = newC_right.rect.start.copy();
+                            maybe_newC_right.reset();
+                        }
+                    }
+                }
+            }
+            if (maybe_newC_top.has_value()) {
+                auto newC_top = maybe_newC_top.value();
+                auto result = newC_top.rect & waste_c.rect;
+                if (result == TYPE::LINE) {
+                    auto diff = result.end - result.start;
+                    if (diff.x == 0) {
+                        if (waste_c.rect.bottomRight() == newC_top.rect.bottomLeft() and waste_c.rect.topRight() == newC_top.rect.topLeft()) {
+                            waste_c.rect.end = newC_top.rect.end.copy();
+                            maybe_newC_top.reset();
+                        }
+                        else if (waste_c.rect.bottomLeft() == newC_top.rect.bottomRight() and waste_c.rect.topLeft() == newC_top.rect.topRight()) {
+                            waste_c.rect.start = newC_top.rect.start.copy();
+                            maybe_newC_top.reset();
+                        }
+                    }
+                    else if (diff.y == 0) {
+                        if (waste_c.rect.topRight() == newC_top.rect.bottomRight() and waste_c.rect.topLeft() == newC_top.rect.bottomLeft()) {
+                            waste_c.rect.end = newC_top.rect.end.copy();
+                            maybe_newC_top.reset();
+                        }
+                        else if (waste_c.rect.bottomRight() == newC_top.rect.topRight() and waste_c.rect.bottomLeft() == newC_top.rect.topLeft()) {
+                            waste_c.rect.start = newC_top.rect.start.copy();
+                            maybe_newC_top.reset();
+                        }
+                    }
+                }
+            }
+        }
+        if (maybe_newC_right.has_value()) {
+            plan.WasteMap.push_back(maybe_newC_right.value());
+        }
+        if (maybe_newC_top.has_value()) {
+            plan.WasteMap.push_back(maybe_newC_top.value());
+        }
+        erase(plan.WasteMap, container);
+    }
     void run() {
         // sorting the items
         sort(this->items.begin(), this->items.end(), [this](Item a,Item b) {
@@ -1470,69 +1712,13 @@ public:
         solution.clear();// avoid some strange things;
         for (auto item_idx = 0; item_idx < items.size(); item_idx++) { // load item one by one
             auto new_item = items.at(item_idx);
-
-            
             vector<Dist3::Score> scores; // init a score list;
-            for (auto& plan : solution) {
-                
-                for (auto i = 0; i < plan.WasteMap.size(); i++) {
-                    Rect waste_rect = plan.WasteMap.at(i).rect;
-                    if (waste_rect.contains(new_item.size + waste_rect.start)) {
-                        auto item_to_append = new_item.copy();
-                        item_to_append.pos = waste_rect.start.copy();
-                        auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i),plan.ID));
-                        scores.push_back(score);
-                    }
-                    auto itemT = new_item.transpose();
-                    if (waste_rect.contains(itemT.size + waste_rect.start)) {
-                        auto item_to_append = itemT.copy();
-                        item_to_append.pos = waste_rect.start.copy();
-                        auto score = Score(item_to_append, { i,i + 1 }, plan.ID, ContainerType::WasteMap, calc_wastemap_score(item_to_append, plan.WasteMap.at(i), plan.ID));
-                        scores.push_back(score);
-                    }
-                }
-
-            }
-
+            get_wastemap_scores(new_item, scores);
             if (scores.size() == 0) {
-                for (auto& plan : solution) {
-                    for (auto i = 0; i < plan.SkylineContainers.size(); i++) {
-                        Rect skyline_rect = plan.SkylineContainers.at(i).rect;
-                        int idx = get_placable_area(new_item, i, plan.SkylineContainers);
-                        if (idx >= 0) {
-                            auto item_to_append = new_item.copy();
-                            item_to_append.pos = skyline_rect.start.copy();
-                            float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers, plan.ID);
-                            auto score = Score(item_to_append, { i,idx + 1 }, plan.ID, ContainerType::Skyline, score_calc);
-                            scores.push_back(score);
-                        }
-                        auto itemT = new_item.transpose();
-                        idx = get_placable_area(itemT, i, plan.SkylineContainers);
-                        if (idx >= 0) {
-                            auto item_to_append = itemT.copy();
-                            item_to_append.pos = skyline_rect.start.copy();
-                            float score_calc = calc_skyline_score(item_to_append, i, idx, plan.SkylineContainers, plan.ID);
-                            auto score = Score(item_to_append, { i,idx + 1 }, plan.ID, ContainerType::Skyline, score_calc);
-                            scores.push_back(score);
-                        }
-                    }
-                }
+                get_skyline_scores(new_item, scores);
             }
             if (scores.size() == 0) {
-                vector<Container> fake_container = { Container(Rect(this->material.start, this->material.end)) };
-                int idx = get_placable_area(new_item, 0, fake_container);
-                if (idx >= 0) {
-                    auto item_to_append = new_item.copy();
-                    auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container,-1));
-                    scores.push_back(score);
-                }
-                auto itemT = new_item.transpose();
-                idx = get_placable_area(itemT, 0, fake_container);
-                if (idx >= 0) {
-                    auto item_to_append = itemT.copy();
-                    auto score = Score(item_to_append, { 0,1 }, -1, ContainerType::Skyline, calc_skyline_score(item_to_append, 0, idx, fake_container,-1));
-                    scores.push_back(score);
-                }
+                get_newbin_scores(new_item, scores);
             }
             if (scores.size() == 0) {
                 throw runtime_error("no possible item candidates");
@@ -1567,184 +1753,12 @@ public:
             else {
                 auto& plan = solution.at(best_score.plan_id);// load plan
                 plan.item_sequence.push_back(best_score.item);// push item
-
                 auto new_rect = best_score.item.get_rect(); // get item actual place position
                 if (best_score.type == ContainerType::WasteMap) {
-                    auto& container = plan.WasteMap.at(best_score.container_range.first);
-                    // generate the best split plan
-                    pair<Container, Container> split_1 = {
-                        Container(Rect(new_rect.topLeft(),container.rect.topRight()),best_score.plan_id),
-                        Container(Rect(new_rect.bottomRight(),POS(container.rect.bottomRight().x,new_rect.topRight().y),best_score.plan_id))
-                    };
-                    pair<Container, Container> split_2 = {
-                        Container(Rect(new_rect.topLeft(),POS(new_rect.topRight().x,container.rect.topRight().y)),best_score.plan_id),
-                        Container(Rect(new_rect.bottomRight(),POS(new_rect.topRight().x,container.rect.topRight().y),best_score.plan_id))
-                    };
-                    auto split_1_area = max(split_1.first.rect.area(), split_1.second.rect.area());
-                    auto split_2_area = max(split_2.first.rect.area(), split_2.second.rect.area());
-
-                    optional<Container> maybe_newC_top = nullopt;
-                    optional<Container> maybe_newC_right = nullopt;
-                    if (split_1_area > split_2_area) {
-                        maybe_newC_top = split_1.first;
-                        maybe_newC_right = split_1.second;
-                    }
-                    else {
-                        maybe_newC_top = split_2.first;
-                        maybe_newC_right = split_2.second;
-                    }
-                    if (maybe_newC_top.has_value() && (maybe_newC_top.value() == TYPE::LINE or maybe_newC_top.value() == TYPE::POS)) {
-                        maybe_newC_top.reset();
-                    }
-                    if (maybe_newC_right.has_value() && (maybe_newC_right.value() == TYPE::LINE or maybe_newC_right.value() == TYPE::POS)) {
-                        maybe_newC_right.reset();
-                    }
-                    // maintain the old wastemap, if the new could merge to old
-                    for (auto& waste_c : plan.WasteMap) {
-                        if (!maybe_newC_top.has_value() && !maybe_newC_right.has_value()) {
-                            break;
-                        }
-                        if (maybe_newC_right.has_value()) {
-                            auto& newC_right = maybe_newC_right.value();
-                            auto result = newC_right.rect & waste_c.rect;
-                            if (result == TYPE::LINE) {
-                                auto diff = result.end - result.start;
-                                if (diff.x == 0) {
-                                    if (waste_c.rect.bottomRight() == newC_right.rect.bottomLeft() and waste_c.rect.topRight() == newC_right.rect.topLeft()) {
-                                        waste_c.rect.end = newC_right.rect.end.copy();
-                                        maybe_newC_right.reset();
-                                    }
-                                    else if (waste_c.rect.bottomLeft() == newC_right.rect.bottomRight() and waste_c.rect.topLeft() == newC_right.rect.topRight()) {
-                                        waste_c.rect.start = newC_right.rect.start.copy();
-                                        maybe_newC_right.reset();
-                                    }
-                                }
-                                else if (diff.y == 0) {
-                                    if (waste_c.rect.topRight() == newC_right.rect.bottomRight() and waste_c.rect.topLeft() == newC_right.rect.bottomLeft()) {
-                                        waste_c.rect.end = newC_right.rect.end.copy();
-                                        maybe_newC_right.reset();
-                                    }
-                                    else if (waste_c.rect.bottomRight() == newC_right.rect.topRight() and waste_c.rect.bottomLeft() == newC_right.rect.topLeft()) {
-                                        waste_c.rect.start = newC_right.rect.start.copy();
-                                        maybe_newC_right.reset();
-                                    }
-                                }
-                            }
-                        }
-                        if (maybe_newC_top.has_value()) {
-                            auto newC_top = maybe_newC_top.value();
-                            auto result = newC_top.rect & waste_c.rect;
-                            if (result == TYPE::LINE) {
-                                auto diff = result.end - result.start;
-                                if (diff.x == 0) {
-                                    if (waste_c.rect.bottomRight() == newC_top.rect.bottomLeft() and waste_c.rect.topRight() == newC_top.rect.topLeft()) {
-                                        waste_c.rect.end = newC_top.rect.end.copy();
-                                        maybe_newC_top.reset();
-                                    }
-                                    else if (waste_c.rect.bottomLeft() == newC_top.rect.bottomRight() and waste_c.rect.topLeft() == newC_top.rect.topRight()) {
-                                        waste_c.rect.start = newC_top.rect.start.copy();
-                                        maybe_newC_top.reset();
-                                    }
-                                }
-                                else if (diff.y == 0) {
-                                    if (waste_c.rect.topRight() == newC_top.rect.bottomRight() and waste_c.rect.topLeft() == newC_top.rect.bottomLeft()) {
-                                        waste_c.rect.end = newC_top.rect.end.copy();
-                                        maybe_newC_top.reset();
-                                    }
-                                    else if (waste_c.rect.bottomRight() == newC_top.rect.topRight() and waste_c.rect.bottomLeft() == newC_top.rect.topLeft()) {
-                                        waste_c.rect.start = newC_top.rect.start.copy();
-                                        maybe_newC_top.reset();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (maybe_newC_right.has_value()) {
-                        plan.WasteMap.push_back(maybe_newC_right.value());
-                    }
-                    if (maybe_newC_top.has_value()) {
-                        plan.WasteMap.push_back(maybe_newC_top.value());
-                    }
-                    erase(plan.WasteMap, container);
-
+                    update_wastemap_container(plan, best_score, new_rect);
                 }
                 else {
-                    auto removed_container_start = plan.SkylineContainers.begin() + best_score.container_range.first;
-                    auto removed_container_end = plan.SkylineContainers.begin() + best_score.container_range.second;
-                    vector<Container> removed_containers(removed_container_start, removed_container_end);
-                    plan.SkylineContainers.erase(removed_container_start, removed_container_end);
-                    auto& last_c = removed_containers.back();
-                    optional<Container> maybe_container_right = nullopt;
-                    optional<Container> maybe_container_top = nullopt;
-                    maybe_container_top = Container(Rect(new_rect.topLeft(), POS(new_rect.topRight().x, this->material.height())), plan.ID);
-                    if (new_rect.bottomRight().x != last_c.rect.end.x) {
-                        maybe_container_right = Container(Rect(POS(new_rect.bottomRight().x, last_c.rect.start.y), POS(last_c.rect.end.x, this->material.height())),plan.ID);
-                    }
-                    else {
-                        if (maybe_container_right.has_value()) {
-                            maybe_container_right.reset();
-                        }
-                    }
-
-                    for (auto& sky_c : plan.SkylineContainers) {
-                        if (not maybe_container_right.has_value() and not maybe_container_top.has_value()) {
-                            break;
-                        }
-                        if (maybe_container_right.has_value()) {
-                            auto& container_right = maybe_container_right.value();
-                            auto result = container_right.rect & sky_c.rect;
-                            if (result == TYPE::LINE) {
-                                auto diff = result.end - result.start;
-                                if (diff.x == 0) {
-                                    if (sky_c.rect.bottomLeft() == container_right.rect.bottomRight()) {
-                                        sky_c.rect.start = container_right.rect.start.copy();
-                                        maybe_container_right.reset();
-                                    }
-                                    else if (sky_c.rect.bottomRight() == container_right.rect.bottomLeft()) {
-                                        sky_c.rect.end = container_right.rect.end.copy();
-                                        maybe_container_right.reset();
-                                    }
-                                }
-                            }
-
-                        }
-                        if (maybe_container_top.has_value()) {
-                            auto& container_top = maybe_container_top.value();
-                            auto result = container_top.rect & sky_c.rect;
-                            if (result == TYPE::LINE) {
-                                auto diff = result.end - result.start;
-                                if (diff.x == 0) {
-                                    if (sky_c.rect.bottomLeft() == container_top.rect.bottomRight()) {
-                                        sky_c.rect.start = container_top.rect.start.copy();
-                                        maybe_container_top.reset();
-                                    }
-                                    else if (sky_c.rect.bottomRight() == container_top.rect.bottomLeft()) {
-                                        sky_c.rect.end = container_top.rect.end.copy();
-                                        maybe_container_top.reset();
-                                    }
-                                }
-                            }
-
-                        }
-
-                    }
-                    if (maybe_container_right.has_value()) {
-                        plan.SkylineContainers.push_back(maybe_container_right.value());
-                    }
-                    if (maybe_container_top.has_value()) {
-                        plan.SkylineContainers.push_back(maybe_container_top.value());
-                    }
-                    vector<Container> waste_rect_to_append;
-                    for (auto i = 1; i < removed_containers.size(); i++) {
-                        auto& waste_c = removed_containers.at(i);
-                        if (new_rect.bottomRight().y > waste_c.rect.bottomRight().y) {
-                            auto c = Container(Rect(waste_c.rect.bottomLeft(), POS(min(waste_c.rect.bottomRight().x, new_rect.bottomRight().x), new_rect.bottomRight().y)), plan.ID);
-                            waste_rect_to_append.push_back(c);
-                        }
-                    }
-                    for (auto& waste_c : waste_rect_to_append) {
-                        plan.WasteMap.push_back(waste_c);
-                    }
+                    update_skyline_container(plan,best_score,new_rect);
                 }
                 sort(plan.SkylineContainers.begin(), plan.SkylineContainers.end(), [](Container c1, Container c2) {
                     return c1.rect.start.x < c2.rect.start.x;
@@ -2924,9 +2938,9 @@ void test_dist_skyline() {
 
     //test_rect();
     std::default_random_engine generator;
-    for (auto x = 0; x < 1; x++) {
+    for (auto x = 0; x < 4; x++) {
         cout << "iter=" << x << endl;
-        for (auto j = 0; j < 3; j++) {
+        for (auto j = 0; j < 5; j++) {
             vector<float>input_data;
             for (auto i = 0; i < 5; i++) {
                 for (auto k = 0; k < test_item_data.size(); k++) {
@@ -2967,7 +2981,7 @@ void test_dist_skyline2() {
 
 
 int main() {
-    test_dist_skyline2();
+    test_dist_skyline();
     
     
     return 0;
