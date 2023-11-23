@@ -79,16 +79,14 @@ class JOB:
 if __name__ == "__main__":
     start_time = time()
     job = JOB(
-            data_sets={
-                    PRODUCTION_DATA1: 华为杯_data,
-                    PRODUCTION_DATA2: 外包_data,
-                    RANDOMGEN_DATA  : 随机_data,
-            },
-            algo_types=[AlgoName.Dist_Skyline],
+            data_sets=data_sets,
+            algo_types=[AlgoName.Dist_Skyline,AlgoName.Dist_MaxRect],
             param_source=params,
             data_type=[STANDARD,NOISED],
             algo_prefix=[STANDARD,NOISED],
-            scales=(100,300,500,1000,3000,5000)
+            scales=(100,300,500,1000,3000,5000),
+            run_count=40
+
     )
     job.DO()
     print(time() - start_time)
