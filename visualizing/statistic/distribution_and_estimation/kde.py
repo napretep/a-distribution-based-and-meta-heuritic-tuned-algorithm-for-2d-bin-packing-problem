@@ -16,31 +16,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_hist2d(sj_data, hw_data, wb_data,titles):
+def plot_hist2d(datas,titles):
     """数据的统计图"""
     plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']  # 指定默认字体为微软雅黑
     plt.rcParams['axes.unicode_minus'] = False  # 解决保存图像时负号'-'显示为方块的问题
-    data = [sj_data, hw_data, wb_data]
 
-    for i in range(3):
-        g= sns.jointplot(x=data[i][:,1], y=data[i][:,2], kind='hist',joint_kws={'bins': 50}, marginal_kws={'bins': 50},marginal_ticks=True)
+
+    for i in range(len(datas)):
+        g= sns.jointplot(x=datas[i][:,1], y=datas[i][:,2], kind='hist',joint_kws={'bins': 50}, marginal_kws={'bins': 50},marginal_ticks=True)
         plt.subplots_adjust(bottom=0.2)
+        # g.fig.save(f"test{time()}")
         g.fig.suptitle(titles[i], y=0.1)
+        plt.savefig(f"test{time()}.png")
+
 
 
 def plot_data_dist():
-    plot_hist2d(随机_data, 华为杯_data, 外包_data,
-                titles=[RANDOMGEN_DATA, PRODUCTION_DATA1, PRODUCTION_DATA2])
+    plot_hist2d([data_sets[name] for name in data_sets.keys()],
+                titles=[name for name in data_sets.keys()])
     plt.show()
 
 def plot_kde_sampled_data_dist():
-    plot_hist2d(kde_sample(随机_data, 5000), kde_sample(华为杯_data, 5000), kde_sample(外包_data, 5000),
-                titles=[f"kde sampled {RANDOMGEN_DATA}", f"kde sampled {PRODUCTION_DATA1}",f"kde sampled {PRODUCTION_DATA2}",])
+    plot_hist2d([kde_sample(data_sets[name],5000) for name in data_sets.keys()],
+                titles=[f"kde sampled {name}" for name in data_sets.keys()])
     plt.show()
 
 def plot_kde_noised_sample_data_dist():
-    plot_hist2d(random_mix(kde_sample(随机_data, 5000)[:,1:],(0,0.1)),random_mix(kde_sample(华为杯_data, 5000)[:,1:],(0,0.2)),random_mix(kde_sample(外包_data, 5000)[:,1:],(0,0.3)),
-                titles=[f"noised sampled {RANDOMGEN_DATA}", f"noised sampled {PRODUCTION_DATA1}",f"noised sampled {PRODUCTION_DATA2}",])
+    noised_ratio = [(0,(i+1)/10) for i in range(5)]
+    data_names = list(data_sets.keys())
+    noised_data = [random_mix(kde_sample(data_sets[data_names[i]], 5000)[:,1:],noised_ratio[i]) for i in range(len(data_names)) ]
+    plot_hist2d(noised_data,titles=[f"noised sampled {data_names[i]} noised ratio {noised_ratio[i][1]}" for i in range(len(data_names))])
     plt.show()
 
 if __name__ == "__main__":

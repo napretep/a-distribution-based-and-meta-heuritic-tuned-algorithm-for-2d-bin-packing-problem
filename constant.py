@@ -37,9 +37,15 @@ SOLUTIONS_PATH = os.path.join(IMAGES_PATH, 'solutions')
 RANDOMGEN_DATA = "randomGen_data"
 PRODUCTION_DATA1 = "production_data1"
 PRODUCTION_DATA2 = "production_data2"
+OPEN_ACCESS_DATA1="open_access_data1"
+OPEN_ACCESS_DATA2="open_access_data2"
+
 
 NOISED = "noised"
 STANDARD = "standard"
+DATA_NAME="data_name"
+DATA_CONTAINER="data_container"
+
 
 DATA_SCALES = (100, 300, 500, 1000, 3000, 5000)
 RUN_COUNT = 40
@@ -417,33 +423,73 @@ class ProtoPlan:
             raise NotImplementedError()
 
 
-_temp_外包_data = np.loadtxt(os.path.join(DATA_PATH, r'wb_data\items.csv'), delimiter=',')
-外包_data: "np.ndarray|None" = None
+def make_data_from_json(data_name,filecount):
+    x_data = []
+    z_data_path = lambda i: os.path.join(DATA_PATH, data_name, f"{i}.json")
+    for i in range(1, filecount+1):
+        temp_aa_data = json.load(open(z_data_path(i)))
+        temp_aa_old_material = temp_aa_data["Objects"][0]
+        material_width, material_height = temp_aa_old_material["Length"], temp_aa_old_material["Height"]
+        for item in temp_aa_data["Items"]:
+            new_width, new_height = item["Length"] / material_width * MATERIAL_SIZE[0], item["Height"] / material_height * MATERIAL_SIZE[1]
+            item_li = [[int(max(new_width, new_height)), int(min(new_height, new_width))] for i in range(item["Demand"])]
+            x_data += item_li
+    x_data = np.column_stack((range(len(x_data)), np.array(x_data)))
+    np.save(os.path.join(DATA_PATH, data_name, "data.npy"),x_data)
+
+
+def make_wb_data():
+    外包_data: "np.ndarray|None" = None
+    _temp_外包_data = np.loadtxt(os.path.join(DATA_PATH, r'wb_data\items.csv'), delimiter=',')
+    for i in range(_temp_外包_data.shape[0]):
+        row = _temp_外包_data[i]
+        item_count = row[COL.Remain]
+        new_rows = np.repeat(row[np.newaxis, :], item_count, axis=0)
+
+        if 外包_data is None:
+            外包_data = new_rows
+        else:
+            外包_data = np.row_stack((外包_data, new_rows))
+
+    外包_data = np.column_stack(
+            (外包_data[:, 0], np.maximum(外包_data[:, 1], 外包_data[:, 2]), np.minimum(外包_data[:, 1], 外包_data[:, 2]))
+    )
+    外包_data_idx = (外包_data[:, 1] <= MATERIAL_SIZE[0]) & (外包_data[:, 2] <= MATERIAL_SIZE[1])
+    外包_data = 外包_data[外包_data_idx]
+    np.save(os.path.join(DATA_PATH, r'wb_data',"data.npy"),外包_data)
+
+def make_hw_data():
+    华为杯_data: "np.ndarray|None" = None
+    # item_id, item_material, item_num, item_length, item_width, item_order
+    for i in range(5):
+        _temp_华为杯_data = np.loadtxt(os.path.join(DATA_PATH, r'hw_data\data' + str(i + 1) + '.csv'), delimiter=',')
+        if 华为杯_data is None:
+            华为杯_data = _temp_华为杯_data
+        else:
+            华为杯_data = np.row_stack((华为杯_data, _temp_华为杯_data))
+    华为杯_data = np.column_stack((华为杯_data[:, 0], np.maximum(华为杯_data[:, 1], 华为杯_data[:, 2]), np.minimum(华为杯_data[:, 1], 华为杯_data[:, 2])))
+    np.save(os.path.join(DATA_PATH, r'hw_data',"data.npy"),华为杯_data)
+
+
+aa_data = np.load(os.path.join(DATA_PATH, "AA_data", "data.npy"))
+
+cz_data = np.load(os.path.join(DATA_PATH, "CZ_data", "data.npy"))
+
+华为杯_data = np.load(os.path.join(DATA_PATH, "hw_data", "data.npy"))
+
+外包_data = np.load(os.path.join(DATA_PATH, "wb_data", "data.npy"))
+
+
+
+
+
 # _temp_外包_data = np.column_stack((_temp_外包_data[:,0],np.maximum(_temp_外包_data[:,1],_temp_外包_data[:,2]),np.minimum(_temp_外包_data[:,1],_temp_外包_data[:,2])))
-for i in range(_temp_外包_data.shape[0]):
-    row = _temp_外包_data[i]
-    item_count = row[COL.Remain]
-    new_rows = np.repeat(row[np.newaxis, :], item_count, axis=0)
 
-    if 外包_data is None:
-        外包_data = new_rows
-    else:
-        外包_data = np.row_stack((外包_data, new_rows))
 
-外包_data = np.column_stack(
-        (外包_data[:, 0], np.maximum(外包_data[:, 1], 外包_data[:, 2]), np.minimum(外包_data[:, 1], 外包_data[:, 2]))
-)
-外包_data_idx = (外包_data[:, 1] <= MATERIAL_SIZE[0]) & (外包_data[:, 2] <= MATERIAL_SIZE[1])
-外包_data = 外包_data[外包_data_idx]
-华为杯_data: "np.ndarray|None" = None
-# item_id, item_material, item_num, item_length, item_width, item_order
-for i in range(5):
-    _temp_华为杯_data = np.loadtxt(os.path.join(DATA_PATH, r'hw_data\data' + str(i + 1) + '.csv'), delimiter=',')
-    if 华为杯_data is None:
-        华为杯_data = _temp_华为杯_data
-    else:
-        华为杯_data = np.row_stack((华为杯_data, _temp_华为杯_data))
-华为杯_data = np.column_stack((华为杯_data[:, 0], np.maximum(华为杯_data[:, 1], 华为杯_data[:, 2]), np.minimum(华为杯_data[:, 1], 华为杯_data[:, 2])))
+
+
+
+
 
 # 设置随机种子以保证结果可复现
 np.random.seed(0)
@@ -481,23 +527,6 @@ samples = samples[(0 <= samples[:, 0]) & (samples[:, 0] <= 1) & (0 <= samples[:,
 随机_data = 随机_data.astype(int)
 
 
-# 随机_data[:,1:3] = 随机_data[:,1:3]
-
-# def unify(data:"np.ndarray"):
-#     """单位化
-#     :param:data:[ID,col1,col2]
-#     """
-#
-#     col1_idx = 1
-#     col2_idx = 2
-#     data1 = np.column_stack((data[:, 0],np.maximum(data[:, col1_idx], data[:, col2_idx]), np.minimum(data[:, col1_idx], data[:, col2_idx])))
-#     max_data = np.max(data1[:,col1_idx:col2_idx+1])
-#     min_data = np.min(data1[:,col1_idx:col2_idx+1])
-#     data_col1 = data1[:,0]
-#     data_col2 = data1[:,1]
-#     final_data=np.column_stack((data1[:,0],data_col1/MATERIAL_SIZE[1]*100,data_col2/MATERIAL_SIZE[1]*100))
-#
-#     return final_data
 def unify(data: "np.ndarray"):
     """单位化
     :param:data:[ID,col1,col2]
@@ -538,16 +567,6 @@ def random_mix(data: "np.ndarray", random_ratio):
 
     return result
 
-
-# 随机_data = np.column_stack((np.zeros(samples.shape[0]),samples))
-
-# def kde(data):
-#     plt.figure(figsize=(6, 6))
-#     ax = plt.subplot(1, 1, 1)
-#     # ax.set_aspect('equal')
-#     sns.kdeplot(x=data[:, 1], y=data[:, 2], fill=True, bw_adjust=1)
-#     plt.show()
-#     pass
 
 
 class Algo:
@@ -636,23 +655,6 @@ def test_rect():
         print(f"A={A},B={B},A&B={D}=={C},{D == C}", )
 
 
-param_hw_300_107 = [-12.764467729922428, -7.2807524490032804, -17.405272153673526, 11.62060943355495, -17.767676767373285, 13.498788968865574, -3.058679224306764, -17.380930383866435, -17.380008727391687, -19.579085902347263,
-                    15.561194939767207, 2.310615782862815, -5.273339286206582, 1.6631169187587558, -1.906345802422087, -3.3207320056750733, -7.4098035553284936, 12.394940621852495]  # 1.07
-param_hw_100_107 = [8.83448324, -0.78330578, -12.21199958, 7.22317107,
-                    1.61499858, -0.0553183, -2.69584164, -11.02099219,
-                    -4.97376009, -15.62966524, -5.56556291, -1.03325264,
-                    10.2767393, 2.58138559, -1.69017877, -3.64516804,
-                    8.50960196, 6.30652372]  # , 1.0703488072955363]
-param_sj_300_107 = [-1.02321573, -5.20514864, -6.41326147, 10.96209644,
-                    -1.97574661, 19.27319067, -13.60961322, -13.23331498,
-                    -0.06874471, -2.94132876, 12.22846914, 4.79181802,
-                    9.5587779, -6.43842083, -2.50993943, -1.67412239,
-                    -7.52341044, 19.66874479]  # 1.0707875776869782
-param_wb_300_107 = [19.54349797, -8.08577713, -8.30230933, 6.99432589,
-                    -12.84731553, 8.41063454, -19.31235045, -7.50747201,
-                    -18.71292422, -15.99165935, -2.50475771, -17.89194201,
-                    17.7640952, 13.17242401, -4.56488583, -16.71416094,
-                    -10.50712621, -3.95408833]  # 1.0732741257505072
 
 
 class EVAL:
@@ -686,54 +688,14 @@ params = {}
 
 
 
-# params = {
-#        STANDARD: {
-#                 PRODUCTION_DATA1: [27.57934813, 23.29018577, 33.43375348, 18.89843672,
-#                                      -18.28887118, 0.36416545, 38.55297982, 1.58717868,
-#                                      -12.72023321, -4.78548915, 1.24706308, -30.0087219,
-#                                      -26.44875766, 19.04054086, -39.76115475, 2.18626198,
-#                                      -29.64918256, -14.72861541, 23.58872823, 26.29482364,
-#                                      -10.93733512, 2.4618385, 7.3259813, 19.91113574],
-#                 PRODUCTION_DATA2: [28.12061657, -8.0430912, 22.58183676, -36.278031,
-#                                      -18.67314595, 0.14616366, 22.46584206, -35.59192484,
-#                                      1.45843571, 2.81054814, -4.70562306, 7.44944437,
-#                                      -11.04635553, -25.21184856, 33.64858665, 1.43668068,
-#                                      1.38881597, -2.31121838, 37.72415834, 9.3078541,
-#                                      8.54222983, 2.6429937, -3.17287881, -9.44685875],
-#                 RANDOMGEN_DATA     : [25.5435356, 9.25573678, 7.33452141, 11.87821915,
-#                                      -18.15776172, -0.69890311, 32.35026717, 20.43240378,
-#                                      7.59892088, 5.14509784, -2.94299651, 2.40380363,
-#                                      -34.66379054, 8.21110542, -37.56377915, -10.16772923,
-#                                      -30.83058312, 26.36755633, 36.43783522, -13.96861355,
-#                                      23.04090018, 2.31979539, -7.09244668, -0.84345639],
-#         },
-#         NOISED : {
-#                 PRODUCTION_DATA1: [32.5297365, 17.42349883, 31.07130181, -27.08239102,
-#                                      -16.1294125, 0.55513815, 24.09125474, 18.33520099,
-#                                      -14.46151256, 0.85308145, -0.98344585, -31.19569029,
-#                                      -21.8196573, -30.40856389, 0.17618179, -3.6816786,
-#                                      28.74556118, 8.17828654, 26.91246714, 5.98856374,
-#                                      -17.47834592, -31.059624, -23.15718183, 27.40120483],
-#                 PRODUCTION_DATA2: [32.81051893, 27.71859658, -18.12926271, 31.47141733,
-#                                      11.15234478, 0.98452451, 30.20495797, -13.62208354,
-#                                      14.46456117, 0.35245309, 2.57142432, -17.99945398,
-#                                      -29.75812519, 24.37060543, -13.10154752, -6.09719204,
-#                                      7.50557726, -8.27136646, 36.6475308, 3.24912781,
-#                                      -4.3851668, 2.2489736, 35.10086676, 6.805312], # 这组参数非常强大,打败了各种情况
-#                 RANDOMGEN_DATA    : [20.53944317, -14.50081467, -13.72178025, -36.98244615,
-#                                      38.81836636, 0.55734865, 4.25591023, -23.77335997,
-#                                      4.96419603, 4.04618501, 5.64926788, -34.76708757,
-#                                      -32.87163442, -36.30439092, 8.58333456, 36.94052644,
-#                                      9.05199327, -26.73226726, 4.89877997, -39.19794429,
-#                                      5.8054671, 12.25104461, 14.58953578, 14.81294095],
-#         },
-# }
-
 
 data_sets = {
         PRODUCTION_DATA1: 华为杯_data,
         PRODUCTION_DATA2: 外包_data,
         RANDOMGEN_DATA  : 随机_data,
+        OPEN_ACCESS_DATA1:aa_data,
+        OPEN_ACCESS_DATA2:cz_data
+
 }
 param_length={
 
@@ -760,6 +722,10 @@ for algo_name,gencount in [(AlgoName.Dist_MaxRect,500),(AlgoName.Dist_Skyline,50
 
 
 if __name__ == "__main__":
-    test_rect()
-
+    # make_data_from_json("AA_data", 2)
+    # make_data_from_json("CZ_data", 5)
+    # make_wb_data()
+    # make_hw_data()
+    for name,item in data_sets.items():
+        print(item[item[:,2]>MATERIAL_SIZE[1]])
     pass
