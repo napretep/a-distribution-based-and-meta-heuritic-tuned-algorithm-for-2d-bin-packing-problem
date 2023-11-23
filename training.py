@@ -438,7 +438,8 @@ class Training:
         start_time = time()
         with multiprocessing.Pool() as p:
             result = []
-            for data, name in self.data_sets:
+            for data_name in self.data_sets:
+                data = data_sets[data_name]
                 for algo_name in self.algo_names:
                     for training_type in self.training_types:
                         start_time2 = time()
@@ -457,12 +458,14 @@ class Training:
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
     t = Training([
-        [华为杯_data, PRODUCTION_DATA1],
-        # [外包_data, PRODUCTION_DATA2],
-        # [随机_data, RANDOMGEN_DATA]
+            PRODUCTION_DATA1,
+            PRODUCTION_DATA2,
+            RANDOMGEN_DATA,
+            OPEN_ACCESS_DATA1,
+            OPEN_ACCESS_DATA2
     ],
-        training_type=[STANDARD],
-        algo_name=[AlgoName.Dist_MaxRect]
+        training_type=[STANDARD,NOISED],
+        algo_name=[AlgoName.Dist_MaxRect,AlgoName.Dist_Skyline]
     )
     t.run()
     # print(params[STANDARD][PRODUCTION_DATA2])

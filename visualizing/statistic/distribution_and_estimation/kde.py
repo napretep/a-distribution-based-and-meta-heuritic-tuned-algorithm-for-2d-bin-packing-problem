@@ -49,6 +49,6 @@ def plot_kde_noised_sample_data_dist():
     plt.show()
 
 if __name__ == "__main__":
-    plot_kde_noised_sample_data_dist()
+    plot_data_dist()
     pass
 

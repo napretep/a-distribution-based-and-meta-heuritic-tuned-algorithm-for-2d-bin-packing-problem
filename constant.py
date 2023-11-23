@@ -722,10 +722,6 @@ for algo_name,gencount in [(AlgoName.Dist_MaxRect,500),(AlgoName.Dist_Skyline,50
 
 
 if __name__ == "__main__":
-    # make_data_from_json("AA_data", 2)
-    # make_data_from_json("CZ_data", 5)
-    # make_wb_data()
-    # make_hw_data()
     for name,item in data_sets.items():
         print(item[item[:,2]>MATERIAL_SIZE[1]])
     pass
