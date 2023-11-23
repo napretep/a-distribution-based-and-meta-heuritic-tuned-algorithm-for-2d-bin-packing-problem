@@ -80,7 +80,10 @@ if __name__ == "__main__":
     start_time = time()
     job = JOB(
             data_sets=data_sets,
-            algo_types=[AlgoName.Skyline,AlgoName.Dist_Skyline,AlgoName.MaxRect,AlgoName.Dist_MaxRect],
+            algo_types=[
+                    AlgoName.Skyline,AlgoName.Dist_Skyline,
+                    AlgoName.MaxRect,AlgoName.Dist_MaxRect
+            ],
             param_source=params,
             data_mode=[STANDARD, NOISED],
             algo_prefix=[STANDARD,NOISED],
