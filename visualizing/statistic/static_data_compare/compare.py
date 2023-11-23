@@ -60,7 +60,7 @@ class JOB:
 
     def noised_work(self,p,file_name,data_set,scale,eval_obj:EVAL,timestart):
         run_results = []
-        for i in range(30):
+        for i in range(50):
             print(file_name, f"random interval=(0,{(i + 1) / 100})")
             input_data = [random_mix(kde_sample(self.data_sets[data_set], scale)[:, 1:], random_ratio=(0, (i + 1) / 100)) for _ in range(self.run_count)]
             result = p.map(eval_obj.run_single, input_data)
