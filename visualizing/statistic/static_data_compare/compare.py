@@ -21,22 +21,22 @@ def gen_sample_data(data, scale, i):
 
 
 class JOB:
-    def __init__(self, data_sets, algo_types, param_source, scales=(100, 300, 500, 1000, 3000, 5000), data_type: "iter[str]" = (STANDARD,), algo_prefix:"iter"=("",), run_count=36):
+    def __init__(self, data_sets, algo_types, param_source, scales=(100, 300, 500, 1000, 3000, 5000), data_mode: "iter[str]" = (STANDARD,), algo_prefix: "iter"=("",), run_count=36):
         """
 
         :param data_sets:
         :param algo_types:
         :param param_source:
         :param scales:
-        :param data_type: "standard","noised"
+        :param data_mode: "standard","noised"
         :param algo_prefix:
         :param run_count:
         """
         self.param_source = param_source
-        self.data_type = data_type
+        self.data_mode = data_mode
         self.algo_prefix = algo_prefix
         self.data_sets = data_sets
-        self.algo_types = algo_types
+        self.algo_types:"list[str]" = algo_types
         self.scales = scales
         self.run_count = run_count
 
@@ -45,13 +45,13 @@ class JOB:
             for data_set in self.data_sets:
                 for algo_type in self.algo_types:
                     for scale in self.scales:
-                        for prefix in self.algo_prefix:
-                            for data_type in self.data_type:
+                        for prefix in (self.algo_prefix if algo_type.startswith("Dist") else [""]):
+                            for data_mode in self.data_mode:
                                 timestart = time()
-                                print(data_type,data_set,prefix,algo_type,scale)
+                                print(data_mode,data_set,prefix,algo_type,scale)
                                 eval_obj = EVAL(algo_type, self.run_count, self.param_source[algo_type][prefix][data_set] if algo_type in self.param_source else None)
-                                file_name = f"{data_type}_{data_set}_{prefix}{algo_type}_{scale}_.npy"
-                                if data_type == NOISED:
+                                file_name = f"{data_mode}_{data_set}_{prefix}{algo_type}_{scale}_.npy"
+                                if data_mode == NOISED:
                                     self.noised_work(p, file_name, data_set, scale, eval_obj,timestart)
                                     pass
                                 else:
@@ -80,9 +80,9 @@ if __name__ == "__main__":
     start_time = time()
     job = JOB(
             data_sets=data_sets,
-            algo_types=[AlgoName.Skyline,AlgoName.MaxRect],
+            algo_types=[AlgoName.Skyline,AlgoName.Dist_Skyline,AlgoName.MaxRect,AlgoName.Dist_MaxRect],
             param_source=params,
-            data_type=[STANDARD,NOISED],
+            data_mode=[STANDARD, NOISED],
             algo_prefix=[STANDARD,NOISED],
             scales=(100,300,500,1000,3000,5000),
             run_count=40
