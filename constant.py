@@ -717,7 +717,7 @@ for algo_name,gencount in [(AlgoName.Dist_MaxRect,500),(AlgoName.Dist_Skyline,50
     params[algo_name] = {}
     for data_type in [STANDARD, NOISED]:
         params[algo_name][data_type] = {}
-        for data_set_name in [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]:
+        for data_set_name in data_sets.keys():
             params[algo_name][data_type][data_set_name] = np.load(os.path.join(PARAM_PATH,f"{algo_name}_param_{data_type}_{data_set_name}_sample1000_gen{gencount}.npy"))
 
 
