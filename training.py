@@ -443,8 +443,8 @@ class Training:
                 for algo_name in self.algo_names:
                     for training_type in self.training_types:
                         start_time2 = time()
-                        print(training_type, name, algo_name, "start")
-                        d = Optimizer(p, data, name, random_ratio=(0, 0.3) if training_type == NOISED else None,
+                        print(training_type, data_name, algo_name, "start")
+                        d = Optimizer(p, data, data_name, random_ratio=(0, 0.3) if training_type == NOISED else None,
                                       eval_selector=EvalSelect.Multi,
                                       algo_name=algo_name)
                         d.run_v2(d.DE)
@@ -458,14 +458,20 @@ class Training:
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
     t = Training([
-            PRODUCTION_DATA1,
-            PRODUCTION_DATA2,
-            RANDOMGEN_DATA,
+            # PRODUCTION_DATA1,
+            # PRODUCTION_DATA2,
+            # RANDOMGEN_DATA,
             OPEN_ACCESS_DATA1,
             OPEN_ACCESS_DATA2
     ],
-        training_type=[STANDARD,NOISED],
-        algo_name=[AlgoName.Dist_MaxRect,AlgoName.Dist_Skyline]
+        training_type=[
+                STANDARD,
+                NOISED
+        ],
+        algo_name=[
+                AlgoName.Dist_MaxRect,
+                AlgoName.Dist_Skyline
+        ]
     )
     t.run()
     # print(params[STANDARD][PRODUCTION_DATA2])
