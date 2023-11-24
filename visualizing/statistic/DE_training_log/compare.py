@@ -6,6 +6,7 @@ __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/11/10 5:57'
 """
+import itertools
 import os
 
 import matplotlib.pyplot as plt
@@ -48,9 +49,29 @@ def run_test():
 
 
 def test():
-    data = np.load("Dist_Skyline_traininglog_noised_production_data2_sample1000_gen500.npy")
-    print(np.max(data))
+    # training_modes =
+    data_names = list(data_sets.keys())
+    fig, axs = plt.subplots(nrows=4, ncols=len(data_names), figsize=(24, 8))
+    algo_names = list(itertools.product([STANDARD, NOISED], [AlgoName.Dist_MaxRect, AlgoName.Dist_Skyline]))
+    for row in range(4):
+        mode = row%2
+        training_mode,algo_name =algo_names[row]
+        for col in range(len(data_names)):
+            training_data = np.load(os.path.join(PROJECT_ROOT_PATH,
+                                                 "visualizing", "statistic", "DE_training_log",
+                                                 f"{algo_name}_traininglog_{training_mode}_{data_names[col]}_sample1000_gen{500}.npy"))
+            print(f"{algo_name}_traininglog_{training_mode}_{data_names[col]}",np.max(training_data[:, 0]))
+    #         axs[row, col].plot(training_data[:, 0], label=f"history best ulti_rate")
+    #         axs[row, col].plot(training_data[:, 1], label=f"avg ulti_rate per gen")
+    #         axs[row, col].set_xlabel('gen')  # 添加 x 轴名称
+    #         axs[row, col].set_ylabel('util_rate')  # 添加 y 轴名称
+    #         title_name = f'{algo_name},{training_mode},{data_names[col]}'
+    #         axs[row, col].set_title(title_name)
+    #         axs[row, col].legend()  # 在每个子图上添加图例
+    # plt.tight_layout()
+    # plt.show()
+
 
 if __name__ == "__main__":
-    run()
+    test()
     pass
