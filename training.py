@@ -227,7 +227,7 @@ class Optimizer:
         best_score: "np.ndarray|None" = None
         final_best_x: "np.ndarray|None" = None
         for best_x, best_fitness, pop, fitness in optimizer():
-            std_value = np.std(pop, axis=0)
+            std_value = list(np.std(pop, axis=0))
             avg_fitness = np.mean(fitness)
             self.time_recorder.append((time()))
             if best_score is None:
