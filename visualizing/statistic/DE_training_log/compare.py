@@ -17,12 +17,12 @@ def run():
 
     training_modes = [STANDARD, NOISED]
     algo_names = [ AlgoName.Dist_MaxRect,AlgoName.Dist_Skyline]
-    data_names = [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]
+    data_names =list(data_sets.keys())
 
     for mode in range(2):
-        fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(17, 9))
+        fig, axs = plt.subplots(nrows=2, ncols=len(data_names), figsize=(24, 8))
         for row in range(2):
-            for col in range(3):
+            for col in range(len(data_names)):
                 training_data = np.load(os.path.join(PROJECT_ROOT_PATH,
                                                      "visualizing", "statistic", "DE_training_log",
                                                      f"{algo_names[row]}_traininglog_{training_modes[mode]}_{data_names[col]}_sample1000_gen{500}.npy"))
@@ -30,7 +30,7 @@ def run():
                 axs[row,col].plot(training_data[:,1],label=f"avg ulti_rate per gen")
                 axs[row,col].set_xlabel('gen')  # 添加 x 轴名称
                 axs[row,col].set_ylabel('util_rate')  # 添加 y 轴名称
-                title_name = f'training of {algo_names[row]} on {training_modes[mode]} {data_names[col]}'
+                title_name = f'{algo_names[row]},{training_modes[mode]},{data_names[col]}'
                 axs[row,col].set_title(title_name)
                 axs[row,col].legend()  # 在每个子图上添加图例
         plt.tight_layout()
@@ -52,5 +52,5 @@ def test():
     print(np.max(data))
 
 if __name__ == "__main__":
-    test()
+    run()
     pass

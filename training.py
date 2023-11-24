@@ -296,6 +296,8 @@ class Optimizer:
             yield best_X, best_f, pop, fitness
 
     def GA(self):
+        se = scores_evaluator(self.p,self.data_set_name, self.data_sample_scale, self.random_ratio, self.eval_run_count, self.algo_name)
+
         def selection(population, scores, k=5):
             selection_ix = np.random.randint(len(population), size=k)
             ix = selection_ix[np.argmin(scores[selection_ix])]
@@ -326,8 +328,7 @@ class Optimizer:
         min_b, max_b = np.asarray(self.bounds).T
         # 变异操作
         pop = np.round(np.random.uniform(min_b, max_b, (self.pop_size,self.total_param_num)), 4)
-        scores = np.array([self.idvl_eval(i) for i in pop])
-        g = scores_evaluator(self.data_set_name, self.data_sample_scale, self.random_ratio, self.eval_run_count, self.algo_name)
+        scores = np.array([se.run_idvl(i) for i in pop])
 
         best_idx = np.argmin(scores)
         history_best_x = pop[best_idx]
@@ -349,7 +350,7 @@ class Optimizer:
                 new_pop[i]=mutation(offspring[0])
                 new_pop[self.pop_size+i]=mutation(offspring[1])
 
-            new_scores = np.array(self.p.map(g.run_pop, new_pop))
+            new_scores = np.array([se.run_idvl(i) for i in pop])
             new_idx = np.argsort(new_scores)[:self.pop_size]
             pop = new_pop[new_idx]
             scores = new_scores[new_idx]
@@ -447,7 +448,7 @@ class Training:
                         d = Optimizer(p, data, data_name, random_ratio=(0, 0.3) if training_type == NOISED else None,
                                       eval_selector=EvalSelect.Multi,
                                       algo_name=algo_name)
-                        d.run_v2(d.DE)
+                        d.run_v2(d.GA)
 
                     # result.append([name, x, 1 / fun, f"训练用时(秒):{time() - start_time2}"])
                     # np.save(f"{self.training_type}_Dist_{name}_{fun}__{round(time())}.npy", np.array(x))
@@ -470,7 +471,7 @@ if __name__ == "__main__":
         ],
         algo_name=[
                 AlgoName.Dist_MaxRect,
-                AlgoName.Dist_Skyline
+                # AlgoName.Dist_Skyline
         ]
     )
     t.run()
