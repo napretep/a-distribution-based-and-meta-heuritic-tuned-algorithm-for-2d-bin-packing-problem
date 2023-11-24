@@ -60,7 +60,13 @@ def test():
             training_data = np.load(os.path.join(PROJECT_ROOT_PATH,
                                                  "visualizing", "statistic", "DE_training_log",
                                                  f"{algo_name}_traininglog_{training_mode}_{data_names[col]}_sample1000_gen{500}.npy"))
-            print(f"{algo_name}_traininglog_{training_mode}_{data_names[col]}",np.max(training_data[:, 0]))
+
+
+            training_data2 = np.load(os.path.join(PROJECT_ROOT_PATH,
+                                                 "visualizing", "statistic", "DE_training_log","old",
+                                                 f"{algo_name}_traininglog_{training_mode}_{data_names[col]}_sample1000_gen{500}.npy"))
+
+            print(f"{algo_name}_traininglog_{training_mode}_{data_names[col]}", np.max(training_data[:, 0]-np.max(training_data2[:, 0])))
     #         axs[row, col].plot(training_data[:, 0], label=f"history best ulti_rate")
     #         axs[row, col].plot(training_data[:, 1], label=f"avg ulti_rate per gen")
     #         axs[row, col].set_xlabel('gen')  # 添加 x 轴名称
@@ -73,5 +79,5 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
+    run()
     pass
