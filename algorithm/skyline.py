@@ -474,8 +474,9 @@ class Skyline(Algo):
 
 
 if __name__ == "__main__":
+    start_time = time()
     np.random.seed(int(time() * 10000) % 4294967296)
-    data_idx = np.random.choice(随机_data.shape[0], 500)
+    data_idx = np.random.choice(随机_data.shape[0],1000)
     data = 随机_data[data_idx]
     s = Skyline(data)
 
@@ -485,5 +486,7 @@ if __name__ == "__main__":
     # s.run(debug_mode=True)
     s.run(debug_mode=False)
     print(f"util rate={s.avg_util_rate()}")
-    standard_draw_plan(s.solution,task_id=s.task_id)
+    print(time()-start_time)
+    # standard_draw_plan(s.solution,task_id=s.task_id)
+
     pass

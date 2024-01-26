@@ -122,73 +122,6 @@ def 求整体平均():
     plt.savefig(f"./pic/total_avg_compare_{time()}.png")
     plt.show()
 
-def 求整体平均2():
-    original = "original"
-    optimized = "optimized"
-    standard_optimized = "standard_optimized"
-    noised_optimized = "noised_optimized"
-    algo_sets = {
-            "skyline":{
-                    original:AlgoName.Skyline,
-                    optimized: [f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"]
-            },
-            "maxrect":{
-                    original: AlgoName.MaxRect,
-                    optimized: [f"{STANDARD}{AlgoName.Dist_MaxRect}", f"{NOISED}{AlgoName.Dist_MaxRect}"]
-            }
-
-    }
-    algo_families = ["skyline","maxrect"]
-    scales = [100, 300, 500, 1000, 3000, 5000]
-
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(20, 6))
-    # 两组图, 每组图在每个尺度上, 综合所有的分布上的结果
-    for col in range(2):
-        ax = axs[col]
-        # ax2 = ax.twinx()  # Create a second y-axis
-        algo_fam = algo_families[col]
-        original_algo = algo_sets[algo_fam]["original"]
-        standard_op = algo_sets[algo_fam]["optimized"][0]
-        noised_op = algo_sets[algo_fam]["optimized"][1]
-        mean_data={
-        }
-        for scale in scales:
-            for data_name in data_sets:
-                result1 = np.load(f"./standard_{data_name}_{original_algo}_{scale}_.npy")
-                result2 = np.load(f"./standard_{data_name}_{standard_op}_{scale}_.npy")
-                result3 = np.load(f"./standard_{data_name}_{noised_op}_{scale}_.npy")
-                # op_result = np.row_stack((result2,result3))
-                original_mean = np.mean(result1)
-                standard_optimized_mean = np.mean(result2)
-                noised_optimized_mean = np.mean(result3)
-                if scale not in mean_data:
-                    mean_data[scale]={
-                            original:[],
-                            standard_optimized:[],
-                            noised_optimized:[]
-                    }
-                mean_data[scale][original].append(original_mean)
-                mean_data[scale][standard_optimized].append(standard_optimized_mean)
-                mean_data[scale][noised_optimized].append(noised_optimized_mean)
-        standard_optimized_means = [np.mean(mean_data[scale][standard_optimized]) for scale in mean_data]
-        noised_optimized_mean = [np.mean(mean_data[scale][noised_optimized]) for scale in mean_data]
-        original_means = [np.mean(mean_data[scale][original]) for scale in mean_data]
-        # optimized_std = [np.std(mean_data[scale][optimized]) for scale in mean_data]
-        # original_std = [np.std(mean_data[scale][original]) for scale in mean_data]
-        ax.plot(scales, original_means, label='Original mean')
-        ax.plot(scales, standard_optimized_means, label=standard_optimized)
-        ax.plot(scales, noised_optimized_mean, label=noised_optimized)
-        # ax2.plot(scales, optimized_std, label='Optimized std', color='green')
-        # ax2.plot(scales, original_std, label='Original std', color='red')
-        # ax2.set_ylabel("std")
-        ax.set_xlabel('sample scale')
-        ax.set_ylabel('mean ulti rate')
-        ax.set_title("avg perfom on "+algo_fam)
-        # ax2.legend(loc='upper right')
-        ax.legend(loc='upper left')
-    plt.tight_layout()
-    plt.savefig(f"./pic/total_avg_compare_{time()}.png")
-    plt.show()
 def load_data_compare_new():
     algo_type = [AlgoName.Skyline, f"{STANDARD}{AlgoName.Dist_Skyline}"]#[AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}"]
     data_sets = [PRODUCTION_DATA1, PRODUCTION_DATA2, RANDOMGEN_DATA]
@@ -218,9 +151,41 @@ def load_data_compare_new():
         print("")
 
 
+def make_single_pic():
+    algo_sets = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}", f"{NOISED}{AlgoName.Dist_MaxRect}",
+                 AlgoName.Skyline, f"{STANDARD}{AlgoName.Dist_Skyline}", f"{NOISED}{AlgoName.Dist_Skyline}"]
+
+    scales = [100, 300, 500, 1000, 3000, 5000]
+    results = []
+
+    for data_name in data_sets.keys():
+        for algo in algo_sets:
+            for scale in scales:
+                result = np.load(f"./standard_{data_name}_{algo}_{scale}_.npy")
+                for result_i in result:
+                    results.append({
+                        "algo_name": algo,
+                        "data_set": data_name,
+                        "scale": scale,
+                        "result": result_i
+                    })
+
+    # 将结果转换为 DataFrame
+    df = pd.DataFrame(results)
+
+    # 为每个数据集和算法组合创建一个图表
+    for data_name in data_sets.keys():
+        for algo_count, algo_group in enumerate([algo_sets[:3], algo_sets[3:]]):
+            algo_df = df[df["algo_name"].isin(algo_group) & (df["data_set"] == data_name)]
+            plt.figure(figsize=(10, 6))
+            sns.boxplot(x="scale", y="result", hue="algo_name", data=algo_df)
+            title = f"{data_name} with {'MaxRect' if algo_count == 0 else 'Skyline'} Algorithms"
+            plt.title(title)
+            plt.tight_layout()
+            # 保存每个图表为单独的文件
+            plt.savefig(f"./pic/standard_compare_{title}.png")
+            plt.close()
+
 if __name__ == "__main__":
-    # run_data(4)
-    # run_data(4)
-    # run_data(6)
-    求整体平均2()
+    make_single_pic()
     pass

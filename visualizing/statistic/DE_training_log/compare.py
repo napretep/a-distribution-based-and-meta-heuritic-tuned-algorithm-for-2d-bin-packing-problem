@@ -77,7 +77,38 @@ def test():
     # plt.tight_layout()
     # plt.show()
 
+def get_single_pic():
+    # 假定 PROJECT_ROOT_PATH, AlgoName, data_sets 是在上下文中定义好的
+    training_modes = [STANDARD, NOISED]
+    algo_names = [AlgoName.Dist_MaxRect, AlgoName.Dist_Skyline]
+    data_names = list(data_sets.keys())
+
+    # 创建一个目录来保存所有的图
+    os.makedirs('./pic', exist_ok=True)
+
+    for mode in training_modes:
+        for row, algo in enumerate(algo_names):
+            for col, data_name in enumerate(data_names):
+                # 加载训练数据
+                training_data = np.load(os.path.join(PROJECT_ROOT_PATH,
+                                                     "visualizing", "statistic", "DE_training_log",
+                                                     f"{algo}_traininglog_{mode}_{data_name}_sample1000_gen{500}.npy"))
+                # 创建一个独立的图
+                plt.figure(figsize=(8, 8))
+                plt.plot(training_data[:, 0], label=f"history best util_rate")
+                plt.plot(training_data[:, 1], label=f"avg util_rate per gen")
+                plt.xlabel('gen')
+                plt.ylabel('util_rate')
+                title_name = f'traininglog-{algo}-{mode}-{data_name}'
+                plt.title(title_name)
+                plt.legend()
+                plt.tight_layout()
+                # 保存图
+                plt.savefig(f'./pic/{title_name}.png')
+                plt.close()  # 关闭图形，这样它就不会显示出来了
+
+
 
 if __name__ == "__main__":
-    test()
+    get_single_pic()
     pass

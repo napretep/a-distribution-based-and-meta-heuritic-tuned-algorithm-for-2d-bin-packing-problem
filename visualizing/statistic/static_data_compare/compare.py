@@ -5,6 +5,9 @@ __file_name__ = 'compare.py'
 __author__ = '十五'
 __email__ = '564298339@qq.com'
 __time__ = '2023/11/6 22:34'
+
+这个脚本用于读取训练好的参数，跑出算法在各个数据集上的结果来
+
 """
 import numpy as np
 

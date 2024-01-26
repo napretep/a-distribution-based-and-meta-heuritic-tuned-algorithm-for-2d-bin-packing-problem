@@ -17,16 +17,18 @@ cmap = cm.get_cmap('Dark2')
 scales = [100,300,500,1000,3000,5000]
 # scales = [1000,3000,5000]
 # algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_MaxRect}"]#,AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"]
-algo_names = [AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"]
+algo_names = [AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}",
+                AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_MaxRect}"
+              ]
 # 定义不同算法类型和比例尺度的颜色和形状
 color_map = {f'{STANDARD}Dist2': 'b', f'{NOISED}Dist2': 'g', 'MaxRect': 'r', 'Skyline': 'c'}
 
 colors = cmap(range(len(algo_names)))
 
-def run_compare_algo(algo_count=3):
+def run_compare_algo(algo_count=3,only_noise=False):
     if algo_count==2:
-        skyline_algo_names = [AlgoName.Skyline, f"{STANDARD}{AlgoName.Dist_Skyline}",]
-        maxrect_algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",]
+        skyline_algo_names = [AlgoName.Skyline, f"{STANDARD if not only_noise else NOISED}{AlgoName.Dist_Skyline}",]
+        maxrect_algo_names = [AlgoName.MaxRect, f"{STANDARD if not only_noise else NOISED}{AlgoName.Dist_MaxRect}",]
     else:
         skyline_algo_names = [AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"]
         maxrect_algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_MaxRect}"]
@@ -60,7 +62,6 @@ def run_compare_algo(algo_count=3):
                             })
 
     df = pd.DataFrame(results)
-
     # Create subplots with 1 row and as many columns as there are data sets
     fig, axs = plt.subplots(2, len(data_sets), figsize=(5 * len(data_sets), 5))
 
@@ -98,10 +99,10 @@ def run_compare_algo(algo_count=3):
 
 
 
-def run_compare_algo2(algo_count=3):
+def total_compare(algo_count=3,only_noise=False):
     if algo_count==2:
-        skyline_algo_names = [AlgoName.Skyline, f"{STANDARD}{AlgoName.Dist_Skyline}",]
-        maxrect_algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",]
+        skyline_algo_names = [AlgoName.Skyline, f"{STANDARD if not only_noise else NOISED}{AlgoName.Dist_Skyline}",]
+        maxrect_algo_names = [AlgoName.MaxRect, f"{STANDARD if not only_noise else NOISED}{AlgoName.Dist_MaxRect}",]
     else:
         skyline_algo_names = [AlgoName.Skyline,f"{STANDARD}{AlgoName.Dist_Skyline}",f"{NOISED}{AlgoName.Dist_Skyline}"]
         maxrect_algo_names = [AlgoName.MaxRect, f"{STANDARD}{AlgoName.Dist_MaxRect}",f"{NOISED}{AlgoName.Dist_MaxRect}"]
@@ -156,6 +157,6 @@ def run_compare_algo2(algo_count=3):
 
 
 if __name__ == "__main__":
-    # run_compare_algo(3)
-    run_compare_algo2(3)
+    # total_compare(2,only_noise=True)
+    run_compare_algo(2,only_noise=True)
     pass
